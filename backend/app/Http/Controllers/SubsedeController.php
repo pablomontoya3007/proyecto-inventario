@@ -17,6 +17,9 @@ class SubsedeController extends Controller
 
         $subsedes = Subsede::query()
             ->with('sede')
+            // Mismo ajuste que en SedeController: withCount en vez de
+            // cargar cada ubicación completa solo para contarlas.
+            ->withCount('ubicacionesFormacion')
             ->when($request->filled('sede_id'), fn ($q) => $q->where('sede_id', $request->input('sede_id')))
             ->orderBy('nombre')
             ->paginate(15);

@@ -15,6 +15,7 @@ class SubsedeResource extends JsonResource
             'sede' => new SedeResource($this->whenLoaded('sede')),
             'nombre' => $this->nombre,
             'ubicaciones_formacion' => UbicacionFormacionResource::collection($this->whenLoaded('ubicacionesFormacion')),
+            'ubicaciones_formacion_count' => $this->whenCounted('ubicacionesFormacion'),
             'creado_en' => $this->created_at,
             'actualizado_en' => $this->updated_at,
         ];

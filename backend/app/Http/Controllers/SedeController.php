@@ -14,7 +14,12 @@ class SedeController extends Controller
     {
         $this->authorize('viewAny', Sede::class);
 
-        return SedeResource::collection(Sede::orderBy('nombre')->paginate(15));
+        // withCount agrega "subsedes_count" con una sola consulta SQL
+        // (COUNT vía subquery), sin traer ni serializar cada subsede
+        // completa — más barato que ->load('subsedes') para un listado.
+        return SedeResource::collection(
+            Sede::withCount('subsedes')->orderBy('nombre')->paginate(15)
+        );
     }
 
     public function store(SedeRequest $request): JsonResponse
