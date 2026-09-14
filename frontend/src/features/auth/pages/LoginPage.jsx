@@ -7,7 +7,7 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { login } = useAuth();
+  const { login, sessionExpired } = useAuth();
   const navigate = useNavigate();
 
   async function handleSubmit(event) {
@@ -34,6 +34,12 @@ export function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-slate-100">
       <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4 rounded-lg bg-white p-8 shadow">
         <h1 className="text-xl font-semibold text-slate-800">SPY — Inventario SENA</h1>
+
+        {sessionExpired && !error && (
+          <p className="rounded bg-amber-50 px-3 py-2 text-sm text-amber-700">
+            Tu sesión expiró. Vuelve a iniciar sesión.
+          </p>
+        )}
 
         {error && (
           <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>

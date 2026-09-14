@@ -22,14 +22,22 @@ httpClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Manejo centralizado de errores de sesión. No decide qué hacer en la UI
-// (eso es responsabilidad de ProtectedRoute/AuthContext); solo limpia el
-// token inválido para que el resto de la app detecte que ya no hay sesión.
+// Manejo centralizado de errores de sesión. httpClient no decide qué
+// hacer en la UI (eso es responsabilidad de AuthContext) — solo limpia
+// el token inválido y avisa por este callback, para que el estado de
+// React se entere incluso siendo un módulo fuera del árbol de React.
+let onUnauthorized = null;
+
+export function setOnUnauthorized(callback) {
+  onUnauthorized = callback;
+}
+
 httpClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem(TOKEN_KEY);
+      onUnauthorized?.();
     }
     return Promise.reject(error);
   }
