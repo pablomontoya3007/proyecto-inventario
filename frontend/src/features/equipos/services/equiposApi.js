@@ -1,0 +1,42 @@
+import httpClient from '../../../api/httpClient';
+import { ENDPOINTS } from '../../../api/endpoints';
+
+/**
+ * Shapes confirmados contra EquipoController.php / EquipoResource.php:
+ * - GET    /equipos?...filtros&page= -> { data: [EquipoResource...], links, meta }
+ *          index() trae tipoEquipo, responsable y la cadena completa de
+ *          ubicación (ubicacionFormacion.subsede.sede) — NO trae licencia
+ *          ni observaciones (eso lo hace show(), para la hoja de vida
+ *          completa que se arma en una fase más adelante).
+ * - POST   /equipos      -> { data: EquipoResource }
+ * - PUT    /equipos/{id} -> { data: EquipoResource }
+ * - DELETE /equipos/{id} -> { mensaje: '...' } — siempre permitido, pero
+ *          en cascada: borra también la licencia y TODAS las
+ *          observaciones del equipo.
+ *
+ * Filtros soportados por index(): placa_sena, serial, mac, hostname,
+ * estado, tipo_equipo_id, responsable_id, ubicacion_formacion_id,
+ * subsede_id, sede_id — todos opcionales y combinables.
+ */
+
+export async function fetchEquipos(filtros = {}, page = 1) {
+  const { data } = await httpClient.get(ENDPOINTS.equipos, {
+    params: { page, ...filtros },
+  });
+  return data;
+}
+
+export async function createEquipo(payload) {
+  const { data } = await httpClient.post(ENDPOINTS.equipos, payload);
+  return data.data;
+}
+
+export async function updateEquipo(id, payload) {
+  const { data } = await httpClient.put(`${ENDPOINTS.equipos}/${id}`, payload);
+  return data.data;
+}
+
+export async function deleteEquipo(id) {
+  const { data } = await httpClient.delete(`${ENDPOINTS.equipos}/${id}`);
+  return data;
+}

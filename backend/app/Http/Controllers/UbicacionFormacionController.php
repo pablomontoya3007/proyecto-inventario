@@ -17,6 +17,9 @@ class UbicacionFormacionController extends Controller
 
         $ubicaciones = UbicacionFormacion::query()
             ->with('subsede.sede')
+            // Mismo ajuste que en Sede y Subsede: withCount en vez de
+            // cargar cada equipo completo solo para contarlos.
+            ->withCount('equipos')
             ->when($request->filled('subsede_id'), fn ($q) => $q->where('subsede_id', $request->input('subsede_id')))
             ->orderBy('nombre')
             ->paginate(15);

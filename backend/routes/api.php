@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\EquipoController;
 use App\Http\Controllers\LicenciaOfficeController;
 use App\Http\Controllers\ObservacionController;
+use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\ResponsableController;
 use App\Http\Controllers\SedeController;
 use App\Http\Controllers\SubsedeController;
@@ -20,10 +21,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('sedes', SedeController::class);
     Route::apiResource('subsedes', SubsedeController::class);
 
-    // ->parameters(...): sin esto, Laravel intentaría adivinar el nombre
-    // del parámetro pluralizando en inglés "ubicaciones-formacion", igual
-    // que nos pasó con las tablas. Se fija explícito para que coincida con
-    // lo que ya asumieron los Form Requests (->ignore($this->route(...))).
     Route::apiResource('ubicaciones-formacion', UbicacionFormacionController::class)
         ->parameters(['ubicaciones-formacion' => 'ubicacion_formacion']);
 
@@ -36,7 +33,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('licencias-office', LicenciaOfficeController::class)
         ->parameters(['licencias-office' => 'licencia_office']);
 
-    // Sin update ni destroy: las observaciones son inmutables.
     Route::apiResource('observaciones', ObservacionController::class)
         ->only(['index', 'store', 'show']);
+
+    // Fase 5 — RF-08 Reportes y Consultas. La parte de "Consultas" ya
+    // está cubierta por los filtros de EquipoController::index(); esto
+    // cubre la parte de "Reportes" (vistas agregadas).
+    Route::prefix('reportes')->group(function () {
+        Route::get('equipos', [ReporteController::class, 'equipos']);
+        Route::get('equipos/excel', [ReporteController::class, 'equiposExcel']);
+        Route::get('equipos/pdf', [ReporteController::class, 'equiposPdf']);
+    });
 });

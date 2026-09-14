@@ -24,4 +24,11 @@ export const ENDPOINTS = {
 
   // Fase 4 — solo index, store, show: son inmutables, sin update ni destroy
   observaciones: '/observaciones',
+
+  // Fase 5
+  reportes: {
+    equipos: '/reportes/equipos',
+    equiposExcel: '/reportes/equipos/excel',
+    equiposPdf: '/reportes/equipos/pdf',
+  },
 };

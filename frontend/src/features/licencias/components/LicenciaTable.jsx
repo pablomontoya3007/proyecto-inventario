@@ -1,0 +1,37 @@
+export function LicenciaTable({ licencias, onEdit, onDelete }) {
+  if (licencias.length === 0) {
+    return <p className="text-sm text-slate-500">No hay licencias registradas todavía.</p>;
+  }
+
+  return (
+    <table className="w-full text-left text-sm">
+      <thead>
+        <tr className="border-b border-slate-200 text-slate-500">
+          <th className="py-2 pr-4 font-medium">Equipo</th>
+          <th className="py-2 pr-4 font-medium">Correo</th>
+          <th className="py-2 pr-4 font-medium">Estado</th>
+          <th className="py-2 pr-4 font-medium">Última actualización</th>
+          <th className="py-2 pr-4 font-medium text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {licencias.map((licencia) => (
+          <tr key={licencia.id} className="border-b border-slate-100">
+            <td className="py-2 pr-4 text-slate-800">{licencia.equipo?.placa_sena ?? '—'}</td>
+            <td className="py-2 pr-4 text-slate-500">{licencia.correo}</td>
+            <td className="py-2 pr-4 text-slate-500">{licencia.estado_licencia_label ?? '—'}</td>
+            <td className="py-2 pr-4 text-slate-500">{licencia.fecha_actualizacion ?? '—'}</td>
+            <td className="py-2 pr-4 text-right">
+              <button onClick={() => onEdit(licencia)} className="mr-3 text-sm text-slate-600 hover:underline">
+                Editar
+              </button>
+              <button onClick={() => onDelete(licencia)} className="text-sm text-red-600 hover:underline">
+                Eliminar
+              </button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}

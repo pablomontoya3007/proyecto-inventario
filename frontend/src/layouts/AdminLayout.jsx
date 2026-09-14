@@ -6,6 +6,13 @@ import { useAuth } from '../features/auth/hooks/useAuth';
 const NAV_ITEMS = [
   { label: 'Sedes', path: '/sedes' },
   { label: 'Subsedes', path: '/subsedes' },
+  { label: 'Ubicaciones', path: '/ubicaciones-formacion' },
+  { label: 'Tipos de Equipo', path: '/tipos-equipo' },
+  { label: 'Responsables', path: '/responsables' },
+  { label: 'Equipos', path: '/equipos' },
+  { label: 'Licencias', path: '/licencias-office' },
+  { label: 'Observaciones', path: '/observaciones' },
+  { label: 'Reportes', path: '/reportes' },
 ];
 
 export function AdminLayout() {
