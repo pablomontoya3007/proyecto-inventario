@@ -30,5 +30,11 @@ export const ENDPOINTS = {
     equipos: '/reportes/equipos',
     equiposExcel: '/reportes/equipos/excel',
     equiposPdf: '/reportes/equipos/pdf',
+    licencias: '/reportes/licencias',
+    licenciasExcel: '/reportes/licencias/excel',
+    licenciasPdf: '/reportes/licencias/pdf',
+    responsables: '/reportes/responsables',
+    responsablesExcel: '/reportes/responsables/excel',
+    responsablesPdf: '/reportes/responsables/pdf',
   },
 };

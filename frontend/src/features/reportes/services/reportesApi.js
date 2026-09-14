@@ -11,11 +11,6 @@ import { ENDPOINTS } from '../../../api/endpoints';
  * la descarga se dispara manualmente en el navegador.
  */
 
-export async function fetchReporteEquipos() {
-  const { data } = await httpClient.get(ENDPOINTS.reportes.equipos);
-  return data;
-}
-
 async function descargarArchivo(url, nombreArchivo) {
   const response = await httpClient.get(url, { responseType: 'blob' });
   const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
@@ -28,10 +23,51 @@ async function descargarArchivo(url, nombreArchivo) {
   window.URL.revokeObjectURL(blobUrl);
 }
 
+// --- Equipos ---
+
+export async function fetchReporteEquipos() {
+  const { data } = await httpClient.get(ENDPOINTS.reportes.equipos);
+  return data;
+}
+
 export function descargarReporteEquiposExcel() {
   return descargarArchivo(ENDPOINTS.reportes.equiposExcel, 'equipos-por-categoria.xlsx');
 }
 
 export function descargarReporteEquiposPdf() {
   return descargarArchivo(ENDPOINTS.reportes.equiposPdf, 'equipos-por-categoria.pdf');
+}
+
+// --- Licencias ---
+// "por vencer" no existe como consulta real: LicenciaOffice no guarda
+// fecha de vencimiento, solo fecha_actualizacion (cuándo cambió la
+// contraseña). El reporte cubre estado actual + las que ya requieren
+// atención (Vencida/Suspendida).
+
+export async function fetchReporteLicencias() {
+  const { data } = await httpClient.get(ENDPOINTS.reportes.licencias);
+  return data;
+}
+
+export function descargarReporteLicenciasExcel() {
+  return descargarArchivo(ENDPOINTS.reportes.licenciasExcel, 'licencias.xlsx');
+}
+
+export function descargarReporteLicenciasPdf() {
+  return descargarArchivo(ENDPOINTS.reportes.licenciasPdf, 'licencias.pdf');
+}
+
+// --- Responsables ---
+
+export async function fetchReporteResponsables() {
+  const { data } = await httpClient.get(ENDPOINTS.reportes.responsables);
+  return data;
+}
+
+export function descargarReporteResponsablesExcel() {
+  return descargarArchivo(ENDPOINTS.reportes.responsablesExcel, 'responsables.xlsx');
+}
+
+export function descargarReporteResponsablesPdf() {
+  return descargarArchivo(ENDPOINTS.reportes.responsablesPdf, 'responsables.pdf');
 }
