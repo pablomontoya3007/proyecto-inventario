@@ -21,6 +21,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('sedes', SedeController::class);
     Route::apiResource('subsedes', SubsedeController::class);
 
+    // ->parameters(...): sin esto, Laravel intentaría adivinar el nombre
+    // del parámetro pluralizando en inglés "ubicaciones-formacion", igual
+    // que nos pasó con las tablas. Se fija explícito para que coincida con
+    // lo que ya asumieron los Form Requests (->ignore($this->route(...))).
     Route::apiResource('ubicaciones-formacion', UbicacionFormacionController::class)
         ->parameters(['ubicaciones-formacion' => 'ubicacion_formacion']);
 
@@ -33,6 +37,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('licencias-office', LicenciaOfficeController::class)
         ->parameters(['licencias-office' => 'licencia_office']);
 
+    // Sin update ni destroy: las observaciones son inmutables.
     Route::apiResource('observaciones', ObservacionController::class)
         ->only(['index', 'store', 'show']);
 
@@ -43,5 +48,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('equipos', [ReporteController::class, 'equipos']);
         Route::get('equipos/excel', [ReporteController::class, 'equiposExcel']);
         Route::get('equipos/pdf', [ReporteController::class, 'equiposPdf']);
+
+        Route::get('licencias', [ReporteController::class, 'licencias']);
+        Route::get('licencias/excel', [ReporteController::class, 'licenciasExcel']);
+        Route::get('licencias/pdf', [ReporteController::class, 'licenciasPdf']);
+
+        Route::get('responsables', [ReporteController::class, 'responsables']);
+        Route::get('responsables/excel', [ReporteController::class, 'responsablesExcel']);
+        Route::get('responsables/pdf', [ReporteController::class, 'responsablesPdf']);
     });
 });

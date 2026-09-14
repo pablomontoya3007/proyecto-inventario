@@ -8,7 +8,8 @@ class DatabaseSeeder extends Seeder
 {
     /**
      * Orden importa: cada seeder asume que los anteriores ya corrieron
-     * (Equipo necesita Ubicaciones y Responsables ya creados, por ejemplo).
+     * (Equipo necesita Ubicaciones y Responsables ya creados, por
+     * ejemplo; LicenciaOffice necesita Equipos ya creados).
      */
     public function run(): void
     {
@@ -18,6 +19,7 @@ class DatabaseSeeder extends Seeder
             EstructuraSeeder::class,
             ResponsableSeeder::class,
             EquipoSeeder::class,
+            LicenciaOfficeSeeder::class,
         ]);
     }
 }
