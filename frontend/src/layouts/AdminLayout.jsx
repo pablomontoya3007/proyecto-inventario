@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { label: 'Tipos de Equipo', path: '/tipos-equipo' },
   { label: 'Responsables', path: '/responsables' },
   { label: 'Equipos', path: '/equipos' },
+  { label: 'Mantenimientos', path: '/mantenimientos' },
   { label: 'Licencias', path: '/licencias-office' },
   { label: 'Observaciones', path: '/observaciones' },
   { label: 'Reportes', path: '/reportes' },

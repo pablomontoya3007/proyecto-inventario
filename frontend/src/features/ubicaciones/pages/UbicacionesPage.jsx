@@ -5,6 +5,7 @@ import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
 import { UbicacionTable } from '../components/UbicacionTable';
 import { UbicacionForm } from '../components/UbicacionForm';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
+import { Modal } from '../../../shared/components/Modal';
 
 export function UbicacionesPage() {
   const [page, setPage] = useState(1);
@@ -145,20 +146,18 @@ export function UbicacionesPage() {
       )}
 
       {editingUbicacion !== null && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
-            <h2 className="mb-4 text-lg font-semibold text-slate-800">
-              {editingUbicacion.id ? 'Editar ubicación' : 'Nueva ubicación'}
-            </h2>
-            <UbicacionForm
-              initialValues={editingUbicacion.id ? editingUbicacion : null}
-              onSubmit={handleSubmit}
-              onCancel={() => setEditingUbicacion(null)}
-              isSubmitting={createUbicacion.isPending || updateUbicacion.isPending}
-              serverErrors={serverErrors}
-            />
-          </div>
-        </div>
+        <Modal
+          title={editingUbicacion.id ? 'Editar ubicación' : 'Nueva ubicación'}
+          onClose={() => setEditingUbicacion(null)}
+        >
+          <UbicacionForm
+            initialValues={editingUbicacion.id ? editingUbicacion : null}
+            onSubmit={handleSubmit}
+            onCancel={() => setEditingUbicacion(null)}
+            isSubmitting={createUbicacion.isPending || updateUbicacion.isPending}
+            serverErrors={serverErrors}
+          />
+        </Modal>
       )}
 
       <ConfirmDialog

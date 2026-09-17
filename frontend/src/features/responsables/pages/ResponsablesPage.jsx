@@ -8,6 +8,7 @@ import {
 import { ResponsableTable } from '../components/ResponsableTable';
 import { ResponsableForm } from '../components/ResponsableForm';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
+import { Modal } from '../../../shared/components/Modal';
 
 export function ResponsablesPage() {
   const [page, setPage] = useState(1);
@@ -105,20 +106,18 @@ export function ResponsablesPage() {
       )}
 
       {editingResponsable !== null && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
-            <h2 className="mb-4 text-lg font-semibold text-slate-800">
-              {editingResponsable.id ? 'Editar responsable' : 'Nuevo responsable'}
-            </h2>
-            <ResponsableForm
-              initialValues={editingResponsable.id ? editingResponsable : null}
-              onSubmit={handleSubmit}
-              onCancel={() => setEditingResponsable(null)}
-              isSubmitting={createResponsable.isPending || updateResponsable.isPending}
-              serverErrors={serverErrors}
-            />
-          </div>
-        </div>
+        <Modal
+          title={editingResponsable.id ? 'Editar responsable' : 'Nuevo responsable'}
+          onClose={() => setEditingResponsable(null)}
+        >
+          <ResponsableForm
+            initialValues={editingResponsable.id ? editingResponsable : null}
+            onSubmit={handleSubmit}
+            onCancel={() => setEditingResponsable(null)}
+            isSubmitting={createResponsable.isPending || updateResponsable.isPending}
+            serverErrors={serverErrors}
+          />
+        </Modal>
       )}
 
       <ConfirmDialog

@@ -7,6 +7,7 @@ import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
 import { EquipoTable } from '../components/EquipoTable';
 import { EquipoForm } from '../components/EquipoForm';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
+import { Modal } from '../../../shared/components/Modal';
 
 export function EquiposPage() {
   const [page, setPage] = useState(1);
@@ -205,23 +206,19 @@ export function EquiposPage() {
       )}
 
       {editingEquipo !== null && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
-          {/* Modal más ancho que los anteriores (max-w-2xl + scroll
-              interno): el formulario de Equipo tiene bastantes más
-              campos que Sede/Subsede/Ubicación. */}
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-6 shadow-lg">
-            <h2 className="mb-4 text-lg font-semibold text-slate-800">
-              {editingEquipo.id ? 'Editar equipo' : 'Nuevo equipo'}
-            </h2>
-            <EquipoForm
-              initialValues={editingEquipo.id ? editingEquipo : null}
-              onSubmit={handleSubmit}
-              onCancel={() => setEditingEquipo(null)}
-              isSubmitting={createEquipo.isPending || updateEquipo.isPending}
-              serverErrors={serverErrors}
-            />
-          </div>
-        </div>
+        <Modal
+          title={editingEquipo.id ? 'Editar equipo' : 'Nuevo equipo'}
+          onClose={() => setEditingEquipo(null)}
+          maxWidth="max-w-2xl"
+        >
+          <EquipoForm
+            initialValues={editingEquipo.id ? editingEquipo : null}
+            onSubmit={handleSubmit}
+            onCancel={() => setEditingEquipo(null)}
+            isSubmitting={createEquipo.isPending || updateEquipo.isPending}
+            serverErrors={serverErrors}
+          />
+        </Modal>
       )}
 
       <ConfirmDialog

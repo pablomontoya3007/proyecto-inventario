@@ -10,6 +10,7 @@ import { UbicacionesPage } from '../features/ubicaciones/pages/UbicacionesPage';
 import { TiposEquipoPage } from '../features/tipos-equipo/pages/TiposEquipoPage';
 import { ResponsablesPage } from '../features/responsables/pages/ResponsablesPage';
 import { EquiposPage } from '../features/equipos/pages/EquiposPage';
+import { MantenimientosPage } from '../features/mantenimientos/pages/MantenimientosPage';
 import { LicenciasPage } from '../features/licencias/pages/LicenciasPage';
 import { ObservacionesPage } from '../features/observaciones/pages/ObservacionesPage';
 import { ReportesPage } from '../features/reportes/pages/ReportesPage';
@@ -38,6 +39,7 @@ export function AppRouter() {
                   <Route path="/tipos-equipo" element={<TiposEquipoPage />} />
                   <Route path="/responsables" element={<ResponsablesPage />} />
                   <Route path="/equipos" element={<EquiposPage />} />
+                <Route path="/mantenimientos" element={<MantenimientosPage />} />
                   <Route path="/licencias-office" element={<LicenciasPage />} />
                   <Route path="/observaciones" element={<ObservacionesPage />} />
                   <Route path="/reportes" element={<ReportesPage />} />

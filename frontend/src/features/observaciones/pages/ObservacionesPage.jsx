@@ -3,6 +3,7 @@ import { useObservaciones, useCreateObservacion } from '../hooks/useObservacione
 import { useEquipos } from '../../equipos/hooks/useEquipos';
 import { ObservacionList } from '../components/ObservacionList';
 import { ObservacionForm } from '../components/ObservacionForm';
+import { Modal } from '../../../shared/components/Modal';
 
 export function ObservacionesPage() {
   const [page, setPage] = useState(1);
@@ -81,18 +82,15 @@ export function ObservacionesPage() {
       )}
 
       {creandoObservacion && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
-            <h2 className="mb-4 text-lg font-semibold text-slate-800">Nueva observación</h2>
-            <ObservacionForm
-              equipoIdInicial={equipoFiltro}
-              onSubmit={handleSubmit}
-              onCancel={() => setCreandoObservacion(false)}
-              isSubmitting={createObservacion.isPending}
-              serverErrors={serverErrors}
-            />
-          </div>
-        </div>
+        <Modal title="Nueva observación" onClose={() => setCreandoObservacion(false)}>
+          <ObservacionForm
+            equipoIdInicial={equipoFiltro}
+            onSubmit={handleSubmit}
+            onCancel={() => setCreandoObservacion(false)}
+            isSubmitting={createObservacion.isPending}
+            serverErrors={serverErrors}
+          />
+        </Modal>
       )}
     </div>
   );

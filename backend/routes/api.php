@@ -10,6 +10,7 @@ use App\Http\Controllers\SedeController;
 use App\Http\Controllers\SubsedeController;
 use App\Http\Controllers\TipoEquipoController;
 use App\Http\Controllers\UbicacionFormacionController;
+use App\Http\Controllers\MantenimientoController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
@@ -20,6 +21,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::apiResource('sedes', SedeController::class);
     Route::apiResource('subsedes', SubsedeController::class);
+    
 
     // ->parameters(...): sin esto, Laravel intentaría adivinar el nombre
     // del parámetro pluralizando en inglés "ubicaciones-formacion", igual
@@ -40,6 +42,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // Sin update ni destroy: las observaciones son inmutables.
     Route::apiResource('observaciones', ObservacionController::class)
         ->only(['index', 'store', 'show']);
+            
+    Route::apiResource('mantenimientos', MantenimientoController::class)
+        ->only(['index', 'store', 'update', 'destroy']);
+
 
     // Fase 5 — RF-08 Reportes y Consultas. La parte de "Consultas" ya
     // está cubierta por los filtros de EquipoController::index(); esto

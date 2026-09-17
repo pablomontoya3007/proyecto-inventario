@@ -3,6 +3,7 @@ import { useLicencias, useCreateLicencia, useUpdateLicencia, useDeleteLicencia }
 import { LicenciaTable } from '../components/LicenciaTable';
 import { LicenciaForm } from '../components/LicenciaForm';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
+import { Modal } from '../../../shared/components/Modal';
 
 export function LicenciasPage() {
   const [page, setPage] = useState(1);
@@ -82,20 +83,15 @@ export function LicenciasPage() {
       )}
 
       {editingLicencia !== null && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
-            <h2 className="mb-4 text-lg font-semibold text-slate-800">
-              {editingLicencia.id ? 'Editar licencia' : 'Nueva licencia'}
-            </h2>
-            <LicenciaForm
-              initialValues={editingLicencia.id ? editingLicencia : null}
-              onSubmit={handleSubmit}
-              onCancel={() => setEditingLicencia(null)}
-              isSubmitting={createLicencia.isPending || updateLicencia.isPending}
-              serverErrors={serverErrors}
-            />
-          </div>
-        </div>
+        <Modal title={editingLicencia.id ? 'Editar licencia' : 'Nueva licencia'} onClose={() => setEditingLicencia(null)}>
+          <LicenciaForm
+            initialValues={editingLicencia.id ? editingLicencia : null}
+            onSubmit={handleSubmit}
+            onCancel={() => setEditingLicencia(null)}
+            isSubmitting={createLicencia.isPending || updateLicencia.isPending}
+            serverErrors={serverErrors}
+          />
+        </Modal>
       )}
 
       <ConfirmDialog

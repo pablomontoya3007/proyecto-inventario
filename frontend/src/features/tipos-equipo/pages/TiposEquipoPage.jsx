@@ -8,6 +8,7 @@ import {
 import { TipoEquipoTable } from '../components/TipoEquipoTable';
 import { TipoEquipoForm } from '../components/TipoEquipoForm';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
+import { Modal } from '../../../shared/components/Modal';
 
 export function TiposEquipoPage() {
   const [editingTipo, setEditingTipo] = useState(null);
@@ -72,20 +73,15 @@ export function TiposEquipoPage() {
       )}
 
       {editingTipo !== null && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
-            <h2 className="mb-4 text-lg font-semibold text-slate-800">
-              {editingTipo.id ? 'Editar tipo de equipo' : 'Nuevo tipo de equipo'}
-            </h2>
-            <TipoEquipoForm
-              initialValues={editingTipo.id ? editingTipo : null}
-              onSubmit={handleSubmit}
-              onCancel={() => setEditingTipo(null)}
-              isSubmitting={createTipo.isPending || updateTipo.isPending}
-              serverErrors={serverErrors}
-            />
-          </div>
-        </div>
+        <Modal title={editingTipo.id ? 'Editar tipo de equipo' : 'Nuevo tipo de equipo'} onClose={() => setEditingTipo(null)}>
+          <TipoEquipoForm
+            initialValues={editingTipo.id ? editingTipo : null}
+            onSubmit={handleSubmit}
+            onCancel={() => setEditingTipo(null)}
+            isSubmitting={createTipo.isPending || updateTipo.isPending}
+            serverErrors={serverErrors}
+          />
+        </Modal>
       )}
 
       <ConfirmDialog
