@@ -1,4 +1,4 @@
-export function EquipoTable({ equipos, onEdit, onDelete }) {
+export function EquipoTable({ equipos, onVerHojaDeVida, onEdit, onDelete }) {
   if (equipos.length === 0) {
     return <p className="text-sm text-slate-500">No hay equipos registrados todavía.</p>;
   }
@@ -31,6 +31,12 @@ export function EquipoTable({ equipos, onEdit, onDelete }) {
                 EstadoEquipo::label()) — no hace falta mapearlo aquí. */}
             <td className="py-2 pr-4 text-slate-500">{equipo.estado_label ?? '—'}</td>
             <td className="py-2 pr-4 text-right">
+              <button
+                onClick={() => onVerHojaDeVida(equipo)}
+                className="mr-3 text-sm text-slate-600 hover:underline"
+              >
+                Hoja de vida
+              </button>
               <button onClick={() => onEdit(equipo)} className="mr-3 text-sm text-slate-600 hover:underline">
                 Editar
               </button>

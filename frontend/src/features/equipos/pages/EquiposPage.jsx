@@ -6,6 +6,7 @@ import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
 import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
 import { EquipoTable } from '../components/EquipoTable';
 import { EquipoForm } from '../components/EquipoForm';
+import { HojaDeVidaModal } from '../components/HojaDeVidaModal';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 import { Modal } from '../../../shared/components/Modal';
 
@@ -19,6 +20,7 @@ export function EquiposPage() {
   const [ubicacionFiltro, setUbicacionFiltro] = useState('');
 
   const [editingEquipo, setEditingEquipo] = useState(null);
+  const [viendoHojaDeVida, setViendoHojaDeVida] = useState(null);
   const [deletingEquipo, setDeletingEquipo] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
 
@@ -178,6 +180,7 @@ export function EquiposPage() {
         <>
           <EquipoTable
             equipos={data.data}
+            onVerHojaDeVida={setViendoHojaDeVida}
             onEdit={setEditingEquipo}
             onDelete={(equipo) => {
               setDeleteError(null);
@@ -219,6 +222,14 @@ export function EquiposPage() {
             serverErrors={serverErrors}
           />
         </Modal>
+      )}
+
+      {viendoHojaDeVida && (
+        <HojaDeVidaModal
+          equipoId={viendoHojaDeVida.id}
+          placaSena={viendoHojaDeVida.placa_sena}
+          onClose={() => setViendoHojaDeVida(null)}
+        />
       )}
 
       <ConfirmDialog

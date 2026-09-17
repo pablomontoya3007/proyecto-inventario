@@ -1,5 +1,6 @@
 import httpClient from '../../../api/httpClient';
 import { ENDPOINTS } from '../../../api/endpoints';
+import { descargarBlob } from '../../../shared/utils/descargarArchivo';
 
 /**
  * Shapes confirmados contra EquipoController.php / EquipoResource.php:
@@ -39,4 +40,16 @@ export async function updateEquipo(id, payload) {
 export async function deleteEquipo(id) {
   const { data } = await httpClient.delete(`${ENDPOINTS.equipos}/${id}`);
   return data;
+}
+
+// GET /equipos/{id} -> { data: EquipoResource } — el mismo show() que ya
+// traía tipo/responsable/ubicación/licencia/observaciones, ahora también
+// con mantenimientos. Es la fuente de datos de la hoja de vida.
+export async function fetchEquipo(id) {
+  const { data } = await httpClient.get(`${ENDPOINTS.equipos}/${id}`);
+  return data.data;
+}
+
+export function descargarHojaDeVidaPdf(id, placaSena) {
+  return descargarBlob(httpClient, `${ENDPOINTS.equipos}/${id}/hoja-de-vida/pdf`, `hoja-de-vida-${placaSena}.pdf`);
 }

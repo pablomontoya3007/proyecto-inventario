@@ -30,6 +30,7 @@ class EquipoResource extends JsonResource
             'ubicacion_formacion' => new UbicacionFormacionResource($this->whenLoaded('ubicacionFormacion')),
             'licencia_office' => new LicenciaOfficeResource($this->whenLoaded('licenciaOffice')),
             'observaciones' => ObservacionResource::collection($this->whenLoaded('observaciones')),
+            'mantenimientos' => MantenimientoResource::collection($this->whenLoaded('mantenimientos')),
             'creado_en' => $this->created_at,
             'actualizado_en' => $this->updated_at,
         ];

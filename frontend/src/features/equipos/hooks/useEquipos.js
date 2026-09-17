@@ -1,10 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchEquipos, createEquipo, updateEquipo, deleteEquipo } from '../services/equiposApi';
+import { fetchEquipos, fetchEquipo, createEquipo, updateEquipo, deleteEquipo } from '../services/equiposApi';
 
 export function useEquipos(filtros = {}, page = 1) {
   return useQuery({
     queryKey: ['equipos', filtros, page],
     queryFn: () => fetchEquipos(filtros, page),
+  });
+}
+
+// Para la hoja de vida: un solo equipo, con todas sus relaciones.
+// enabled evita disparar la petición mientras el modal está cerrado.
+export function useEquipo(id, { enabled = true } = {}) {
+  return useQuery({
+    queryKey: ['equipos', 'detalle', id],
+    queryFn: () => fetchEquipo(id),
+    enabled: enabled && !!id,
   });
 }
 
@@ -30,4 +40,4 @@ export function useDeleteEquipo() {
     mutationFn: deleteEquipo,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['equipos'] }),
   });
-}
+} 

@@ -8,6 +8,7 @@ import {
 import { MantenimientoTable } from '../components/MantenimientoTable';
 import { HistorialMantenimientoTable } from '../components/HistorialMantenimientoTable';
 import { MantenimientoForm } from '../components/MantenimientoForm';
+import { MarcarListoForm } from '../components/MarcarListoForm';
 import { Modal } from '../../../shared/components/Modal';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 
@@ -15,6 +16,7 @@ export function MantenimientosPage() {
   const [pestana, setPestana] = useState('activos'); // 'activos' | 'historial'
   const [page, setPage] = useState(1);
   const [creando, setCreando] = useState(false);
+  const [completandoMantenimiento, setCompletandoMantenimiento] = useState(null);
   const [deletingMantenimiento, setDeletingMantenimiento] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
   const [errorCambioEstado, setErrorCambioEstado] = useState(null);
@@ -43,11 +45,30 @@ export function MantenimientosPage() {
     );
   }
 
-  function handleMarcarListo(mantenimiento) {
+  function handleAbrirCompletar(mantenimiento) {
     setErrorCambioEstado(null);
+    setCompletandoMantenimiento(mantenimiento);
+  }
+
+  // Combina la nota de cierre con la descripción que ya tenía (si tenía
+  // alguna desde que se programó) — no la reemplaza, "para que aparezcan
+  // ambas cosas" en el Historial.
+  function handleConfirmarListo(nota) {
+    if (!completandoMantenimiento) return;
+
+    const descripcionActual = completandoMantenimiento.descripcion?.trim();
+    let descripcionFinal = descripcionActual || null;
+
+    if (nota) {
+      descripcionFinal = descripcionActual ? `${descripcionActual}\n\nAl completar: ${nota}` : `Al completar: ${nota}`;
+    }
+
     updateMantenimiento.mutate(
-      { id: mantenimiento.id, payload: { estado: 'listo' } },
-      { onError: () => setErrorCambioEstado('No se pudo marcar como listo. Intenta de nuevo.') }
+      { id: completandoMantenimiento.id, payload: { estado: 'listo', descripcion: descripcionFinal } },
+      {
+        onSuccess: () => setCompletandoMantenimiento(null),
+        onError: () => setErrorCambioEstado('No se pudo marcar como listo. Intenta de nuevo.'),
+      }
     );
   }
 
@@ -106,7 +127,7 @@ export function MantenimientosPage() {
             <MantenimientoTable
               mantenimientos={data.data}
               onCambiarEstado={handleCambiarEstado}
-              onMarcarListo={handleMarcarListo}
+              onMarcarListo={handleAbrirCompletar}
               onDelete={(mantenimiento) => {
                 setDeleteError(null);
                 setDeletingMantenimiento(mantenimiento);
@@ -149,6 +170,16 @@ export function MantenimientosPage() {
             onCancel={() => setCreando(false)}
             isSubmitting={createMantenimiento.isPending}
             serverErrors={serverErrors}
+          />
+        </Modal>
+      )}
+
+      {completandoMantenimiento && (
+        <Modal title="Marcar como listo" onClose={() => setCompletandoMantenimiento(null)}>
+          <MarcarListoForm
+            onSubmit={handleConfirmarListo}
+            onCancel={() => setCompletandoMantenimiento(null)}
+            isSubmitting={updateMantenimiento.isPending}
           />
         </Modal>
       )}

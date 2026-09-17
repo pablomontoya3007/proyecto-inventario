@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+
 use App\Http\Requests\EquipoRequest;
 use App\Http\Resources\EquipoResource;
 use App\Models\Equipo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class EquipoController extends Controller
 {
@@ -53,7 +55,8 @@ class EquipoController extends Controller
     /**
      * La hoja de vida completa (sección 2 de los requisitos): a diferencia
      * de index(), aquí sí se precargan TODAS las relaciones, incluida la
-     * licencia y el historial de observaciones con su usuario.
+     * licencia, el historial de observaciones con su usuario, y los
+     * mantenimientos (programados y ya completados).
      */
     public function show(Equipo $equipo): EquipoResource
     {
@@ -65,6 +68,7 @@ class EquipoController extends Controller
             'ubicacionFormacion.subsede.sede',
             'licenciaOffice',
             'observaciones.usuario',
+            'mantenimientos',
         ]);
 
         return new EquipoResource($equipo);
@@ -86,5 +90,26 @@ class EquipoController extends Controller
         $equipo->delete();
 
         return response()->json(['mensaje' => 'Equipo eliminado correctamente.']);
+    }
+
+    /**
+     * Genera el PDF de la hoja de vida — mismas relaciones que show(),
+     * pero renderizadas en una vista Blade en vez de JSON.
+     */
+    public function hojaDeVidaPdf(Equipo $equipo)
+    {
+        $this->authorize('view', $equipo);
+
+        $equipo->load([
+            'tipoEquipo',
+            'responsable',
+            'ubicacionFormacion.subsede.sede',
+            'licenciaOffice',
+            'observaciones.usuario',
+            'mantenimientos',
+        ]);
+
+        return Pdf::loadView('equipos.hoja-de-vida', ['equipo' => $equipo])
+            ->download('hoja-de-vida-'.$equipo->placa_sena.'.pdf');
     }
 }
