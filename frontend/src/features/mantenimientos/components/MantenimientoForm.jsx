@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { EquipoAutocomplete } from './EquipoAutocomplete';
+import { EquipoAutocomplete } from '../../../shared/components/EquipoAutocomplete';
 
 export function MantenimientoForm({ onSubmit, onCancel, isSubmitting, serverErrors }) {
   const [equipo, setEquipo] = useState(null);

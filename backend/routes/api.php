@@ -11,6 +11,7 @@ use App\Http\Controllers\SubsedeController;
 use App\Http\Controllers\TipoEquipoController;
 use App\Http\Controllers\UbicacionFormacionController;
 use App\Http\Controllers\MantenimientoController;
+use App\Http\Controllers\TrasladoController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
@@ -46,6 +47,11 @@ Route::middleware('auth:sanctum')->group(function () {
             
     Route::apiResource('mantenimientos', MantenimientoController::class)
         ->only(['index', 'store', 'update', 'destroy']);
+
+    // Sin update ni destroy: los traslados son inmutables, igual que las
+    // observaciones — un error de captura se corrige con uno nuevo.
+    Route::apiResource('traslados', TrasladoController::class)
+        ->only(['index', 'store']);
 
 
     // Fase 5 — RF-08 Reportes y Consultas. La parte de "Consultas" ya

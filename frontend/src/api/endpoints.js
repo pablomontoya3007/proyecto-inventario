@@ -19,6 +19,7 @@ export const ENDPOINTS = {
   responsables: '/responsables',
   equipos: '/equipos',
   mantenimientos: '/mantenimientos',
+  traslados: '/traslados',
 
   // Fase 3
   licenciasOffice: '/licencias-office', // parámetro de ruta: licencia_office

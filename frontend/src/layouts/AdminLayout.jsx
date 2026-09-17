@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { label: 'Responsables', path: '/responsables' },
   { label: 'Equipos', path: '/equipos' },
   { label: 'Mantenimientos', path: '/mantenimientos' },
+  { label: 'Traslados', path: '/traslados' },
   { label: 'Licencias', path: '/licencias-office' },
   { label: 'Observaciones', path: '/observaciones' },
   { label: 'Reportes', path: '/reportes' },
