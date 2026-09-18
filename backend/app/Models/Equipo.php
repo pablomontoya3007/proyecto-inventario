@@ -67,8 +67,13 @@ class Equipo extends Model
         return $this->hasMany(Observacion::class)->latest('created_at');
     }
 
-        public function mantenimientos(): HasMany
+    public function mantenimientos(): HasMany
     {
         return $this->hasMany(Mantenimiento::class)->latest('fecha_programada');
+    }
+
+    public function traslados(): HasMany
+    {
+        return $this->hasMany(Traslado::class)->latest('fecha_traslado');
     }
 }

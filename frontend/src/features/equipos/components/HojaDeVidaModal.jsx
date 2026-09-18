@@ -117,6 +117,27 @@ export function HojaDeVidaModal({ equipoId, placaSena, onClose }) {
           </section>
 
           <section>
+            <h3 className="mb-2 text-sm font-semibold text-slate-700">Historial de traslados</h3>
+            {equipo.traslados?.length > 0 ? (
+              <ul className="space-y-2">
+                {equipo.traslados.map((traslado) => (
+                  <li key={traslado.id} className="rounded border border-slate-200 p-2 text-sm">
+                    <div className="flex justify-between text-slate-600">
+                      <span>
+                        {traslado.ubicacion_origen?.nombre ?? '—'} → {traslado.ubicacion_destino?.nombre ?? '—'}
+                      </span>
+                      <span>{traslado.fecha_traslado}</span>
+                    </div>
+                    {traslado.motivo && <p className="mt-1 text-slate-800">{traslado.motivo}</p>}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-slate-400">Sin traslados registrados.</p>
+            )}
+          </section>
+
+          <section>
             <h3 className="mb-2 text-sm font-semibold text-slate-700">Historial de observaciones</h3>
             {equipo.observaciones?.length > 0 ? (
               <ul className="space-y-2">

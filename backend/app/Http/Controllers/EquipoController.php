@@ -69,6 +69,8 @@ class EquipoController extends Controller
             'licenciaOffice',
             'observaciones.usuario',
             'mantenimientos',
+            'traslados.ubicacionOrigen',
+            'traslados.ubicacionDestino',
         ]);
 
         return new EquipoResource($equipo);
@@ -107,6 +109,8 @@ class EquipoController extends Controller
             'licenciaOffice',
             'observaciones.usuario',
             'mantenimientos',
+            'traslados.ubicacionOrigen',
+            'traslados.ubicacionDestino',
         ]);
 
         return Pdf::loadView('equipos.hoja-de-vida', ['equipo' => $equipo])
