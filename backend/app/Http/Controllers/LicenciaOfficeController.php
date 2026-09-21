@@ -38,6 +38,19 @@ class LicenciaOfficeController extends Controller
 
         return (new LicenciaOfficeResource($licencia))->response()->setStatusCode(201);
     }
+        /**
+     * Único punto donde la contraseña sale en texto plano — bajo
+     * demanda, una sola licencia a la vez, nunca en el listado general.
+     * password_cifrado tiene cast 'encrypted': leerlo aquí lo descifra
+     * automáticamente (aunque $hidden en el modelo lo oculte en la
+     * serialización normal, este array se arma a mano, así que sí viaja).
+     */
+    public function mostrarPassword(LicenciaOffice $licenciaOffice): JsonResponse
+    {
+        $this->authorize('view', $licenciaOffice);
+
+        return response()->json(['password' => $licenciaOffice->password_cifrado]);
+    }
 
     public function show(LicenciaOffice $licenciaOffice): LicenciaOfficeResource
     {

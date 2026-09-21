@@ -40,6 +40,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::apiResource('licencias-office', LicenciaOfficeController::class)
         ->parameters(['licencias-office' => 'licencia_office']);
+    Route::get('licencias-office/{licencia_office}/password', [LicenciaOfficeController::class, 'mostrarPassword']);
 
     // Sin update ni destroy: las observaciones son inmutables.
     Route::apiResource('observaciones', ObservacionController::class)

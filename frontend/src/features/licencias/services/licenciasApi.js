@@ -35,3 +35,11 @@ export async function deleteLicencia(id) {
   const { data } = await httpClient.delete(`${ENDPOINTS.licenciasOffice}/${id}`);
   return data;
 }
+
+// La única función que puede traer la contraseña en texto plano — se
+// llama solo cuando alguien hace clic en "Mostrar" en una fila
+// específica, nunca automáticamente al cargar el listado.
+export async function fetchLicenciaPassword(id) {
+  const { data } = await httpClient.get(`${ENDPOINTS.licenciasOffice}/${id}/password`);
+  return data.password;
+}

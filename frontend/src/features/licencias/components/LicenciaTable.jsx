@@ -1,3 +1,5 @@
+import { LicenciaPasswordCell } from './LicenciaPasswordCell';
+
 export function LicenciaTable({ licencias, onEdit, onDelete }) {
   if (licencias.length === 0) {
     return <p className="text-sm text-slate-500">No hay licencias registradas todavía.</p>;
@@ -9,6 +11,7 @@ export function LicenciaTable({ licencias, onEdit, onDelete }) {
         <tr className="border-b border-slate-200 text-slate-500">
           <th className="py-2 pr-4 font-medium">Equipo</th>
           <th className="py-2 pr-4 font-medium">Correo</th>
+          <th className="py-2 pr-4 font-medium">Contraseña</th>
           <th className="py-2 pr-4 font-medium">Estado</th>
           <th className="py-2 pr-4 font-medium">Última actualización</th>
           <th className="py-2 pr-4 font-medium text-right">Acciones</th>
@@ -19,6 +22,9 @@ export function LicenciaTable({ licencias, onEdit, onDelete }) {
           <tr key={licencia.id} className="border-b border-slate-100">
             <td className="py-2 pr-4 text-slate-800">{licencia.equipo?.placa_sena ?? '—'}</td>
             <td className="py-2 pr-4 text-slate-500">{licencia.correo}</td>
+            <td className="py-2 pr-4">
+              <LicenciaPasswordCell licenciaId={licencia.id} />
+            </td>
             <td className="py-2 pr-4 text-slate-500">{licencia.estado_licencia_label ?? '—'}</td>
             <td className="py-2 pr-4 text-slate-500">{licencia.fecha_actualizacion ?? '—'}</td>
             <td className="py-2 pr-4 text-right">
