@@ -13,8 +13,15 @@ import {
 
 // --- Equipos ---
 
-export function useReporteEquipos() {
-  return useQuery({ queryKey: ['reportes', 'equipos'], queryFn: fetchReporteEquipos });
+// `filtros` entra en la queryKey a propósito: así TanStack Query trata
+// cada combinación de sede/subsede/ubicación como una consulta distinta
+// y vuelve a pedir los datos solo cuando cambia el filtro, sin invalidar
+// la caché a mano.
+export function useReporteEquipos(filtros) {
+  return useQuery({
+    queryKey: ['reportes', 'equipos', filtros],
+    queryFn: () => fetchReporteEquipos(filtros),
+  });
 }
 
 export function useDescargarReporteEquiposExcel() {
@@ -27,8 +34,11 @@ export function useDescargarReporteEquiposPdf() {
 
 // --- Licencias ---
 
-export function useReporteLicencias() {
-  return useQuery({ queryKey: ['reportes', 'licencias'], queryFn: fetchReporteLicencias });
+export function useReporteLicencias(filtros) {
+  return useQuery({
+    queryKey: ['reportes', 'licencias', filtros],
+    queryFn: () => fetchReporteLicencias(filtros),
+  });
 }
 
 export function useDescargarReporteLicenciasExcel() {
@@ -41,8 +51,11 @@ export function useDescargarReporteLicenciasPdf() {
 
 // --- Responsables ---
 
-export function useReporteResponsables() {
-  return useQuery({ queryKey: ['reportes', 'responsables'], queryFn: fetchReporteResponsables });
+export function useReporteResponsables(filtros) {
+  return useQuery({
+    queryKey: ['reportes', 'responsables', filtros],
+    queryFn: () => fetchReporteResponsables(filtros),
+  });
 }
 
 export function useDescargarReporteResponsablesExcel() {

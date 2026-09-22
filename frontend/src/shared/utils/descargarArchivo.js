@@ -6,9 +6,13 @@
  * archivo se pide por código (con axios, que sí lo manda) y se
  * descarga manualmente. Antes vivía duplicada dentro de reportesApi.js;
  * se extrajo aquí al necesitarla por tercera vez (equiposApi.js).
+ *
+ * `params` es opcional: los llamadores que no filtran (como la hoja de
+ * vida en PDF de un equipo) no necesitan pasar nada y siguen
+ * funcionando igual que antes.
  */
-export async function descargarBlob(httpClient, url, nombreArchivo) {
-  const response = await httpClient.get(url, { responseType: 'blob' });
+export async function descargarBlob(httpClient, url, nombreArchivo, params = {}) {
+  const response = await httpClient.get(url, { responseType: 'blob', params });
   const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
   const enlace = document.createElement('a');
   enlace.href = blobUrl;

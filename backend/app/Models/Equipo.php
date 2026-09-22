@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\EstadoEquipo;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -75,5 +76,45 @@ class Equipo extends Model
     public function traslados(): HasMany
     {
         return $this->hasMany(Traslado::class)->latest('fecha_traslado');
+    }
+
+    /**
+     * Filtra equipos por ubicación jerárquica (sede / subsede / ubicación
+     * de formación). Mismo criterio que ya usaba EquipoController::index():
+     * cada nivel se aplica de forma independiente si viene informado, sin
+     * forzar "el más específico gana" aquí — esa precedencia ya la resuelve
+     * el frontend antes de armar la query string (ver EquiposPage y ahora
+     * ReportesPage), así que basta con encadenar el where/whereHas que
+     * corresponda a cada parámetro presente.
+     *
+     * Se extrae como scope porque esta misma cadena ya vivía duplicada en
+     * EquipoController::index() y ahora la necesita también
+     * ReporteController, en tres formas distintas (query directa a Equipo,
+     * whereHas desde LicenciaOffice, withCount desde Responsable). Tenerla
+     * en un solo lugar evita que las tres terminen divergiendo con el
+     * tiempo.
+     */
+    public function scopeFiltrarPorUbicacion(
+        Builder $query,
+        ?int $sedeId,
+        ?int $subsedeId,
+        ?int $ubicacionId
+    ): Builder {
+        return $query
+            ->when($ubicacionId, fn (Builder $q) => $q->where('ubicacion_formacion_id', $ubicacionId))
+            ->when(
+                $subsedeId,
+                fn (Builder $q) => $q->whereHas(
+                    'ubicacionFormacion',
+                    fn (Builder $sub) => $sub->where('subsede_id', $subsedeId)
+                )
+            )
+            ->when(
+                $sedeId,
+                fn (Builder $q) => $q->whereHas(
+                    'ubicacionFormacion.subsede',
+                    fn (Builder $sub) => $sub->where('sede_id', $sedeId)
+                )
+            );
     }
 }

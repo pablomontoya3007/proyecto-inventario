@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   useReporteEquipos,
   useDescargarReporteEquiposExcel,
@@ -9,6 +10,9 @@ import {
   useDescargarReporteResponsablesExcel,
   useDescargarReporteResponsablesPdf,
 } from '../hooks/useReportes';
+import { useSedes } from '../../sedes/hooks/useSedes';
+import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
+import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
 import { DesgloseCategoria } from '../components/DesgloseCategoria';
 import { LicenciasAtencionTabla } from '../components/LicenciasAtencionTabla';
 
@@ -36,16 +40,142 @@ function BotonesExportar({ onExcel, onPdf, cargandoExcel, cargandoPdf }) {
   );
 }
 
+// Mismo patrón "en cascada, el más específico manda" que ya usan
+// EquiposPage y UbicacionesPage: elegir una ubicación implica su subsede
+// y su sede, así que solo se manda el id más específico al backend. Se
+// extrae aquí mismo (no a shared/) por la misma razón que BotonesExportar:
+// es propio de esta página.
+function FiltrosUbicacion({
+  sedesData,
+  subsedesData,
+  ubicacionesData,
+  sedeFiltro,
+  subsedeFiltro,
+  ubicacionFiltro,
+  onSedeChange,
+  onSubsedeChange,
+  onUbicacionChange,
+  onLimpiar,
+}) {
+  const hayFiltrosActivos = sedeFiltro || subsedeFiltro || ubicacionFiltro;
+
+  return (
+    <div className="mb-6 flex flex-wrap items-end gap-4 rounded border border-slate-200 bg-white p-4">
+      <div>
+        <label htmlFor="filtro-sede" className="mb-1 block text-sm text-slate-600">
+          Sede
+        </label>
+        <select
+          id="filtro-sede"
+          value={sedeFiltro}
+          onChange={(event) => onSedeChange(event.target.value)}
+          className="rounded border border-slate-300 px-2 py-1 text-sm"
+        >
+          <option value="">Todas las sedes</option>
+          {sedesData?.data.map((sede) => (
+            <option key={sede.id} value={sede.id}>
+              {sede.nombre}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label htmlFor="filtro-subsede" className="mb-1 block text-sm text-slate-600">
+          Subsede
+        </label>
+        <select
+          id="filtro-subsede"
+          value={subsedeFiltro}
+          disabled={!sedeFiltro}
+          onChange={(event) => onSubsedeChange(event.target.value)}
+          className="rounded border border-slate-300 px-2 py-1 text-sm disabled:bg-slate-100"
+        >
+          <option value="">Todas las subsedes</option>
+          {subsedesData?.data.map((subsede) => (
+            <option key={subsede.id} value={subsede.id}>
+              {subsede.nombre}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label htmlFor="filtro-ubicacion" className="mb-1 block text-sm text-slate-600">
+          Ubicación
+        </label>
+        <select
+          id="filtro-ubicacion"
+          value={ubicacionFiltro}
+          disabled={!subsedeFiltro}
+          onChange={(event) => onUbicacionChange(event.target.value)}
+          className="rounded border border-slate-300 px-2 py-1 text-sm disabled:bg-slate-100"
+        >
+          <option value="">Todas las ubicaciones</option>
+          {ubicacionesData?.data.map((ubicacion) => (
+            <option key={ubicacion.id} value={ubicacion.id}>
+              {ubicacion.nombre}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {hayFiltrosActivos && (
+        <button onClick={onLimpiar} className="text-sm text-slate-500 underline hover:text-slate-700">
+          Limpiar filtros
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function ReportesPage() {
-  const equipos = useReporteEquipos();
+  const [sedeFiltro, setSedeFiltro] = useState('');
+  const [subsedeFiltro, setSubsedeFiltro] = useState('');
+  const [ubicacionFiltro, setUbicacionFiltro] = useState('');
+
+  function handleSedeChange(valor) {
+    setSedeFiltro(valor);
+    setSubsedeFiltro('');
+    setUbicacionFiltro('');
+  }
+
+  function handleSubsedeChange(valor) {
+    setSubsedeFiltro(valor);
+    setUbicacionFiltro('');
+  }
+
+  function handleLimpiarFiltros() {
+    setSedeFiltro('');
+    setSubsedeFiltro('');
+    setUbicacionFiltro('');
+  }
+
+  // ubicacion_formacion_id ya implica subsede/sede, así que si está
+  // elegida se manda solo ella — mismo criterio que EquiposPage.
+  const filtros = {
+    ...(ubicacionFiltro
+      ? { ubicacion_formacion_id: ubicacionFiltro }
+      : subsedeFiltro
+        ? { subsede_id: subsedeFiltro }
+        : sedeFiltro
+          ? { sede_id: sedeFiltro }
+          : {}),
+  };
+
+  const { data: sedesData } = useSedes(1);
+  const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeFiltro || undefined });
+  const { data: ubicacionesData } = useUbicaciones({ page: 1, subsedeId: subsedeFiltro || undefined });
+
+  const equipos = useReporteEquipos(filtros);
   const equiposExcel = useDescargarReporteEquiposExcel();
   const equiposPdf = useDescargarReporteEquiposPdf();
 
-  const licencias = useReporteLicencias();
+  const licencias = useReporteLicencias(filtros);
   const licenciasExcel = useDescargarReporteLicenciasExcel();
   const licenciasPdf = useDescargarReporteLicenciasPdf();
 
-  const responsables = useReporteResponsables();
+  const responsables = useReporteResponsables(filtros);
   const responsablesExcel = useDescargarReporteResponsablesExcel();
   const responsablesPdf = useDescargarReporteResponsablesPdf();
 
@@ -53,12 +183,25 @@ export function ReportesPage() {
     <div className="space-y-10">
       <h1 className="text-xl font-semibold text-slate-800">Reportes</h1>
 
+      <FiltrosUbicacion
+        sedesData={sedesData}
+        subsedesData={subsedesData}
+        ubicacionesData={ubicacionesData}
+        sedeFiltro={sedeFiltro}
+        subsedeFiltro={subsedeFiltro}
+        ubicacionFiltro={ubicacionFiltro}
+        onSedeChange={handleSedeChange}
+        onSubsedeChange={handleSubsedeChange}
+        onUbicacionChange={setUbicacionFiltro}
+        onLimpiar={handleLimpiarFiltros}
+      />
+
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-medium text-slate-700">Equipos por sede, tipo y estado</h2>
           <BotonesExportar
-            onExcel={() => equiposExcel.mutate()}
-            onPdf={() => equiposPdf.mutate()}
+            onExcel={() => equiposExcel.mutate(filtros)}
+            onPdf={() => equiposPdf.mutate(filtros)}
             cargandoExcel={equiposExcel.isPending}
             cargandoPdf={equiposPdf.isPending}
           />
@@ -79,8 +222,8 @@ export function ReportesPage() {
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-medium text-slate-700">Licencias de Office</h2>
           <BotonesExportar
-            onExcel={() => licenciasExcel.mutate()}
-            onPdf={() => licenciasPdf.mutate()}
+            onExcel={() => licenciasExcel.mutate(filtros)}
+            onPdf={() => licenciasPdf.mutate(filtros)}
             cargandoExcel={licenciasExcel.isPending}
             cargandoPdf={licenciasPdf.isPending}
           />
@@ -109,8 +252,8 @@ export function ReportesPage() {
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-medium text-slate-700">Responsables con más equipos</h2>
           <BotonesExportar
-            onExcel={() => responsablesExcel.mutate()}
-            onPdf={() => responsablesPdf.mutate()}
+            onExcel={() => responsablesExcel.mutate(filtros)}
+            onPdf={() => responsablesPdf.mutate(filtros)}
             cargandoExcel={responsablesExcel.isPending}
             cargandoPdf={responsablesPdf.isPending}
           />
