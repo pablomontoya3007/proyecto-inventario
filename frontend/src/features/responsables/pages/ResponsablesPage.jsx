@@ -17,6 +17,7 @@ import { Modal } from '../../../shared/components/Modal';
 export function ResponsablesPage() {
   const [page, setPage] = useState(1);
   const [busqueda, setBusqueda] = useState('');
+  const [documentoBusqueda, setDocumentoBusqueda] = useState('');
   const [sedeFiltro, setSedeFiltro] = useState('');
   const [subsedeFiltro, setSubsedeFiltro] = useState('');
   const [ubicacionFiltro, setUbicacionFiltro] = useState('');
@@ -65,7 +66,12 @@ export function ResponsablesPage() {
   const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeFiltro || undefined });
   const { data: ubicacionesData } = useUbicaciones({ page: 1, subsedeId: subsedeFiltro || undefined });
 
-  const { data, isLoading, isError } = useResponsables({ page, nombre: busqueda || undefined, filtros });
+  const { data, isLoading, isError } = useResponsables({
+    page,
+    nombre: busqueda || undefined,
+    documento: documentoBusqueda || undefined,
+    filtros,
+  });
   const createResponsable = useCreateResponsable();
   const updateResponsable = useUpdateResponsable();
   const deleteResponsable = useDeleteResponsable();
@@ -106,13 +112,23 @@ export function ResponsablesPage() {
         </button>
       </div>
 
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap gap-3">
         <input
           type="text"
           placeholder="Buscar por nombre..."
           value={busqueda}
           onChange={(event) => {
             setBusqueda(event.target.value);
+            setPage(1);
+          }}
+          className="w-full max-w-sm rounded border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+        />
+        <input
+          type="text"
+          placeholder="Buscar por documento..."
+          value={documentoBusqueda}
+          onChange={(event) => {
+            setDocumentoBusqueda(event.target.value);
             setPage(1);
           }}
           className="w-full max-w-sm rounded border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"

@@ -14,14 +14,6 @@ class ResponsableController extends Controller
 {
     use FiltraPorUbicacion;
 
-    /**
-     * Un responsable "cae" en el filtro de ubicación si tiene al menos
-     * un equipo en esa sede/subsede/ubicación — a diferencia de Equipo,
-     * un Responsable no tiene una ubicación propia, la hereda de sus
-     * equipos. El whereHas solo se agrega si hay algún filtro activo,
-     * para no excluir del listado general a los responsables que
-     * todavía no tienen equipos asignados.
-     */
     public function index(Request $request): AnonymousResourceCollection
     {
         $this->authorize('viewAny', Responsable::class);
@@ -30,6 +22,7 @@ class ResponsableController extends Controller
 
         $responsables = Responsable::query()
             ->when($request->filled('nombre'), fn ($q) => $q->where('nombre', 'like', '%' . $request->input('nombre') . '%'))
+            ->when($request->filled('documento'), fn ($q) => $q->where('documento', 'like', '%' . $request->input('documento') . '%'))
             ->when(
                 $sedeId || $subsedeId || $ubicacionId,
                 fn ($q) => $q->whereHas('equipos', fn ($sub) => $sub->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId))

@@ -6,10 +6,10 @@ import {
   deleteResponsable,
 } from '../services/responsablesApi';
 
-export function useResponsables({ page = 1, nombre, filtros = {} } = {}) {
+export function useResponsables({ page = 1, nombre, documento, filtros = {} } = {}) {
   return useQuery({
-    queryKey: ['responsables', page, nombre ?? null, filtros],
-    queryFn: () => fetchResponsables({ page, nombre, filtros }),
+    queryKey: ['responsables', page, nombre ?? null, documento ?? null, filtros],
+    queryFn: () => fetchResponsables({ page, nombre, documento, filtros }),
   });
 }
 
