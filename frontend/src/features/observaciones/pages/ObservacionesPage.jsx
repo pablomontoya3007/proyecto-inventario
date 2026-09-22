@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useObservaciones, useCreateObservacion } from '../hooks/useObservaciones';
-import { useEquipos } from '../../equipos/hooks/useEquipos';
 import { useSedes } from '../../sedes/hooks/useSedes';
 import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
 import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
@@ -11,7 +10,8 @@ import { Modal } from '../../../shared/components/Modal';
 
 export function ObservacionesPage() {
   const [page, setPage] = useState(1);
-  const [equipoFiltro, setEquipoFiltro] = useState('');
+  const [placaFiltro, setPlacaFiltro] = useState('');
+  const [usuarioFiltro, setUsuarioFiltro] = useState('');
   const [sedeFiltro, setSedeFiltro] = useState('');
   const [subsedeFiltro, setSubsedeFiltro] = useState('');
   const [ubicacionFiltro, setUbicacionFiltro] = useState('');
@@ -50,14 +50,15 @@ export function ObservacionesPage() {
         : sedeFiltro
           ? { sede_id: sedeFiltro }
           : {}),
+    ...(placaFiltro ? { placa_sena: placaFiltro } : {}),
+    ...(usuarioFiltro ? { usuario: usuarioFiltro } : {}),
   };
 
   const { data: sedesData } = useSedes(1);
   const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeFiltro || undefined });
   const { data: ubicacionesData } = useUbicaciones({ page: 1, subsedeId: subsedeFiltro || undefined });
 
-  const { data, isLoading, isError } = useObservaciones({ page, equipoId: equipoFiltro || undefined, filtros });
-  const { data: equiposData } = useEquipos({}, 1);
+  const { data, isLoading, isError } = useObservaciones({ page, filtros });
   const createObservacion = useCreateObservacion();
 
   const serverErrors = createObservacion.error?.response?.data?.errors;
@@ -91,26 +92,27 @@ export function ObservacionesPage() {
         onLimpiar={handleLimpiarFiltros}
       />
 
-      <div className="mb-4">
-        <label htmlFor="filtro-equipo-obs" className="mr-2 text-sm text-slate-600">
-          Equipo:
-        </label>
-        <select
-          id="filtro-equipo-obs"
-          value={equipoFiltro}
+      <div className="mb-4 flex flex-wrap gap-3">
+        <input
+          type="text"
+          placeholder="Buscar por placa del equipo..."
+          value={placaFiltro}
           onChange={(event) => {
-            setEquipoFiltro(event.target.value);
+            setPlacaFiltro(event.target.value);
             setPage(1);
           }}
-          className="rounded border border-slate-300 px-2 py-1 text-sm"
-        >
-          <option value="">Todos los equipos</option>
-          {equiposData?.data.map((equipo) => (
-            <option key={equipo.id} value={equipo.id}>
-              {equipo.placa_sena}
-            </option>
-          ))}
-        </select>
+          className="w-full max-w-sm rounded border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+        />
+        <input
+          type="text"
+          placeholder="Buscar por quién la registró..."
+          value={usuarioFiltro}
+          onChange={(event) => {
+            setUsuarioFiltro(event.target.value);
+            setPage(1);
+          }}
+          className="w-full max-w-sm rounded border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+        />
       </div>
 
       {isLoading && <p className="text-sm text-slate-500">Cargando observaciones...</p>}
@@ -118,7 +120,7 @@ export function ObservacionesPage() {
 
       {data && (
         <>
-          <ObservacionList observaciones={data.data} mostrarEquipo={!equipoFiltro} />
+          <ObservacionList observaciones={data.data} mostrarEquipo />
 
           {data.meta && data.meta.last_page > 1 && (
             <div className="mt-4 flex items-center justify-between text-sm text-slate-600">
@@ -143,7 +145,6 @@ export function ObservacionesPage() {
       {creandoObservacion && (
         <Modal title="Nueva observación" onClose={() => setCreandoObservacion(false)}>
           <ObservacionForm
-            equipoIdInicial={equipoFiltro}
             onSubmit={handleSubmit}
             onCancel={() => setCreandoObservacion(false)}
             isSubmitting={createObservacion.isPending}
