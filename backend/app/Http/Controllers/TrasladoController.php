@@ -2,56 +2,80 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\TrasladoRequest;
-use App\Http\Resources\TrasladoResource;
-use App\Models\Equipo;
-use App\Models\Traslado;
+use App\Enums\EstadoEquipo;
+use App\Enums\EstadoMantenimiento;
+use App\Http\Controllers\Concerns\FiltraPorUbicacion;
+use App\Http\Requests\MantenimientoRequest;
+use App\Http\Resources\MantenimientoResource;
+use App\Models\Mantenimiento;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Facades\DB;
 
-class TrasladoController extends Controller
+class MantenimientoController extends Controller
 {
-    public function index(Request $request): AnonymousResourceCollection
-    {
-        $this->authorize('viewAny', Traslado::class);
-
-        $traslados = Traslado::query()
-            ->with(['equipo', 'ubicacionOrigen.subsede.sede', 'ubicacionDestino.subsede.sede'])
-            ->when($request->filled('equipo_id'), fn ($q) => $q->where('equipo_id', $request->input('equipo_id')))
-            ->latest('fecha_traslado')
-            ->paginate(15);
-
-        return TrasladoResource::collection($traslados);
-    }
+    use FiltraPorUbicacion;
 
     /**
-     * ubicacion_origen_id se captura aquí, de la ubicación actual del
-     * equipo — nunca la escoge el cliente. El traslado y el cambio de
-     * ubicación en Equipo pasan juntos en una transacción: si uno
-     * fallara, no debe quedar un traslado "fantasma" sin que el equipo
-     * se haya movido de verdad.
+     * ?completado=true  -> solo "listo" (pestaña "Historial").
+     * ?completado=false -> en_espera + en_mantenimiento (pestaña "Activos").
+     * Sin el parámetro  -> sin filtrar.
      */
-    public function store(TrasladoRequest $request): JsonResponse
+    public function index(Request $request): AnonymousResourceCollection
     {
-        $this->authorize('create', Traslado::class);
+        $this->authorize('viewAny', Mantenimiento::class);
 
-        $equipo = Equipo::findOrFail($request->validated('equipo_id'));
+        [$sedeId, $subsedeId, $ubicacionId] = $this->filtrosUbicacion($request);
 
-        $traslado = DB::transaction(function () use ($request, $equipo) {
-            $traslado = Traslado::create([
-                ...$request->validated(),
-                'ubicacion_origen_id' => $equipo->ubicacion_formacion_id,
-            ]);
+        $mantenimientos = Mantenimiento::query()
+            ->with('equipo')
+            ->when($request->filled('completado'), function ($query) use ($request) {
+                $completado = filter_var($request->input('completado'), FILTER_VALIDATE_BOOLEAN);
 
-            $equipo->update(['ubicacion_formacion_id' => $request->validated('ubicacion_destino_id')]);
+                $completado
+                    ? $query->where('estado', EstadoMantenimiento::Listo)
+                    : $query->where('estado', '!=', EstadoMantenimiento::Listo);
+            })
+            ->when(
+                $sedeId || $subsedeId || $ubicacionId,
+                fn ($q) => $q->whereHas('equipo', fn ($sub) => $sub->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId))
+            )
+            ->orderBy('fecha_programada')
+            ->paginate(15);
 
-            return $traslado;
-        });
+        return MantenimientoResource::collection($mantenimientos);
+    }
 
-        $traslado->load(['equipo', 'ubicacionOrigen.subsede.sede', 'ubicacionDestino.subsede.sede']);
+    public function store(MantenimientoRequest $request): JsonResponse
+    {
+        $this->authorize('create', Mantenimiento::class);
 
-        return (new TrasladoResource($traslado))->response()->setStatusCode(201);
+        $mantenimiento = Mantenimiento::create($request->validated());
+
+        return (new MantenimientoResource($mantenimiento->load('equipo')))->response()->setStatusCode(201);
+    }
+
+    public function update(MantenimientoRequest $request, Mantenimiento $mantenimiento): MantenimientoResource
+    {
+        $this->authorize('update', $mantenimiento);
+
+        $mantenimiento->update($request->validated());
+
+        match ($mantenimiento->estado) {
+            EstadoMantenimiento::EnMantenimiento => $mantenimiento->equipo->update(['estado' => EstadoEquipo::Mantenimiento]),
+            EstadoMantenimiento::Listo => $mantenimiento->equipo->update(['estado' => EstadoEquipo::Activo]),
+            EstadoMantenimiento::EnEspera => null,
+        };
+
+        return new MantenimientoResource($mantenimiento->load('equipo'));
+    }
+
+    public function destroy(Mantenimiento $mantenimiento): JsonResponse
+    {
+        $this->authorize('delete', $mantenimiento);
+
+        $mantenimiento->delete();
+
+        return response()->json(['mensaje' => 'Mantenimiento eliminado correctamente.']);
     }
 }

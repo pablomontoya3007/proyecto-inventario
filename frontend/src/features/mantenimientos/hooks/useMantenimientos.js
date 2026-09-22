@@ -6,10 +6,10 @@ import {
   deleteMantenimiento,
 } from '../services/mantenimientosApi';
 
-export function useMantenimientos({ page = 1, completado } = {}) {
+export function useMantenimientos({ page = 1, completado, filtros = {} } = {}) {
   return useQuery({
-    queryKey: ['mantenimientos', page, completado ?? null],
-    queryFn: () => fetchMantenimientos({ page, completado }),
+    queryKey: ['mantenimientos', page, completado ?? null, filtros],
+    queryFn: () => fetchMantenimientos({ page, completado, filtros }),
   });
 }
 
@@ -26,8 +26,6 @@ export function useUpdateMantenimiento() {
   return useMutation({
     mutationFn: ({ id, payload }) => updateMantenimiento(id, payload),
     onSuccess: () => {
-      // Invalida ambas pestañas (activos + historial) a la vez, ya que
-      // comparten el mismo prefijo de queryKey.
       queryClient.invalidateQueries({ queryKey: ['mantenimientos'] });
       queryClient.invalidateQueries({ queryKey: ['equipos'] });
     },

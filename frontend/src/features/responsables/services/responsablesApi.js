@@ -3,7 +3,7 @@ import { ENDPOINTS } from '../../../api/endpoints';
 
 /**
  * Shapes confirmados contra ResponsableController.php / Resource:
- * - GET    /responsables?nombre=&page= -> { data: [...], links, meta }
+ * - GET    /responsables?nombre=&page=&sede_id=&subsede_id=&ubicacion_formacion_id= -> { data: [...], links, meta }
  * - POST   /responsables      -> { data: ResponsableResource }
  * - PUT    /responsables/{id} -> { data: ResponsableResource }
  * - DELETE /responsables/{id} -> { mensaje: '...' } — siempre permitido:
@@ -11,9 +11,9 @@ import { ENDPOINTS } from '../../../api/endpoints';
  *          responsable solo desasigna sus equipos, no lo bloquea.
  */
 
-export async function fetchResponsables({ page = 1, nombre } = {}) {
+export async function fetchResponsables({ page = 1, nombre, filtros = {} } = {}) {
   const { data } = await httpClient.get(ENDPOINTS.responsables, {
-    params: { page, ...(nombre ? { nombre } : {}) },
+    params: { page, ...(nombre ? { nombre } : {}), ...filtros },
   });
   return data;
 }

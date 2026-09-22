@@ -2,30 +2,39 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\FiltraPorUbicacion;
 use App\Http\Requests\LicenciaOfficeRequest;
 use App\Http\Resources\LicenciaOfficeResource;
 use App\Models\LicenciaOffice;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class LicenciaOfficeController extends Controller
 {
-    public function index(): AnonymousResourceCollection
+    use FiltraPorUbicacion;
+
+    public function index(Request $request): AnonymousResourceCollection
     {
         $this->authorize('viewAny', LicenciaOffice::class);
 
-        return LicenciaOfficeResource::collection(
-            LicenciaOffice::with('equipo')->latest()->paginate(15)
-        );
+        [$sedeId, $subsedeId, $ubicacionId] = $this->filtrosUbicacion($request);
+
+        $licencias = LicenciaOffice::query()
+            ->with('equipo.ubicacionFormacion.subsede.sede')
+            ->when(
+                $sedeId || $subsedeId || $ubicacionId,
+                fn ($q) => $q->whereHas(
+                    'equipo',
+                    fn ($sub) => $sub->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId)
+                )
+            )
+            ->latest()
+            ->paginate(15);
+
+        return LicenciaOfficeResource::collection($licencias);
     }
 
-    /**
-     * LicenciaOfficeRequest valida "password" (lo que escribe quien llena
-     * el formulario). Aquí se traduce a "password_cifrado", el nombre real
-     * de la columna — el cast 'encrypted' del modelo cifra el valor en
-     * cuanto se le asigna, sin que este Controller tenga que saber nada de
-     * cifrado.
-     */
     public function store(LicenciaOfficeRequest $request): JsonResponse
     {
         $this->authorize('create', LicenciaOffice::class);
@@ -38,13 +47,7 @@ class LicenciaOfficeController extends Controller
 
         return (new LicenciaOfficeResource($licencia))->response()->setStatusCode(201);
     }
-        /**
-     * Único punto donde la contraseña sale en texto plano — bajo
-     * demanda, una sola licencia a la vez, nunca en el listado general.
-     * password_cifrado tiene cast 'encrypted': leerlo aquí lo descifra
-     * automáticamente (aunque $hidden en el modelo lo oculte en la
-     * serialización normal, este array se arma a mano, así que sí viaja).
-     */
+
     public function mostrarPassword(LicenciaOffice $licenciaOffice): JsonResponse
     {
         $this->authorize('view', $licenciaOffice);
@@ -65,8 +68,6 @@ class LicenciaOfficeController extends Controller
 
         $datos = $request->validated();
 
-        // La contraseña es opcional al editar (ver LicenciaOfficeRequest):
-        // si no vino en esta petición, se conserva la que ya existe.
         if (array_key_exists('password', $datos)) {
             $datos['password_cifrado'] = $datos['password'];
             unset($datos['password']);

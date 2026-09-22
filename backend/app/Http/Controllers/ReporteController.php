@@ -6,10 +6,12 @@ use App\Enums\EstadoLicencia;
 use App\Exports\EquiposPorCategoriaExport;
 use App\Exports\LicenciasExport;
 use App\Exports\ResponsablesExport;
+use App\Http\Controllers\Concerns\FiltraPorUbicacion;
 use App\Models\Equipo;
 use App\Models\LicenciaOffice;
 use App\Models\Responsable;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
@@ -21,6 +23,8 @@ use Maatwebsite\Excel\Facades\Excel;
  */
 class ReporteController extends Controller
 {
+    use FiltraPorUbicacion;
+
     public function equipos(Request $request): JsonResponse
     {
         return response()->json($this->datosEquipos(...$this->filtrosUbicacion($request)));
@@ -79,32 +83,6 @@ class ReporteController extends Controller
             ->download('responsables.pdf');
     }
 
-    /**
-     * Extrae los tres niveles de filtro de ubicación desde la query string,
-     * con los mismos nombres de parámetro que ya usa
-     * EquipoController::index() (sede_id, subsede_id,
-     * ubicacion_formacion_id) — así el frontend reutiliza exactamente la
-     * misma lógica de filtros en cascada que ya tiene para Equipos y
-     * Ubicaciones, en vez de inventar un esquema nuevo solo para Reportes.
-     *
-     * @return array{0: ?int, 1: ?int, 2: ?int}
-     */
-    private function filtrosUbicacion(Request $request): array
-    {
-        return [
-            $request->filled('sede_id') ? (int) $request->input('sede_id') : null,
-            $request->filled('subsede_id') ? (int) $request->input('subsede_id') : null,
-            $request->filled('ubicacion_formacion_id') ? (int) $request->input('ubicacion_formacion_id') : null,
-        ];
-    }
-
-    /**
-     * Centraliza las consultas para que JSON, Excel y PDF usen siempre
-     * los mismos números. Los soft-deletes de Equipo se excluyen
-     * automáticamente (scope global de SoftDeletes). Los tres parámetros
-     * de ubicación son opcionales: sin ellos, el reporte sigue siendo
-     * global, igual que antes.
-     */
     private function datosEquipos(?int $sedeId, ?int $subsedeId, ?int $ubicacionId): array
     {
         $porSede = Equipo::query()
@@ -145,18 +123,21 @@ class ReporteController extends Controller
         ];
     }
 
-    /**
-     * LicenciaOffice no tiene fecha de vencimiento en el esquema (solo
-     * fecha_actualizacion, que registra cuándo cambió la contraseña) —
-     * así que "por vencer" no se puede calcular de forma predictiva.
-     * Se muestra lo que sí hay: conteo por estado, y el listado de las
-     * que YA están en Vencida o Suspendida. El filtro de ubicación se
-     * aplica a través del equipo dueño de la licencia.
-     */
+    private function licenciasFiltradas(?int $sedeId, ?int $subsedeId, ?int $ubicacionId): Builder
+    {
+        return LicenciaOffice::query()
+            ->when(
+                $sedeId || $subsedeId || $ubicacionId,
+                fn (Builder $q) => $q->whereHas(
+                    'equipo',
+                    fn (Builder $sub) => $sub->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId)
+                )
+            );
+    }
+
     private function datosLicencias(?int $sedeId, ?int $subsedeId, ?int $ubicacionId): array
     {
-        $porEstado = LicenciaOffice::query()
-            ->whereHas('equipo', fn ($q) => $q->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId))
+        $porEstado = $this->licenciasFiltradas($sedeId, $subsedeId, $ubicacionId)
             ->select('estado_licencia')
             ->selectRaw('count(*) as total')
             ->groupBy('estado_licencia')
@@ -166,9 +147,8 @@ class ReporteController extends Controller
                 'total' => $fila->total,
             ]);
 
-        $requierenAtencion = LicenciaOffice::query()
+        $requierenAtencion = $this->licenciasFiltradas($sedeId, $subsedeId, $ubicacionId)
             ->with('equipo')
-            ->whereHas('equipo', fn ($q) => $q->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId))
             ->whereIn('estado_licencia', [EstadoLicencia::Vencida, EstadoLicencia::Suspendida])
             ->get()
             ->map(fn ($licencia) => [
@@ -178,20 +158,27 @@ class ReporteController extends Controller
                 'fecha_actualizacion' => $licencia->fecha_actualizacion?->toDateString(),
             ]);
 
+        $listadoCompleto = $this->licenciasFiltradas($sedeId, $subsedeId, $ubicacionId)
+            ->with('equipo.ubicacionFormacion.subsede.sede')
+            ->orderBy('correo')
+            ->get()
+            ->map(fn ($licencia) => [
+                'equipo' => $licencia->equipo?->placa_sena ?? 'Sin equipo',
+                'sede' => $licencia->equipo?->ubicacionFormacion?->subsede?->sede?->nombre ?? 'Sin sede',
+                'subsede' => $licencia->equipo?->ubicacionFormacion?->subsede?->nombre ?? 'Sin subsede',
+                'ubicacion' => $licencia->equipo?->ubicacionFormacion?->nombre ?? 'Sin ubicación',
+                'correo' => $licencia->correo,
+                'estado' => $licencia->estado_licencia?->label() ?? 'Sin estado',
+                'fecha_actualizacion' => $licencia->fecha_actualizacion?->toDateString(),
+            ]);
+
         return [
             'por_estado' => $porEstado,
             'requieren_atencion' => $requierenAtencion,
+            'listado_completo' => $listadoCompleto,
         ];
     }
 
-    /**
-     * Top 10 responsables por cantidad de equipos a cargo. Con filtro de
-     * ubicación, el conteo (withCount) solo tiene en cuenta los equipos de
-     * esa ubicación — y se descartan los responsables que queden en 0
-     * equipos ahí, porque un "0" no aporta nada a un ranking de "los que
-     * más tienen" (sin filtro esto casi no se notaba, porque era raro que
-     * un responsable no tuviera ningún equipo en todo el sistema).
-     */
     private function datosResponsables(?int $sedeId, ?int $subsedeId, ?int $ubicacionId): array
     {
         return Responsable::query()

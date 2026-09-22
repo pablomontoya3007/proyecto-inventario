@@ -5,6 +5,10 @@ import {
   useUpdateResponsable,
   useDeleteResponsable,
 } from '../hooks/useResponsables';
+import { useSedes } from '../../sedes/hooks/useSedes';
+import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
+import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
+import { FiltroUbicacionCascada } from '../../../shared/components/FiltroUbicacionCascada';
 import { ResponsableTable } from '../components/ResponsableTable';
 import { ResponsableForm } from '../components/ResponsableForm';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
@@ -13,11 +17,55 @@ import { Modal } from '../../../shared/components/Modal';
 export function ResponsablesPage() {
   const [page, setPage] = useState(1);
   const [busqueda, setBusqueda] = useState('');
+  const [sedeFiltro, setSedeFiltro] = useState('');
+  const [subsedeFiltro, setSubsedeFiltro] = useState('');
+  const [ubicacionFiltro, setUbicacionFiltro] = useState('');
   const [editingResponsable, setEditingResponsable] = useState(null);
   const [deletingResponsable, setDeletingResponsable] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
 
-  const { data, isLoading, isError } = useResponsables({ page, nombre: busqueda || undefined });
+  function handleSedeChange(valor) {
+    setSedeFiltro(valor);
+    setSubsedeFiltro('');
+    setUbicacionFiltro('');
+    setPage(1);
+  }
+
+  function handleSubsedeChange(valor) {
+    setSubsedeFiltro(valor);
+    setUbicacionFiltro('');
+    setPage(1);
+  }
+
+  function handleUbicacionChange(valor) {
+    setUbicacionFiltro(valor);
+    setPage(1);
+  }
+
+  function handleLimpiarFiltros() {
+    setSedeFiltro('');
+    setSubsedeFiltro('');
+    setUbicacionFiltro('');
+    setPage(1);
+  }
+
+  // Un responsable cae en el filtro si tiene al menos un equipo en la
+  // sede/subsede/ubicación elegida.
+  const filtros = {
+    ...(ubicacionFiltro
+      ? { ubicacion_formacion_id: ubicacionFiltro }
+      : subsedeFiltro
+        ? { subsede_id: subsedeFiltro }
+        : sedeFiltro
+          ? { sede_id: sedeFiltro }
+          : {}),
+  };
+
+  const { data: sedesData } = useSedes(1);
+  const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeFiltro || undefined });
+  const { data: ubicacionesData } = useUbicaciones({ page: 1, subsedeId: subsedeFiltro || undefined });
+
+  const { data, isLoading, isError } = useResponsables({ page, nombre: busqueda || undefined, filtros });
   const createResponsable = useCreateResponsable();
   const updateResponsable = useUpdateResponsable();
   const deleteResponsable = useDeleteResponsable();
@@ -70,6 +118,19 @@ export function ResponsablesPage() {
           className="w-full max-w-sm rounded border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
         />
       </div>
+
+      <FiltroUbicacionCascada
+        sedesData={sedesData}
+        subsedesData={subsedesData}
+        ubicacionesData={ubicacionesData}
+        sedeFiltro={sedeFiltro}
+        subsedeFiltro={subsedeFiltro}
+        ubicacionFiltro={ubicacionFiltro}
+        onSedeChange={handleSedeChange}
+        onSubsedeChange={handleSubsedeChange}
+        onUbicacionChange={handleUbicacionChange}
+        onLimpiar={handleLimpiarFiltros}
+      />
 
       {isLoading && <p className="text-sm text-slate-500">Cargando responsables...</p>}
       {isError && <p className="text-sm text-red-600">No se pudieron cargar los responsables.</p>}

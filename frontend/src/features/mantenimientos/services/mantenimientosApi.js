@@ -6,9 +6,9 @@ import { ENDPOINTS } from '../../../api/endpoints';
  * en_espera + en_mantenimiento (pestaña Activos); omitido no filtra.
  */
 
-export async function fetchMantenimientos({ page = 1, completado } = {}) {
+export async function fetchMantenimientos({ page = 1, completado, filtros = {} } = {}) {
   const { data } = await httpClient.get(ENDPOINTS.mantenimientos, {
-    params: { page, ...(completado !== undefined ? { completado } : {}) },
+    params: { page, ...(completado !== undefined ? { completado } : {}), ...filtros },
   });
   return data;
 }

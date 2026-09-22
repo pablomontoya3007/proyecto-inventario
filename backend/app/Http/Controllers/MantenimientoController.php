@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\EstadoEquipo;
 use App\Enums\EstadoMantenimiento;
+use App\Http\Controllers\Concerns\FiltraPorUbicacion;
 use App\Http\Requests\MantenimientoRequest;
 use App\Http\Resources\MantenimientoResource;
 use App\Models\Mantenimiento;
@@ -13,6 +14,8 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class MantenimientoController extends Controller
 {
+    use FiltraPorUbicacion;
+
     /**
      * ?completado=true  -> solo "listo" (pestaña "Historial").
      * ?completado=false -> en_espera + en_mantenimiento (pestaña "Activos").
@@ -21,6 +24,8 @@ class MantenimientoController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $this->authorize('viewAny', Mantenimiento::class);
+
+        [$sedeId, $subsedeId, $ubicacionId] = $this->filtrosUbicacion($request);
 
         $mantenimientos = Mantenimiento::query()
             ->with('equipo')
@@ -31,6 +36,10 @@ class MantenimientoController extends Controller
                     ? $query->where('estado', EstadoMantenimiento::Listo)
                     : $query->where('estado', '!=', EstadoMantenimiento::Listo);
             })
+            ->when(
+                $sedeId || $subsedeId || $ubicacionId,
+                fn ($q) => $q->whereHas('equipo', fn ($sub) => $sub->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId))
+            )
             ->orderBy('fecha_programada')
             ->paginate(15);
 

@@ -3,7 +3,7 @@ import { ENDPOINTS } from '../../../api/endpoints';
 
 /**
  * Shapes confirmados contra LicenciaOfficeController.php / Resource:
- * - GET    /licencias-office?page= -> { data: [...], links, meta }
+ * - GET    /licencias-office?page=&sede_id=&subsede_id=&ubicacion_formacion_id= -> { data: [...], links, meta }
  * - POST   /licencias-office      -> { data: LicenciaOfficeResource }
  * - PUT    /licencias-office/{id} -> { data: LicenciaOfficeResource }
  * - DELETE /licencias-office/{id} -> { mensaje: '...' } — siempre permitido
@@ -16,8 +16,8 @@ import { ENDPOINTS } from '../../../api/endpoints';
  * ya existe una para ese equipo, el 422 llega bajo el campo equipo_id.
  */
 
-export async function fetchLicencias(page = 1) {
-  const { data } = await httpClient.get(ENDPOINTS.licenciasOffice, { params: { page } });
+export async function fetchLicencias(page = 1, filtros = {}) {
+  const { data } = await httpClient.get(ENDPOINTS.licenciasOffice, { params: { page, ...filtros } });
   return data;
 }
 

@@ -26,6 +26,21 @@ class LicenciasExport implements FromArray
         foreach ($this->datos['requieren_atencion'] as $fila) {
             $filas[] = [$fila['equipo'], $fila['correo'], $fila['estado'], $fila['fecha_actualizacion']];
         }
+        $filas[] = [];
+
+        $filas[] = ['LISTADO COMPLETO DE LICENCIAS'];
+        $filas[] = ['Equipo', 'Sede', 'Subsede', 'Ubicación', 'Correo', 'Estado', 'Última actualización'];
+        foreach ($this->datos['listado_completo'] as $fila) {
+            $filas[] = [
+                $fila['equipo'],
+                $fila['sede'],
+                $fila['subsede'],
+                $fila['ubicacion'],
+                $fila['correo'],
+                $fila['estado'],
+                $fila['fecha_actualizacion'],
+            ];
+        }
 
         return $filas;
     }

@@ -39,5 +39,33 @@
             @endforeach
         </tbody>
     </table>
+
+    <h2>Listado completo de licencias</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Equipo</th>
+                <th>Sede</th>
+                <th>Subsede</th>
+                <th>Ubicación</th>
+                <th>Correo</th>
+                <th>Estado</th>
+                <th>Última actualización</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach ($listado_completo as $fila)
+                <tr>
+                    <td>{{ $fila['equipo'] }}</td>
+                    <td>{{ $fila['sede'] }}</td>
+                    <td>{{ $fila['subsede'] }}</td>
+                    <td>{{ $fila['ubicacion'] }}</td>
+                    <td>{{ $fila['correo'] }}</td>
+                    <td>{{ $fila['estado'] }}</td>
+                    <td>{{ $fila['fecha_actualizacion'] }}</td>
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
 </body>
 </html>

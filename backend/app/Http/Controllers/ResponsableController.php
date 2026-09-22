@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\FiltraPorUbicacion;
 use App\Http\Requests\ResponsableRequest;
 use App\Http\Resources\ResponsableResource;
 use App\Models\Responsable;
@@ -11,12 +12,28 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class ResponsableController extends Controller
 {
+    use FiltraPorUbicacion;
+
+    /**
+     * Un responsable "cae" en el filtro de ubicación si tiene al menos
+     * un equipo en esa sede/subsede/ubicación — a diferencia de Equipo,
+     * un Responsable no tiene una ubicación propia, la hereda de sus
+     * equipos. El whereHas solo se agrega si hay algún filtro activo,
+     * para no excluir del listado general a los responsables que
+     * todavía no tienen equipos asignados.
+     */
     public function index(Request $request): AnonymousResourceCollection
     {
         $this->authorize('viewAny', Responsable::class);
 
+        [$sedeId, $subsedeId, $ubicacionId] = $this->filtrosUbicacion($request);
+
         $responsables = Responsable::query()
             ->when($request->filled('nombre'), fn ($q) => $q->where('nombre', 'like', '%' . $request->input('nombre') . '%'))
+            ->when(
+                $sedeId || $subsedeId || $ubicacionId,
+                fn ($q) => $q->whereHas('equipos', fn ($sub) => $sub->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId))
+            )
             ->orderBy('nombre')
             ->paginate(15);
 

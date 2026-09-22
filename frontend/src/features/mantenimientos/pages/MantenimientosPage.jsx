@@ -5,6 +5,10 @@ import {
   useUpdateMantenimiento,
   useDeleteMantenimiento,
 } from '../hooks/useMantenimientos';
+import { useSedes } from '../../sedes/hooks/useSedes';
+import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
+import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
+import { FiltroUbicacionCascada } from '../../../shared/components/FiltroUbicacionCascada';
 import { MantenimientoTable } from '../components/MantenimientoTable';
 import { HistorialMantenimientoTable } from '../components/HistorialMantenimientoTable';
 import { MantenimientoForm } from '../components/MantenimientoForm';
@@ -15,23 +19,65 @@ import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 export function MantenimientosPage() {
   const [pestana, setPestana] = useState('activos'); // 'activos' | 'historial'
   const [page, setPage] = useState(1);
+  const [sedeFiltro, setSedeFiltro] = useState('');
+  const [subsedeFiltro, setSubsedeFiltro] = useState('');
+  const [ubicacionFiltro, setUbicacionFiltro] = useState('');
   const [creando, setCreando] = useState(false);
   const [completandoMantenimiento, setCompletandoMantenimiento] = useState(null);
   const [deletingMantenimiento, setDeletingMantenimiento] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
   const [errorCambioEstado, setErrorCambioEstado] = useState(null);
 
-  const { data, isLoading, isError } = useMantenimientos({ page, completado: pestana === 'historial' });
+  function cambiarPestana(nueva) {
+    setPestana(nueva);
+    setPage(1);
+  }
+
+  function handleSedeChange(valor) {
+    setSedeFiltro(valor);
+    setSubsedeFiltro('');
+    setUbicacionFiltro('');
+    setPage(1);
+  }
+
+  function handleSubsedeChange(valor) {
+    setSubsedeFiltro(valor);
+    setUbicacionFiltro('');
+    setPage(1);
+  }
+
+  function handleUbicacionChange(valor) {
+    setUbicacionFiltro(valor);
+    setPage(1);
+  }
+
+  function handleLimpiarFiltros() {
+    setSedeFiltro('');
+    setSubsedeFiltro('');
+    setUbicacionFiltro('');
+    setPage(1);
+  }
+
+  const filtros = {
+    ...(ubicacionFiltro
+      ? { ubicacion_formacion_id: ubicacionFiltro }
+      : subsedeFiltro
+        ? { subsede_id: subsedeFiltro }
+        : sedeFiltro
+          ? { sede_id: sedeFiltro }
+          : {}),
+  };
+
+  const { data: sedesData } = useSedes(1);
+  const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeFiltro || undefined });
+  const { data: ubicacionesData } = useUbicaciones({ page: 1, subsedeId: subsedeFiltro || undefined });
+
+  const { data, isLoading, isError } = useMantenimientos({ page, completado: pestana === 'historial', filtros });
   const createMantenimiento = useCreateMantenimiento();
   const updateMantenimiento = useUpdateMantenimiento();
   const deleteMantenimiento = useDeleteMantenimiento();
 
   const serverErrors = createMantenimiento.error?.response?.data?.errors;
-
-  function cambiarPestana(nueva) {
-    setPestana(nueva);
-    setPage(1);
-  }
 
   function handleSubmit(payload) {
     createMantenimiento.mutate(payload, { onSuccess: () => setCreando(false) });
@@ -50,9 +96,6 @@ export function MantenimientosPage() {
     setCompletandoMantenimiento(mantenimiento);
   }
 
-  // Combina la nota de cierre con la descripción que ya tenía (si tenía
-  // alguna desde que se programó) — no la reemplaza, "para que aparezcan
-  // ambas cosas" en el Historial.
   function handleConfirmarListo(nota) {
     if (!completandoMantenimiento) return;
 
@@ -93,6 +136,19 @@ export function MantenimientosPage() {
           Programar mantenimiento
         </button>
       </div>
+
+      <FiltroUbicacionCascada
+        sedesData={sedesData}
+        subsedesData={subsedesData}
+        ubicacionesData={ubicacionesData}
+        sedeFiltro={sedeFiltro}
+        subsedeFiltro={subsedeFiltro}
+        ubicacionFiltro={ubicacionFiltro}
+        onSedeChange={handleSedeChange}
+        onSubsedeChange={handleSubsedeChange}
+        onUbicacionChange={handleUbicacionChange}
+        onLimpiar={handleLimpiarFiltros}
+      />
 
       <div className="mb-4 flex gap-1 border-b border-slate-200">
         <button
