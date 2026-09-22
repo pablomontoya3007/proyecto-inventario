@@ -6,10 +6,15 @@ import { ENDPOINTS } from '../../../api/endpoints';
  * ->paginate()) — a propósito, son pocos valores para un <select>. La
  * respuesta es { data: [...] }, sin "links" ni "meta" como en los
  * módulos anteriores.
+ *
+ * ?estado= acota qué equipos cuenta equipos_count_filtrado de cada
+ * tipo — no oculta tipos de la lista.
  */
 
-export async function fetchTiposEquipo() {
-  const { data } = await httpClient.get(ENDPOINTS.tiposEquipo);
+export async function fetchTiposEquipo(estado) {
+  const { data } = await httpClient.get(ENDPOINTS.tiposEquipo, {
+    params: { ...(estado ? { estado } : {}) },
+  });
   return data.data;
 }
 

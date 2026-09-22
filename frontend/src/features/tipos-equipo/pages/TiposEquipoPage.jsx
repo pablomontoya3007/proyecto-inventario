@@ -10,12 +10,22 @@ import { TipoEquipoForm } from '../components/TipoEquipoForm';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 import { Modal } from '../../../shared/components/Modal';
 
+// Confirmado contra app/Enums/EstadoEquipo.php — mismos valores que ya
+// usa EquipoForm.jsx.
+const ESTADOS_EQUIPO = [
+  { value: 'activo', label: 'Activo' },
+  { value: 'mantenimiento', label: 'En mantenimiento' },
+  { value: 'de_baja', label: 'De baja' },
+  { value: 'extraviado', label: 'Extraviado' },
+];
+
 export function TiposEquipoPage() {
+  const [estadoFiltro, setEstadoFiltro] = useState('');
   const [editingTipo, setEditingTipo] = useState(null);
   const [deletingTipo, setDeletingTipo] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
 
-  const { data: tipos, isLoading, isError } = useTiposEquipo();
+  const { data: tipos, isLoading, isError } = useTiposEquipo(estadoFiltro || undefined);
   const createTipo = useCreateTipoEquipo();
   const updateTipo = useUpdateTipoEquipo();
   const deleteTipo = useDeleteTipoEquipo();
@@ -56,6 +66,25 @@ export function TiposEquipoPage() {
         >
           Nuevo tipo
         </button>
+      </div>
+
+      <div className="mb-4">
+        <label htmlFor="filtro-estado-tipo" className="mr-2 text-sm text-slate-600">
+          Contar equipos en estado:
+        </label>
+        <select
+          id="filtro-estado-tipo"
+          value={estadoFiltro}
+          onChange={(event) => setEstadoFiltro(event.target.value)}
+          className="rounded border border-slate-300 px-2 py-1 text-sm"
+        >
+          <option value="">Todos los estados</option>
+          {ESTADOS_EQUIPO.map((estado) => (
+            <option key={estado.value} value={estado.value}>
+              {estado.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       {isLoading && <p className="text-sm text-slate-500">Cargando tipos de equipo...</p>}

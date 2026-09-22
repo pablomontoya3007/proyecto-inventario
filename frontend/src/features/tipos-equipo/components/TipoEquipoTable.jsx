@@ -15,6 +15,12 @@ export function TipoEquipoTable({ tipos, onEdit, onDelete }) {
       </thead>
       <tbody>
         {tipos.map((tipo) => {
+          // El número mostrado respeta el filtro de estado si hay uno
+          // activo (equipos_count_filtrado); si se puede eliminar
+          // siempre se decide con el total SIN filtrar (equipos_count),
+          // para que un tipo con equipos en otros estados no quede
+          // habilitado para borrar solo porque el filtro actual da 0.
+          const equiposMostrados = tipo.equipos_count_filtrado ?? tipo.equipos_count;
           const tieneEquipos = (tipo.equipos_count ?? 0) > 0;
 
           return (
@@ -25,7 +31,7 @@ export function TipoEquipoTable({ tipos, onEdit, onDelete }) {
                   {tipo.activo ? 'Activo' : 'Inactivo'}
                 </span>
               </td>
-              <td className="py-2 pr-4 text-slate-500">{tipo.equipos_count ?? '—'}</td>
+              <td className="py-2 pr-4 text-slate-500">{equiposMostrados ?? '—'}</td>
               <td className="py-2 pr-4 text-right">
                 <button onClick={() => onEdit(tipo)} className="mr-3 text-sm text-slate-600 hover:underline">
                   Editar

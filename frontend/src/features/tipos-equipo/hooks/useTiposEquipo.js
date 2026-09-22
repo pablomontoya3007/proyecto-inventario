@@ -6,10 +6,10 @@ import {
   deleteTipoEquipo,
 } from '../services/tiposEquipoApi';
 
-export function useTiposEquipo() {
+export function useTiposEquipo(estado) {
   return useQuery({
-    queryKey: ['tipos-equipo'],
-    queryFn: fetchTiposEquipo,
+    queryKey: ['tipos-equipo', estado ?? null],
+    queryFn: () => fetchTiposEquipo(estado),
   });
 }
 

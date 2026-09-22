@@ -6,17 +6,39 @@ use App\Http\Requests\TipoEquipoRequest;
 use App\Http\Resources\TipoEquipoResource;
 use App\Models\TipoEquipo;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class TipoEquipoController extends Controller
 {
-    // Sin paginar a propósito: son 8 valores fijos, pensado para llenar un
-    // <select> del frontend de una sola vez, no una lista para recorrer.
-    public function index(): AnonymousResourceCollection
+    /**
+     * Sin paginar a propósito: son 8 valores fijos, pensado para llenar
+     * un <select> del frontend de una sola vez, no una lista para
+     * recorrer.
+     *
+     * equipos_count (total, sin filtrar) viaja siempre — el frontend lo
+     * usa para decidir si el botón "Eliminar" debe deshabilitarse, y esa
+     * decisión no puede depender de qué filtro de estado esté activo.
+     * equipos_count_filtrado solo se calcula cuando llega ?estado=, y es
+     * lo que la tabla muestra en ese caso: cuántos equipos de ese tipo
+     * están en ese estado puntual.
+     */
+    public function index(Request $request): AnonymousResourceCollection
     {
         $this->authorize('viewAny', TipoEquipo::class);
 
-        return TipoEquipoResource::collection(TipoEquipo::orderBy('nombre')->get());
+        $tipos = TipoEquipo::query()
+            ->withCount('equipos')
+            ->when(
+                $request->filled('estado'),
+                fn ($q) => $q->withCount([
+                    'equipos as equipos_count_filtrado' => fn ($q2) => $q2->where('estado', $request->input('estado')),
+                ])
+            )
+            ->orderBy('nombre')
+            ->get();
+
+        return TipoEquipoResource::collection($tipos);
     }
 
     public function store(TipoEquipoRequest $request): JsonResponse
