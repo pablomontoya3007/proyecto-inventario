@@ -14,6 +14,19 @@ class LicenciaOfficeController extends Controller
 {
     use FiltraPorUbicacion;
 
+    /**
+     * Filtros disponibles: sede_id/subsede_id/ubicacion_formacion_id
+     * (ubicación del equipo dueño), placa_sena (equipo), correo, estado
+     * (activa/vencida/suspendida) y fecha_desde/fecha_hasta (rango sobre
+     * fecha_actualizacion). Todos opcionales y combinables.
+     *
+     * Ubicación y placa comparten un solo whereHas('equipo', ...): ambos
+     * dependen del equipo dueño de la licencia, así que se resuelven en
+     * una sola subconsulta en vez de dos. Ese whereHas solo se agrega si
+     * alguno de los dos está activo — igual que antes, para no excluir
+     * del listado general las licencias cuyo equipo ya fue eliminado
+     * (soft delete) cuando no hay razón para mirar el equipo.
+     */
     public function index(Request $request): AnonymousResourceCollection
     {
         $this->authorize('viewAny', LicenciaOffice::class);
@@ -23,11 +36,30 @@ class LicenciaOfficeController extends Controller
         $licencias = LicenciaOffice::query()
             ->with('equipo.ubicacionFormacion.subsede.sede')
             ->when(
-                $sedeId || $subsedeId || $ubicacionId,
-                fn ($q) => $q->whereHas(
-                    'equipo',
-                    fn ($sub) => $sub->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId)
-                )
+                $request->filled('correo'),
+                fn ($q) => $q->where('correo', 'like', '%' . $request->input('correo') . '%')
+            )
+            ->when(
+                $request->filled('estado'),
+                fn ($q) => $q->where('estado_licencia', $request->input('estado'))
+            )
+            ->when(
+                $request->filled('fecha_desde'),
+                fn ($q) => $q->whereDate('fecha_actualizacion', '>=', $request->input('fecha_desde'))
+            )
+            ->when(
+                $request->filled('fecha_hasta'),
+                fn ($q) => $q->whereDate('fecha_actualizacion', '<=', $request->input('fecha_hasta'))
+            )
+            ->when(
+                $sedeId || $subsedeId || $ubicacionId || $request->filled('placa_sena'),
+                fn ($q) => $q->whereHas('equipo', function ($sub) use ($sedeId, $subsedeId, $ubicacionId, $request) {
+                    $sub->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId)
+                        ->when(
+                            $request->filled('placa_sena'),
+                            fn ($s) => $s->where('placa_sena', 'like', '%' . $request->input('placa_sena') . '%')
+                        );
+                })
             )
             ->latest()
             ->paginate(15);

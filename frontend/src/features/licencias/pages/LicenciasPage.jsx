@@ -9,11 +9,24 @@ import { LicenciaForm } from '../components/LicenciaForm';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 import { Modal } from '../../../shared/components/Modal';
 
+// Confirmado contra app/Enums/EstadoLicencia.php — mismos valores que ya
+// usa LicenciaForm.jsx.
+const ESTADOS_LICENCIA = [
+  { value: 'activa', label: 'Activa' },
+  { value: 'vencida', label: 'Vencida' },
+  { value: 'suspendida', label: 'Suspendida' },
+];
+
 export function LicenciasPage() {
   const [page, setPage] = useState(1);
   const [sedeFiltro, setSedeFiltro] = useState('');
   const [subsedeFiltro, setSubsedeFiltro] = useState('');
   const [ubicacionFiltro, setUbicacionFiltro] = useState('');
+  const [correoFiltro, setCorreoFiltro] = useState('');
+  const [placaFiltro, setPlacaFiltro] = useState('');
+  const [estadoFiltro, setEstadoFiltro] = useState('');
+  const [fechaDesdeFiltro, setFechaDesdeFiltro] = useState('');
+  const [fechaHastaFiltro, setFechaHastaFiltro] = useState('');
 
   const [editingLicencia, setEditingLicencia] = useState(null);
   const [deletingLicencia, setDeletingLicencia] = useState(null);
@@ -41,6 +54,11 @@ export function LicenciasPage() {
     setSedeFiltro('');
     setSubsedeFiltro('');
     setUbicacionFiltro('');
+    setCorreoFiltro('');
+    setPlacaFiltro('');
+    setEstadoFiltro('');
+    setFechaDesdeFiltro('');
+    setFechaHastaFiltro('');
     setPage(1);
   }
 
@@ -52,6 +70,11 @@ export function LicenciasPage() {
         : sedeFiltro
           ? { sede_id: sedeFiltro }
           : {}),
+    ...(correoFiltro ? { correo: correoFiltro } : {}),
+    ...(placaFiltro ? { placa_sena: placaFiltro } : {}),
+    ...(estadoFiltro ? { estado: estadoFiltro } : {}),
+    ...(fechaDesdeFiltro ? { fecha_desde: fechaDesdeFiltro } : {}),
+    ...(fechaHastaFiltro ? { fecha_hasta: fechaHastaFiltro } : {}),
   };
 
   const { data: sedesData } = useSedes(1);
@@ -107,6 +130,74 @@ export function LicenciasPage() {
         onUbicacionChange={handleUbicacionChange}
         onLimpiar={handleLimpiarFiltros}
       />
+
+      <div className="mb-4 flex flex-wrap items-end gap-3">
+        <input
+          type="text"
+          placeholder="Buscar por correo..."
+          value={correoFiltro}
+          onChange={(event) => {
+            setCorreoFiltro(event.target.value);
+            setPage(1);
+          }}
+          className="rounded border border-slate-300 px-2 py-1 text-sm"
+        />
+        <input
+          type="text"
+          placeholder="Buscar por placa..."
+          value={placaFiltro}
+          onChange={(event) => {
+            setPlacaFiltro(event.target.value);
+            setPage(1);
+          }}
+          className="rounded border border-slate-300 px-2 py-1 text-sm"
+        />
+        <select
+          value={estadoFiltro}
+          onChange={(event) => {
+            setEstadoFiltro(event.target.value);
+            setPage(1);
+          }}
+          className="rounded border border-slate-300 px-2 py-1 text-sm"
+        >
+          <option value="">Todos los estados</option>
+          {ESTADOS_LICENCIA.map((estado) => (
+            <option key={estado.value} value={estado.value}>
+              {estado.label}
+            </option>
+          ))}
+        </select>
+        <div>
+          <label htmlFor="fecha-desde" className="mb-1 block text-xs text-slate-500">
+            Actualizada desde
+          </label>
+          <input
+            id="fecha-desde"
+            type="date"
+            value={fechaDesdeFiltro}
+            onChange={(event) => {
+              setFechaDesdeFiltro(event.target.value);
+              setPage(1);
+            }}
+            className="rounded border border-slate-300 px-2 py-1 text-sm"
+          />
+        </div>
+        <div>
+          <label htmlFor="fecha-hasta" className="mb-1 block text-xs text-slate-500">
+            Actualizada hasta
+          </label>
+          <input
+            id="fecha-hasta"
+            type="date"
+            value={fechaHastaFiltro}
+            onChange={(event) => {
+              setFechaHastaFiltro(event.target.value);
+              setPage(1);
+            }}
+            className="rounded border border-slate-300 px-2 py-1 text-sm"
+          />
+        </div>
+      </div>
 
       {isLoading && <p className="text-sm text-slate-500">Cargando licencias...</p>}
       {isError && <p className="text-sm text-red-600">No se pudieron cargar las licencias.</p>}
