@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useEquipos, useCreateEquipo, useUpdateEquipo, useDeleteEquipo } from '../hooks/useEquipos';
 import { useTiposEquipo } from '../../tipos-equipo/hooks/useTiposEquipo';
+import { useResponsables } from '../../responsables/hooks/useResponsables';
 import { useSedes } from '../../sedes/hooks/useSedes';
 import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
 import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
@@ -10,11 +11,22 @@ import { HojaDeVidaModal } from '../components/HojaDeVidaModal';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 import { Modal } from '../../../shared/components/Modal';
 
+// Confirmado contra app/Enums/EstadoEquipo.php — mismos valores que ya
+// usan EquipoForm.jsx y TiposEquipoPage.jsx.
+const ESTADOS_EQUIPO = [
+  { value: 'activo', label: 'Activo' },
+  { value: 'mantenimiento', label: 'En mantenimiento' },
+  { value: 'de_baja', label: 'De baja' },
+  { value: 'extraviado', label: 'Extraviado' },
+];
+
 export function EquiposPage() {
   const [page, setPage] = useState(1);
   const [placaFiltro, setPlacaFiltro] = useState('');
   const [serialFiltro, setSerialFiltro] = useState('');
   const [tipoFiltro, setTipoFiltro] = useState('');
+  const [responsableFiltro, setResponsableFiltro] = useState('');
+  const [estadoFiltro, setEstadoFiltro] = useState('');
   const [sedeFiltro, setSedeFiltro] = useState('');
   const [subsedeFiltro, setSubsedeFiltro] = useState('');
   const [ubicacionFiltro, setUbicacionFiltro] = useState('');
@@ -30,6 +42,8 @@ export function EquiposPage() {
     ...(placaFiltro ? { placa_sena: placaFiltro } : {}),
     ...(serialFiltro ? { serial: serialFiltro } : {}),
     ...(tipoFiltro ? { tipo_equipo_id: tipoFiltro } : {}),
+    ...(responsableFiltro ? { responsable_id: responsableFiltro } : {}),
+    ...(estadoFiltro ? { estado: estadoFiltro } : {}),
     ...(ubicacionFiltro
       ? { ubicacion_formacion_id: ubicacionFiltro }
       : subsedeFiltro
@@ -41,6 +55,7 @@ export function EquiposPage() {
 
   const { data, isLoading, isError } = useEquipos(filtros, page);
   const { data: tiposData } = useTiposEquipo();
+  const { data: responsablesData } = useResponsables({ page: 1 });
   const { data: sedesData } = useSedes(1);
   const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeFiltro || undefined });
   const { data: ubicacionesData } = useUbicaciones({ page: 1, subsedeId: subsedeFiltro || undefined });
@@ -127,6 +142,36 @@ export function EquiposPage() {
           {tiposData?.map((tipo) => (
             <option key={tipo.id} value={tipo.id}>
               {tipo.nombre}
+            </option>
+          ))}
+        </select>
+        <select
+          value={responsableFiltro}
+          onChange={(event) => {
+            setResponsableFiltro(event.target.value);
+            setPage(1);
+          }}
+          className="rounded border border-slate-300 px-2 py-1 text-sm"
+        >
+          <option value="">Todos los responsables</option>
+          {responsablesData?.data.map((responsable) => (
+            <option key={responsable.id} value={responsable.id}>
+              {responsable.nombre}
+            </option>
+          ))}
+        </select>
+        <select
+          value={estadoFiltro}
+          onChange={(event) => {
+            setEstadoFiltro(event.target.value);
+            setPage(1);
+          }}
+          className="rounded border border-slate-300 px-2 py-1 text-sm"
+        >
+          <option value="">Todos los estados</option>
+          {ESTADOS_EQUIPO.map((estado) => (
+            <option key={estado.value} value={estado.value}>
+              {estado.label}
             </option>
           ))}
         </select>
