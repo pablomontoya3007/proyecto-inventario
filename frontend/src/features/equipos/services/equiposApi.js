@@ -14,6 +14,9 @@ import { descargarBlob } from '../../../shared/utils/descargarArchivo';
  * - DELETE /equipos/{id} -> { mensaje: '...' } — siempre permitido, pero
  *          en cascada: borra también la licencia y TODAS las
  *          observaciones del equipo.
+ * - POST   /equipos/importar (multipart/form-data, campo "archivo") ->
+ *          { importados: number, fallidos: number, errores: [{fila, campo, errores}] }
+ * - GET    /equipos/plantilla-importacion -> descarga un .xlsx
  *
  * Filtros soportados por index(): placa_sena, serial, mac, hostname,
  * estado, tipo_equipo_id, responsable_id, ubicacion_formacion_id,
@@ -52,4 +55,22 @@ export async function fetchEquipo(id) {
 
 export function descargarHojaDeVidaPdf(id, placaSena) {
   return descargarBlob(httpClient, `${ENDPOINTS.equipos}/${id}/hoja-de-vida/pdf`, `hoja-de-vida-${placaSena}.pdf`);
+}
+
+// axios detecta el FormData solo y pone el Content-Type multipart con
+// el boundary correcto — no hay que fijarlo a mano.
+export async function importarEquipos(archivo) {
+  const formData = new FormData();
+  formData.append('archivo', archivo);
+
+  const { data } = await httpClient.post(`${ENDPOINTS.equipos}/importar`, formData);
+  return data;
+}
+
+export function descargarPlantillaImportacion() {
+  return descargarBlob(
+    httpClient,
+    `${ENDPOINTS.equipos}/plantilla-importacion`,
+    'plantilla-importar-equipos.xlsx'
+  );
 }

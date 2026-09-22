@@ -1,5 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchEquipos, fetchEquipo, createEquipo, updateEquipo, deleteEquipo } from '../services/equiposApi';
+import {
+  fetchEquipos,
+  fetchEquipo,
+  createEquipo,
+  updateEquipo,
+  deleteEquipo,
+  importarEquipos,
+} from '../services/equiposApi';
 
 export function useEquipos(filtros = {}, page = 1) {
   return useQuery({
@@ -40,4 +47,12 @@ export function useDeleteEquipo() {
     mutationFn: deleteEquipo,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['equipos'] }),
   });
-} 
+}
+
+export function useImportarEquipos() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: importarEquipos,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['equipos'] }),
+  });
+}

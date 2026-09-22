@@ -8,6 +8,7 @@ import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
 import { EquipoTable } from '../components/EquipoTable';
 import { EquipoForm } from '../components/EquipoForm';
 import { HojaDeVidaModal } from '../components/HojaDeVidaModal';
+import { ImportarEquiposModal } from '../components/ImportarEquiposModal';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 import { Modal } from '../../../shared/components/Modal';
 
@@ -35,9 +36,8 @@ export function EquiposPage() {
   const [viendoHojaDeVida, setViendoHojaDeVida] = useState(null);
   const [deletingEquipo, setDeletingEquipo] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
+  const [importando, setImportando] = useState(false);
 
-  // ubicacion_formacion_id ya implica subsede/sede, así que si está
-  // elegida se manda solo ella — más preciso que combinar los tres.
   const filtros = {
     ...(placaFiltro ? { placa_sena: placaFiltro } : {}),
     ...(serialFiltro ? { serial: serialFiltro } : {}),
@@ -101,12 +101,20 @@ export function EquiposPage() {
     <div>
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-semibold text-slate-800">Equipos</h1>
-        <button
-          onClick={() => setEditingEquipo({})}
-          className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
-        >
-          Nuevo equipo
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setImportando(true)}
+            className="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            Importar Excel
+          </button>
+          <button
+            onClick={() => setEditingEquipo({})}
+            className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+          >
+            Nuevo equipo
+          </button>
+        </div>
       </div>
 
       <div className="mb-4 flex flex-wrap gap-3">
@@ -266,6 +274,12 @@ export function EquiposPage() {
             isSubmitting={createEquipo.isPending || updateEquipo.isPending}
             serverErrors={serverErrors}
           />
+        </Modal>
+      )}
+
+      {importando && (
+        <Modal title="Importar equipos desde Excel" onClose={() => setImportando(false)} maxWidth="max-w-2xl">
+          <ImportarEquiposModal onClose={() => setImportando(false)} />
         </Modal>
       )}
 

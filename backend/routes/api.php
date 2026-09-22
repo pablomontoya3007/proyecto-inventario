@@ -24,10 +24,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('subsedes', SubsedeController::class);
     
 
-    // ->parameters(...): sin esto, Laravel intentaría adivinar el nombre
-    // del parámetro pluralizando en inglés "ubicaciones-formacion", igual
-    // que nos pasó con las tablas. Se fija explícito para que coincida con
-    // lo que ya asumieron los Form Requests (->ignore($this->route(...))).
     Route::apiResource('ubicaciones-formacion', UbicacionFormacionController::class)
         ->parameters(['ubicaciones-formacion' => 'ubicacion_formacion']);
 
@@ -37,27 +33,23 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('responsables', ResponsableController::class);
     Route::apiResource('equipos', EquipoController::class);
     Route::get('equipos/{equipo}/hoja-de-vida/pdf', [EquipoController::class, 'hojaDeVidaPdf']);
+    Route::post('equipos/importar', [EquipoController::class, 'importar']);
+    Route::get('equipos/plantilla-importacion', [EquipoController::class, 'plantillaImportacion']);
 
     Route::apiResource('licencias-office', LicenciaOfficeController::class)
         ->parameters(['licencias-office' => 'licencia_office']);
     Route::get('licencias-office/{licencia_office}/password', [LicenciaOfficeController::class, 'mostrarPassword']);
 
-    // Sin update ni destroy: las observaciones son inmutables.
     Route::apiResource('observaciones', ObservacionController::class)
         ->only(['index', 'store', 'show']);
             
     Route::apiResource('mantenimientos', MantenimientoController::class)
         ->only(['index', 'store', 'update', 'destroy']);
 
-    // Sin update ni destroy: los traslados son inmutables, igual que las
-    // observaciones — un error de captura se corrige con uno nuevo.
     Route::apiResource('traslados', TrasladoController::class)
         ->only(['index', 'store']);
 
 
-    // Fase 5 — RF-08 Reportes y Consultas. La parte de "Consultas" ya
-    // está cubierta por los filtros de EquipoController::index(); esto
-    // cubre la parte de "Reportes" (vistas agregadas).
     Route::prefix('reportes')->group(function () {
         Route::get('equipos', [ReporteController::class, 'equipos']);
         Route::get('equipos/excel', [ReporteController::class, 'equiposExcel']);
