@@ -80,19 +80,9 @@ class Equipo extends Model
 
     /**
      * Filtra equipos por ubicación jerárquica (sede / subsede / ubicación
-     * de formación). Mismo criterio que ya usaba EquipoController::index():
-     * cada nivel se aplica de forma independiente si viene informado, sin
-     * forzar "el más específico gana" aquí — esa precedencia ya la resuelve
-     * el frontend antes de armar la query string (ver EquiposPage y ahora
-     * ReportesPage), así que basta con encadenar el where/whereHas que
-     * corresponda a cada parámetro presente.
-     *
-     * Se extrae como scope porque esta misma cadena ya vivía duplicada en
-     * EquipoController::index() y ahora la necesita también
-     * ReporteController, en tres formas distintas (query directa a Equipo,
-     * whereHas desde LicenciaOffice, withCount desde Responsable). Tenerla
-     * en un solo lugar evita que las tres terminen divergiendo con el
-     * tiempo.
+     * de formación). Cada nivel se aplica de forma independiente si viene
+     * informado — la precedencia "el más específico gana" la resuelve el
+     * frontend antes de armar la query string.
      */
     public function scopeFiltrarPorUbicacion(
         Builder $query,
@@ -116,5 +106,19 @@ class Equipo extends Model
                     fn (Builder $sub) => $sub->where('sede_id', $sedeId)
                 )
             );
+    }
+
+    /**
+     * Filtra equipos por tipo y/o estado — a diferencia de
+     * filtrarPorUbicacion, estos son columnas propias de la tabla
+     * equipos, sin necesidad de whereHas. Lo usa el reporte de Equipos
+     * para acotar "Por sede/tipo/estado" y el listado a un tipo o
+     * estado puntual, además del filtro de ubicación.
+     */
+    public function scopeFiltrarPorAtributos(Builder $query, ?int $tipoEquipoId, ?string $estado): Builder
+    {
+        return $query
+            ->when($tipoEquipoId, fn (Builder $q) => $q->where('tipo_equipo_id', $tipoEquipoId))
+            ->when($estado, fn (Builder $q) => $q->where('estado', $estado));
     }
 }

@@ -27,19 +27,28 @@ class ReporteController extends Controller
 
     public function equipos(Request $request): JsonResponse
     {
-        return response()->json($this->datosEquipos(...$this->filtrosUbicacion($request)));
+        return response()->json($this->datosEquipos(
+            ...$this->filtrosUbicacion($request),
+            ...$this->filtrosEquipo($request)
+        ));
     }
 
     public function equiposExcel(Request $request)
     {
-        $datos = $this->datosEquipos(...$this->filtrosUbicacion($request));
+        $datos = $this->datosEquipos(
+            ...$this->filtrosUbicacion($request),
+            ...$this->filtrosEquipo($request)
+        );
 
         return Excel::download(new EquiposPorCategoriaExport($datos), 'equipos-por-categoria.xlsx');
     }
 
     public function equiposPdf(Request $request)
     {
-        $datos = $this->datosEquipos(...$this->filtrosUbicacion($request));
+        $datos = $this->datosEquipos(
+            ...$this->filtrosUbicacion($request),
+            ...$this->filtrosEquipo($request)
+        );
 
         return Pdf::loadView('reportes.equipos', $datos)->download('equipos-por-categoria.pdf');
     }
@@ -83,10 +92,38 @@ class ReporteController extends Controller
             ->download('responsables.pdf');
     }
 
-    private function datosEquipos(?int $sedeId, ?int $subsedeId, ?int $ubicacionId): array
+    /**
+     * Filtros propios del reporte de Equipos (tipo_equipo_id, estado) —
+     * a diferencia de sede/subsede/ubicación, no aplican a Licencias ni
+     * a Responsables, así que no viven en el trait compartido.
+     *
+     * @return array{0: ?int, 1: ?string}
+     */
+    private function filtrosEquipo(Request $request): array
     {
+        return [
+            $request->filled('tipo_equipo_id') ? (int) $request->input('tipo_equipo_id') : null,
+            $request->filled('estado') ? $request->input('estado') : null,
+        ];
+    }
+
+    /**
+     * Centraliza las consultas para que JSON, Excel y PDF usen siempre
+     * los mismos números. Los soft-deletes de Equipo se excluyen
+     * automáticamente (scope global de SoftDeletes). Los cinco
+     * parámetros son opcionales: sin ellos, el reporte sigue siendo
+     * global, igual que antes.
+     */
+    private function datosEquipos(
+        ?int $sedeId,
+        ?int $subsedeId,
+        ?int $ubicacionId,
+        ?int $tipoEquipoId,
+        ?string $estado
+    ): array {
         $porSede = Equipo::query()
             ->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId)
+            ->filtrarPorAtributos($tipoEquipoId, $estado)
             ->join('ubicaciones_formacion', 'equipos.ubicacion_formacion_id', '=', 'ubicaciones_formacion.id')
             ->join('subsedes', 'ubicaciones_formacion.subsede_id', '=', 'subsedes.id')
             ->join('sedes', 'subsedes.sede_id', '=', 'sedes.id')
@@ -98,6 +135,7 @@ class ReporteController extends Controller
 
         $porTipo = Equipo::query()
             ->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId)
+            ->filtrarPorAtributos($tipoEquipoId, $estado)
             ->join('tipos_equipo', 'equipos.tipo_equipo_id', '=', 'tipos_equipo.id')
             ->select('tipos_equipo.nombre')
             ->selectRaw('count(*) as total')
@@ -107,6 +145,7 @@ class ReporteController extends Controller
 
         $porEstado = Equipo::query()
             ->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId)
+            ->filtrarPorAtributos($tipoEquipoId, $estado)
             ->select('estado')
             ->selectRaw('count(*) as total')
             ->groupBy('estado')
@@ -116,10 +155,26 @@ class ReporteController extends Controller
                 'total' => $fila->total,
             ]);
 
+        $listado = Equipo::query()
+            ->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId)
+            ->filtrarPorAtributos($tipoEquipoId, $estado)
+            ->with(['tipoEquipo', 'ubicacionFormacion.subsede.sede'])
+            ->orderBy('placa_sena')
+            ->get()
+            ->map(fn ($equipo) => [
+                'placa_sena' => $equipo->placa_sena,
+                'tipo' => $equipo->tipoEquipo?->nombre ?? 'Sin tipo',
+                'sede' => $equipo->ubicacionFormacion?->subsede?->sede?->nombre ?? 'Sin sede',
+                'subsede' => $equipo->ubicacionFormacion?->subsede?->nombre ?? 'Sin subsede',
+                'ambiente' => $equipo->ubicacionFormacion?->nombre ?? 'Sin ambiente',
+                'estado' => $equipo->estado?->label() ?? 'Sin estado',
+            ]);
+
         return [
             'por_sede' => $porSede,
             'por_tipo' => $porTipo,
             'por_estado' => $porEstado,
+            'listado' => $listado,
         ];
     }
 

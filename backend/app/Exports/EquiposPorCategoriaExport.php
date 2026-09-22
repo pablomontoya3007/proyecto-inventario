@@ -5,11 +5,10 @@ namespace App\Exports;
 use Maatwebsite\Excel\Concerns\FromArray;
 
 /**
- * Una sola hoja con las tres agrupaciones apiladas (separadas por una
- * fila en blanco), en vez de tres hojas independientes — más simple de
+ * Una sola hoja con las cuatro agrupaciones apiladas (separadas por una
+ * fila en blanco), en vez de hojas independientes — más simple de
  * generar para un reporte pensado para revisarse rápido, no para
- * procesarse por código después. Si más adelante hace falta una hoja
- * por categoría, el cambio queda contenido a esta sola clase.
+ * procesarse por código después.
  */
 class EquiposPorCategoriaExport implements FromArray
 {
@@ -39,6 +38,20 @@ class EquiposPorCategoriaExport implements FromArray
         $filas[] = ['Estado', 'Total'];
         foreach ($this->datos['por_estado'] as $fila) {
             $filas[] = [$fila['estado'], $fila['total']];
+        }
+        $filas[] = [];
+
+        $filas[] = ['LISTADO DE EQUIPOS'];
+        $filas[] = ['Placa SENA', 'Tipo', 'Sede', 'Subsede', 'Ambiente', 'Estado'];
+        foreach ($this->datos['listado'] as $fila) {
+            $filas[] = [
+                $fila['placa_sena'],
+                $fila['tipo'],
+                $fila['sede'],
+                $fila['subsede'],
+                $fila['ambiente'],
+                $fila['estado'],
+            ];
         }
 
         return $filas;

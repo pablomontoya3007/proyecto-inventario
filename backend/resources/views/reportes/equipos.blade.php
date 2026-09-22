@@ -44,5 +44,31 @@
             @endforeach
         </tbody>
     </table>
+
+    <h2>Listado de equipos</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Placa SENA</th>
+                <th>Tipo</th>
+                <th>Sede</th>
+                <th>Subsede</th>
+                <th>Ambiente</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach ($listado as $fila)
+                <tr>
+                    <td>{{ $fila['placa_sena'] }}</td>
+                    <td>{{ $fila['tipo'] }}</td>
+                    <td>{{ $fila['sede'] }}</td>
+                    <td>{{ $fila['subsede'] }}</td>
+                    <td>{{ $fila['ambiente'] }}</td>
+                    <td>{{ $fila['estado'] }}</td>
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
 </body>
 </html>
