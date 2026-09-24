@@ -16,11 +16,6 @@ class MantenimientoController extends Controller
 {
     use FiltraPorUbicacion;
 
-    /**
-     * ?completado=true  -> solo "listo" (pestaña "Historial").
-     * ?completado=false -> en_espera + en_mantenimiento (pestaña "Activos").
-     * Sin el parámetro  -> sin filtrar.
-     */
     public function index(Request $request): AnonymousResourceCollection
     {
         $this->authorize('viewAny', Mantenimiento::class);

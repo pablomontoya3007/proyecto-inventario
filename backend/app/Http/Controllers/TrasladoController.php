@@ -2,80 +2,55 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\EstadoEquipo;
-use App\Enums\EstadoMantenimiento;
 use App\Http\Controllers\Concerns\FiltraPorUbicacion;
-use App\Http\Requests\MantenimientoRequest;
-use App\Http\Resources\MantenimientoResource;
-use App\Models\Mantenimiento;
+use App\Http\Requests\TrasladoRequest;
+use App\Http\Resources\TrasladoResource;
+use App\Models\Equipo;
+use App\Models\Traslado;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 
-class MantenimientoController extends Controller
+class TrasladoController extends Controller
 {
     use FiltraPorUbicacion;
 
-    /**
-     * ?completado=true  -> solo "listo" (pestaña "Historial").
-     * ?completado=false -> en_espera + en_mantenimiento (pestaña "Activos").
-     * Sin el parámetro  -> sin filtrar.
-     */
     public function index(Request $request): AnonymousResourceCollection
     {
-        $this->authorize('viewAny', Mantenimiento::class);
+        $this->authorize('viewAny', Traslado::class);
 
         [$sedeId, $subsedeId, $ubicacionId] = $this->filtrosUbicacion($request);
 
-        $mantenimientos = Mantenimiento::query()
-            ->with('equipo')
-            ->when($request->filled('completado'), function ($query) use ($request) {
-                $completado = filter_var($request->input('completado'), FILTER_VALIDATE_BOOLEAN);
-
-                $completado
-                    ? $query->where('estado', EstadoMantenimiento::Listo)
-                    : $query->where('estado', '!=', EstadoMantenimiento::Listo);
-            })
-            ->when(
-                $sedeId || $subsedeId || $ubicacionId,
-                fn ($q) => $q->whereHas('equipo', fn ($sub) => $sub->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId))
-            )
-            ->orderBy('fecha_programada')
+        $traslados = Traslado::query()
+            ->with(['equipo', 'ubicacionOrigen.subsede.sede', 'ubicacionDestino.subsede.sede'])
+            ->when($request->filled('equipo_id'), fn ($q) => $q->where('equipo_id', $request->input('equipo_id')))
+            ->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId)
+            ->latest('fecha_traslado')
             ->paginate(15);
 
-        return MantenimientoResource::collection($mantenimientos);
+        return TrasladoResource::collection($traslados);
     }
 
-    public function store(MantenimientoRequest $request): JsonResponse
+    public function store(TrasladoRequest $request): JsonResponse
     {
-        $this->authorize('create', Mantenimiento::class);
+        $this->authorize('create', Traslado::class);
 
-        $mantenimiento = Mantenimiento::create($request->validated());
+        $equipo = Equipo::findOrFail($request->validated('equipo_id'));
 
-        return (new MantenimientoResource($mantenimiento->load('equipo')))->response()->setStatusCode(201);
-    }
+        $traslado = DB::transaction(function () use ($request, $equipo) {
+            $traslado = Traslado::create([
+                ...$request->validated(),
+                'ubicacion_origen_id' => $equipo->ubicacion_formacion_id,
+            ]);
 
-    public function update(MantenimientoRequest $request, Mantenimiento $mantenimiento): MantenimientoResource
-    {
-        $this->authorize('update', $mantenimiento);
+            $equipo->update(['ubicacion_formacion_id' => $request->validated('ubicacion_destino_id')]);
 
-        $mantenimiento->update($request->validated());
+            return $traslado;
+        });
 
-        match ($mantenimiento->estado) {
-            EstadoMantenimiento::EnMantenimiento => $mantenimiento->equipo->update(['estado' => EstadoEquipo::Mantenimiento]),
-            EstadoMantenimiento::Listo => $mantenimiento->equipo->update(['estado' => EstadoEquipo::Activo]),
-            EstadoMantenimiento::EnEspera => null,
-        };
+        $traslado->load(['equipo', 'ubicacionOrigen.subsede.sede', 'ubicacionDestino.subsede.sede']);
 
-        return new MantenimientoResource($mantenimiento->load('equipo'));
-    }
-
-    public function destroy(Mantenimiento $mantenimiento): JsonResponse
-    {
-        $this->authorize('delete', $mantenimiento);
-
-        $mantenimiento->delete();
-
-        return response()->json(['mensaje' => 'Mantenimiento eliminado correctamente.']);
+        return (new TrasladoResource($traslado))->response()->setStatusCode(201);
     }
 }
