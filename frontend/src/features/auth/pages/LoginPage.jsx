@@ -31,57 +31,65 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100">
-      <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4 rounded-lg bg-white p-8 shadow">
-        <h1 className="text-xl font-semibold text-slate-800">SPY — Inventario SENA</h1>
+    <div className="flex min-h-screen items-center justify-center bg-surface">
+      <form onSubmit={handleSubmit} className="w-full max-w-sm overflow-hidden rounded-lg bg-white shadow">
+        {/* Franja superior en Verde SENA: el color institucional se usa
+            aquí como acento de marca, no como fondo de sección completa
+            (norma 5 del acta). */}
+        <div className="h-1.5 bg-sena" />
 
-        {sessionExpired && !error && (
-          <p className="rounded bg-amber-50 px-3 py-2 text-sm text-amber-700">
-            Tu sesión expiró. Vuelve a iniciar sesión.
-          </p>
-        )}
+        <div className="space-y-4 p-8">
+          <div>
+            <h1 className="text-xl font-bold text-ink">SPY</h1>
+            <p className="text-sm text-slate-500">Sistema de Gestión de Inventario de Equipos SENA</p>
+          </div>
 
-        {error && (
-          <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>
-        )}
+          {sessionExpired && !error && (
+            <p className="rounded bg-amber-50 px-3 py-2 text-sm text-warning">
+              Tu sesión expiró. Vuelve a iniciar sesión.
+            </p>
+          )}
 
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-slate-700">
-            Correo
-          </label>
-          <input
-            id="email"
-            type="email"
-            required
-            autoComplete="username"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
-          />
+          {error && <p className="rounded bg-red-50 px-3 py-2 text-sm text-danger">{error}</p>}
+
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-ink">
+              Correo
+            </label>
+            <input
+              id="email"
+              type="email"
+              required
+              autoComplete="username"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-ink">
+              Contraseña
+            </label>
+            <input
+              id="password"
+              type="password"
+              required
+              autoComplete="current-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full rounded bg-sena py-2 font-medium text-white transition hover:bg-sena-dark disabled:opacity-50"
+          >
+            {isSubmitting ? 'Ingresando...' : 'Ingresar'}
+          </button>
         </div>
-
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-slate-700">
-            Contraseña
-          </label>
-          <input
-            id="password"
-            type="password"
-            required
-            autoComplete="current-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full rounded bg-slate-800 py-2 font-medium text-white transition hover:bg-slate-700 disabled:opacity-50"
-        >
-          {isSubmitting ? 'Ingresando...' : 'Ingresar'}
-        </button>
       </form>
     </div>
   );

@@ -14,7 +14,6 @@ import { useTiposEquipo } from '../../tipos-equipo/hooks/useTiposEquipo';
 import { useSedes } from '../../sedes/hooks/useSedes';
 import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
 import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
-import { FiltroUbicacionCascada } from '../../../shared/components/FiltroUbicacionCascada';
 import { DesgloseCategoria } from '../components/DesgloseCategoria';
 import { EquiposListadoTabla } from '../components/EquiposListadoTabla';
 import { LicenciasAtencionTabla } from '../components/LicenciasAtencionTabla';
@@ -28,20 +27,23 @@ const ESTADOS_EQUIPO = [
   { value: 'extraviado', label: 'Extraviado' },
 ];
 
+// Los tres botones de exportar se repiten igual en cada sección — se
+// extrae aquí mismo (no a shared/) porque es un patrón visual propio de
+// esta página, no algo que otros módulos necesiten reutilizar.
 function BotonesExportar({ onExcel, onPdf, cargandoExcel, cargandoPdf }) {
   return (
     <div className="flex gap-2">
       <button
         onClick={onExcel}
         disabled={cargandoExcel}
-        className="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+        className="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-surface disabled:opacity-50"
       >
         {cargandoExcel ? 'Generando...' : 'Descargar Excel'}
       </button>
       <button
         onClick={onPdf}
         disabled={cargandoPdf}
-        className="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+        className="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-surface disabled:opacity-50"
       >
         {cargandoPdf ? 'Generando...' : 'Descargar PDF'}
       </button>
@@ -56,82 +58,140 @@ export function ReportesPage() {
   const [tipoFiltro, setTipoFiltro] = useState('');
   const [estadoFiltro, setEstadoFiltro] = useState('');
 
-  function handleSedeChange(valor) {
-    setSedeFiltro(valor);
-    setSubsedeFiltro('');
-    setUbicacionFiltro('');
-  }
-
-  function handleSubsedeChange(valor) {
-    setSubsedeFiltro(valor);
-    setUbicacionFiltro('');
-  }
-
-  function handleLimpiarFiltros() {
-    setSedeFiltro('');
-    setSubsedeFiltro('');
-    setUbicacionFiltro('');
-  }
-
-  // Filtro de ubicación: compartido por las tres secciones.
-  const filtros = {
-    ...(ubicacionFiltro
-      ? { ubicacion_formacion_id: ubicacionFiltro }
-      : subsedeFiltro
-        ? { subsede_id: subsedeFiltro }
-        : sedeFiltro
-          ? { sede_id: sedeFiltro }
-          : {}),
-  };
-
-  // Filtro de la sección Equipos: el de ubicación + tipo/estado, propios
-  // de esta sección (Licencias y Responsables no los usan).
-  const equiposFiltros = {
-    ...filtros,
-    ...(tipoFiltro ? { tipo_equipo_id: tipoFiltro } : {}),
-    ...(estadoFiltro ? { estado: estadoFiltro } : {}),
-  };
-
   const { data: sedesData } = useSedes(1);
   const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeFiltro || undefined });
   const { data: ubicacionesData } = useUbicaciones({ page: 1, subsedeId: subsedeFiltro || undefined });
   const { data: tiposData } = useTiposEquipo();
 
-  const equipos = useReporteEquipos(equiposFiltros);
+  // El más específico gana — igual que en EquiposPage. Si hay
+  // ubicación elegida, se manda solo esa; si no, solo subsede; si no,
+  // solo sede. Nunca se combinan los tres al mismo tiempo.
+  const filtroUbicacion = ubicacionFiltro
+    ? { ubicacion_formacion_id: ubicacionFiltro }
+    : subsedeFiltro
+      ? { subsede_id: subsedeFiltro }
+      : sedeFiltro
+        ? { sede_id: sedeFiltro }
+        : {};
+
+  // Filtro de la sección Equipos: el de ubicación + tipo/estado, propios
+  // de esta sección (Licencias y Responsables no los usan).
+  const filtroEquipos = {
+    ...filtroUbicacion,
+    ...(tipoFiltro ? { tipo_equipo_id: tipoFiltro } : {}),
+    ...(estadoFiltro ? { estado: estadoFiltro } : {}),
+  };
+
+  function handleSedeFiltroChange(event) {
+    setSedeFiltro(event.target.value);
+    setSubsedeFiltro('');
+    setUbicacionFiltro('');
+  }
+
+  function handleSubsedeFiltroChange(event) {
+    setSubsedeFiltro(event.target.value);
+    setUbicacionFiltro('');
+  }
+
+  const equipos = useReporteEquipos(filtroEquipos);
   const equiposExcel = useDescargarReporteEquiposExcel();
   const equiposPdf = useDescargarReporteEquiposPdf();
 
-  const licencias = useReporteLicencias(filtros);
+  const licencias = useReporteLicencias(filtroUbicacion);
   const licenciasExcel = useDescargarReporteLicenciasExcel();
   const licenciasPdf = useDescargarReporteLicenciasPdf();
 
-  const responsables = useReporteResponsables(filtros);
+  const responsables = useReporteResponsables(filtroUbicacion);
   const responsablesExcel = useDescargarReporteResponsablesExcel();
   const responsablesPdf = useDescargarReporteResponsablesPdf();
 
   return (
     <div className="space-y-10">
-      <h1 className="text-xl font-semibold text-slate-800">Reportes</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-ink">Reportes</h1>
+      </div>
 
-      <FiltroUbicacionCascada
-        sedesData={sedesData}
-        subsedesData={subsedesData}
-        ubicacionesData={ubicacionesData}
-        sedeFiltro={sedeFiltro}
-        subsedeFiltro={subsedeFiltro}
-        ubicacionFiltro={ubicacionFiltro}
-        onSedeChange={handleSedeChange}
-        onSubsedeChange={handleSubsedeChange}
-        onUbicacionChange={setUbicacionFiltro}
-        onLimpiar={handleLimpiarFiltros}
-      />
+      <div className="flex flex-wrap items-end gap-3 rounded border border-slate-200 bg-white p-4">
+        <div>
+          <label htmlFor="filtro-sede-reporte" className="block text-xs font-medium text-slate-600">
+            Sede
+          </label>
+          <select
+            id="filtro-sede-reporte"
+            value={sedeFiltro}
+            onChange={handleSedeFiltroChange}
+            className="mt-1 rounded border border-slate-300 px-2 py-1 text-sm focus:border-sena focus:outline-none focus:ring-1 focus:ring-sena"
+          >
+            <option value="">Todas las sedes</option>
+            {sedesData?.data.map((sede) => (
+              <option key={sede.id} value={sede.id}>
+                {sede.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="filtro-subsede-reporte" className="block text-xs font-medium text-slate-600">
+            Subsede
+          </label>
+          <select
+            id="filtro-subsede-reporte"
+            value={subsedeFiltro}
+            disabled={!sedeFiltro}
+            onChange={handleSubsedeFiltroChange}
+            className="mt-1 rounded border border-slate-300 px-2 py-1 text-sm focus:border-sena focus:outline-none focus:ring-1 focus:ring-sena disabled:bg-surface"
+          >
+            <option value="">Todas las subsedes</option>
+            {subsedesData?.data.map((subsede) => (
+              <option key={subsede.id} value={subsede.id}>
+                {subsede.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="filtro-ubicacion-reporte" className="block text-xs font-medium text-slate-600">
+            Ubicación
+          </label>
+          <select
+            id="filtro-ubicacion-reporte"
+            value={ubicacionFiltro}
+            disabled={!subsedeFiltro}
+            onChange={(event) => setUbicacionFiltro(event.target.value)}
+            className="mt-1 rounded border border-slate-300 px-2 py-1 text-sm focus:border-sena focus:outline-none focus:ring-1 focus:ring-sena disabled:bg-surface"
+          >
+            <option value="">Todas las ubicaciones</option>
+            {ubicacionesData?.data.map((ubicacion) => (
+              <option key={ubicacion.id} value={ubicacion.id}>
+                {ubicacion.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {(sedeFiltro || subsedeFiltro || ubicacionFiltro) && (
+          <button
+            type="button"
+            onClick={() => {
+              setSedeFiltro('');
+              setSubsedeFiltro('');
+              setUbicacionFiltro('');
+            }}
+            className="text-sm text-slate-500 hover:underline"
+          >
+            Quitar filtro
+          </button>
+        )}
+      </div>
 
       <section>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-medium text-slate-700">Equipos por sede, tipo y estado</h2>
+          <h2 className="text-lg font-medium text-ink">Equipos por sede, tipo y estado</h2>
           <BotonesExportar
-            onExcel={() => equiposExcel.mutate(equiposFiltros)}
-            onPdf={() => equiposPdf.mutate(equiposFiltros)}
+            onExcel={() => equiposExcel.mutate(filtroEquipos)}
+            onPdf={() => equiposPdf.mutate(filtroEquipos)}
             cargandoExcel={equiposExcel.isPending}
             cargandoPdf={equiposPdf.isPending}
           />
@@ -141,7 +201,7 @@ export function ReportesPage() {
           <select
             value={tipoFiltro}
             onChange={(event) => setTipoFiltro(event.target.value)}
-            className="rounded border border-slate-300 px-2 py-1 text-sm"
+            className="rounded border border-slate-300 px-2 py-1 text-sm focus:border-sena focus:outline-none focus:ring-1 focus:ring-sena"
           >
             <option value="">Todos los tipos</option>
             {tiposData?.map((tipo) => (
@@ -153,7 +213,7 @@ export function ReportesPage() {
           <select
             value={estadoFiltro}
             onChange={(event) => setEstadoFiltro(event.target.value)}
-            className="rounded border border-slate-300 px-2 py-1 text-sm"
+            className="rounded border border-slate-300 px-2 py-1 text-sm focus:border-sena focus:outline-none focus:ring-1 focus:ring-sena"
           >
             <option value="">Todos los estados</option>
             {ESTADOS_EQUIPO.map((estado) => (
@@ -165,7 +225,7 @@ export function ReportesPage() {
         </div>
 
         {equipos.isLoading && <p className="text-sm text-slate-500">Cargando...</p>}
-        {equipos.isError && <p className="text-sm text-red-600">No se pudo cargar el reporte.</p>}
+        {equipos.isError && <p className="text-sm text-danger">No se pudo cargar el reporte.</p>}
         {equipos.data && (
           <>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -175,7 +235,7 @@ export function ReportesPage() {
             </div>
 
             <div className="mt-4 rounded border border-slate-200 bg-white p-4">
-              <h3 className="mb-3 text-sm font-semibold text-slate-700">Listado de equipos</h3>
+              <h3 className="mb-3 text-sm font-semibold text-ink">Listado de equipos</h3>
               <div className="max-h-96 overflow-y-auto">
                 <EquiposListadoTabla filas={equipos.data.listado} />
               </div>
@@ -186,30 +246,28 @@ export function ReportesPage() {
 
       <section>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-medium text-slate-700">Licencias de Office</h2>
+          <h2 className="text-lg font-medium text-ink">Licencias de Office</h2>
           <BotonesExportar
-            onExcel={() => licenciasExcel.mutate(filtros)}
-            onPdf={() => licenciasPdf.mutate(filtros)}
+            onExcel={() => licenciasExcel.mutate(filtroUbicacion)}
+            onPdf={() => licenciasPdf.mutate(filtroUbicacion)}
             cargandoExcel={licenciasExcel.isPending}
             cargandoPdf={licenciasPdf.isPending}
           />
         </div>
 
         {licencias.isLoading && <p className="text-sm text-slate-500">Cargando...</p>}
-        {licencias.isError && <p className="text-sm text-red-600">No se pudo cargar el reporte.</p>}
+        {licencias.isError && <p className="text-sm text-danger">No se pudo cargar el reporte.</p>}
         {licencias.data && (
           <div className="space-y-4">
             <DesgloseCategoria titulo="Por estado" filas={licencias.data.por_estado} etiquetaClave="estado" />
 
             <div className="rounded border border-slate-200 bg-white p-4">
-              <h3 className="mb-3 text-sm font-semibold text-slate-700">
-                Requieren atención (vencidas o suspendidas)
-              </h3>
+              <h3 className="mb-3 text-sm font-semibold text-ink">Requieren atención (vencidas o suspendidas)</h3>
               <LicenciasAtencionTabla filas={licencias.data.requieren_atencion} />
             </div>
 
             <div className="rounded border border-slate-200 bg-white p-4">
-              <h3 className="mb-3 text-sm font-semibold text-slate-700">Listado completo</h3>
+              <h3 className="mb-3 text-sm font-semibold text-ink">Listado completo</h3>
               <div className="max-h-96 overflow-y-auto">
                 <LicenciasListadoTabla filas={licencias.data.listado_completo} />
               </div>
@@ -220,17 +278,17 @@ export function ReportesPage() {
 
       <section>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-medium text-slate-700">Responsables con más equipos</h2>
+          <h2 className="text-lg font-medium text-ink">Responsables con más equipos</h2>
           <BotonesExportar
-            onExcel={() => responsablesExcel.mutate(filtros)}
-            onPdf={() => responsablesPdf.mutate(filtros)}
+            onExcel={() => responsablesExcel.mutate(filtroUbicacion)}
+            onPdf={() => responsablesPdf.mutate(filtroUbicacion)}
             cargandoExcel={responsablesExcel.isPending}
             cargandoPdf={responsablesPdf.isPending}
           />
         </div>
 
         {responsables.isLoading && <p className="text-sm text-slate-500">Cargando...</p>}
-        {responsables.isError && <p className="text-sm text-red-600">No se pudo cargar el reporte.</p>}
+        {responsables.isError && <p className="text-sm text-danger">No se pudo cargar el reporte.</p>}
         {responsables.data && <DesgloseCategoria titulo="Top 10" filas={responsables.data.top} />}
       </section>
     </div>

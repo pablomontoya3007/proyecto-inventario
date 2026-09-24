@@ -96,6 +96,9 @@ export function MantenimientosPage() {
     setCompletandoMantenimiento(mantenimiento);
   }
 
+  // Combina la nota de cierre con la descripción que ya tenía (si tenía
+  // alguna desde que se programó) — no la reemplaza, "para que aparezcan
+  // ambas cosas" en el Historial.
   function handleConfirmarListo(nota) {
     if (!completandoMantenimiento) return;
 
@@ -127,11 +130,11 @@ export function MantenimientosPage() {
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-800">Mantenimientos</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-ink">Mantenimientos</h1>
         <button
           onClick={() => setCreando(true)}
-          className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+          className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark"
         >
           Programar mantenimiento
         </button>
@@ -154,9 +157,7 @@ export function MantenimientosPage() {
         <button
           onClick={() => cambiarPestana('activos')}
           className={`px-4 py-2 text-sm font-medium ${
-            pestana === 'activos'
-              ? 'border-b-2 border-slate-800 text-slate-800'
-              : 'text-slate-500 hover:text-slate-700'
+            pestana === 'activos' ? 'border-b-2 border-sena text-ink' : 'text-slate-500 hover:text-ink'
           }`}
         >
           Activos
@@ -164,9 +165,7 @@ export function MantenimientosPage() {
         <button
           onClick={() => cambiarPestana('historial')}
           className={`px-4 py-2 text-sm font-medium ${
-            pestana === 'historial'
-              ? 'border-b-2 border-slate-800 text-slate-800'
-              : 'text-slate-500 hover:text-slate-700'
+            pestana === 'historial' ? 'border-b-2 border-sena text-ink' : 'text-slate-500 hover:text-ink'
           }`}
         >
           Historial
@@ -174,8 +173,8 @@ export function MantenimientosPage() {
       </div>
 
       {isLoading && <p className="text-sm text-slate-500">Cargando...</p>}
-      {isError && <p className="text-sm text-red-600">No se pudieron cargar los mantenimientos.</p>}
-      {errorCambioEstado && <p className="mb-3 text-sm text-red-600">{errorCambioEstado}</p>}
+      {isError && <p className="text-sm text-danger">No se pudieron cargar los mantenimientos.</p>}
+      {errorCambioEstado && <p className="mb-3 text-sm text-danger">{errorCambioEstado}</p>}
 
       {data && (
         <>

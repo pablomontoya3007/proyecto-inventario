@@ -9,7 +9,7 @@ export function DesgloseCategoria({ titulo, filas, etiquetaClave = 'nombre', val
 
   return (
     <div className="rounded border border-slate-200 bg-white p-4">
-      <h3 className="mb-3 text-sm font-semibold text-slate-700">{titulo}</h3>
+      <h3 className="mb-3 text-sm font-semibold text-ink">{titulo}</h3>
       {filas.length === 0 ? (
         <p className="text-sm text-slate-400">Sin datos.</p>
       ) : (
@@ -18,13 +18,10 @@ export function DesgloseCategoria({ titulo, filas, etiquetaClave = 'nombre', val
             <div key={indice}>
               <div className="mb-1 flex justify-between text-xs text-slate-600">
                 <span>{fila[etiquetaClave]}</span>
-                <span>{fila[valorClave]}</span>
+                <span className="font-mono">{fila[valorClave]}</span>
               </div>
-              <div className="h-2 w-full rounded bg-slate-100">
-                <div
-                  className="h-2 rounded bg-slate-600"
-                  style={{ width: `${(fila[valorClave] / maximo) * 100}%` }}
-                />
+              <div className="h-2 w-full rounded bg-surface">
+                <div className="h-2 rounded bg-sena" style={{ width: `${(fila[valorClave] / maximo) * 100}%` }} />
               </div>
             </div>
           ))}

@@ -17,14 +17,14 @@ export function HistorialMantenimientoTable({ mantenimientos, onDelete }) {
       <tbody>
         {mantenimientos.map((mantenimiento) => (
           <tr key={mantenimiento.id} className="border-b border-slate-100">
-            <td className="py-2 pr-4 text-slate-800">{mantenimiento.equipo?.placa_sena ?? '—'}</td>
+            <td className="py-2 pr-4 text-ink">{mantenimiento.equipo?.placa_sena ?? '—'}</td>
             <td className="py-2 pr-4 text-slate-500">{mantenimiento.fecha_programada}</td>
             <td className="max-w-xs truncate py-2 pr-4 text-slate-500" title={mantenimiento.descripcion ?? ''}>
               {mantenimiento.descripcion || '—'}
             </td>
             <td className="py-2 pr-4 text-slate-500">{mantenimiento.fecha_completado ?? '—'}</td>
             <td className="py-2 pr-4 text-right">
-              <button onClick={() => onDelete(mantenimiento)} className="text-sm text-red-600 hover:underline">
+              <button onClick={() => onDelete(mantenimiento)} className="text-sm text-danger hover:underline">
                 Eliminar
               </button>
             </td>

@@ -58,11 +58,11 @@ export function TiposEquipoPage() {
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-800">Tipos de Equipo</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-ink">Tipos de Equipo</h1>
         <button
           onClick={() => setEditingTipo({})}
-          className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+          className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark"
         >
           Nuevo tipo
         </button>
@@ -76,7 +76,7 @@ export function TiposEquipoPage() {
           id="filtro-estado-tipo"
           value={estadoFiltro}
           onChange={(event) => setEstadoFiltro(event.target.value)}
-          className="rounded border border-slate-300 px-2 py-1 text-sm"
+          className="rounded border border-slate-300 px-2 py-1 text-sm focus:border-sena focus:outline-none focus:ring-1 focus:ring-sena"
         >
           <option value="">Todos los estados</option>
           {ESTADOS_EQUIPO.map((estado) => (
@@ -88,7 +88,7 @@ export function TiposEquipoPage() {
       </div>
 
       {isLoading && <p className="text-sm text-slate-500">Cargando tipos de equipo...</p>}
-      {isError && <p className="text-sm text-red-600">No se pudieron cargar los tipos de equipo.</p>}
+      {isError && <p className="text-sm text-danger">No se pudieron cargar los tipos de equipo.</p>}
 
       {tipos && (
         <TipoEquipoTable

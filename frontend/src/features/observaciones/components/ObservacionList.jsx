@@ -28,7 +28,7 @@ export function ObservacionList({ observaciones, mostrarEquipo }) {
             </span>
             <span>{new Date(observacion.registrada_en).toLocaleString('es-CO')}</span>
           </div>
-          <p className="text-sm text-slate-800">{observacion.descripcion}</p>
+          <p className="text-sm text-ink">{observacion.descripcion}</p>
         </li>
       ))}
     </ul>

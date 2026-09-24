@@ -1,3 +1,5 @@
+import { EstadoBadge } from '../../../shared/components/EstadoBadge';
+
 export function LicenciasAtencionTabla({ filas }) {
   if (filas.length === 0) {
     return <p className="text-sm text-slate-400">Ninguna licencia requiere atención ahora mismo.</p>;
@@ -16,10 +18,12 @@ export function LicenciasAtencionTabla({ filas }) {
       <tbody>
         {filas.map((fila, indice) => (
           <tr key={indice} className="border-b border-slate-100">
-            <td className="py-2 pr-4 text-slate-800">{fila.equipo}</td>
+            <td className="py-2 pr-4 font-mono text-ink">{fila.equipo}</td>
             <td className="py-2 pr-4 text-slate-500">{fila.correo}</td>
-            <td className="py-2 pr-4 text-slate-500">{fila.estado}</td>
-            <td className="py-2 pr-4 text-slate-500">{fila.fecha_actualizacion ?? '—'}</td>
+            <td className="py-2 pr-4">
+              <EstadoBadge estado={fila.estado === 'Vencida' ? 'vencida' : 'suspendida'} label={fila.estado} />
+            </td>
+            <td className="py-2 pr-4 font-mono text-slate-500">{fila.fecha_actualizacion ?? '—'}</td>
           </tr>
         ))}
       </tbody>

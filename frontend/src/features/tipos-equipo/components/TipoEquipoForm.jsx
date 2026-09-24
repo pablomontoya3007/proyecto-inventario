@@ -17,7 +17,7 @@ export function TipoEquipoForm({ initialValues, onSubmit, onCancel, isSubmitting
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor="nombre" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="nombre" className="block text-sm font-medium text-ink">
           Nombre del tipo de equipo
         </label>
         <input
@@ -27,12 +27,12 @@ export function TipoEquipoForm({ initialValues, onSubmit, onCancel, isSubmitting
           maxLength={100}
           value={nombre}
           onChange={(event) => setNombre(event.target.value)}
-          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
+          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
         />
-        {serverErrors?.nombre && <p className="mt-1 text-sm text-red-600">{serverErrors.nombre[0]}</p>}
+        {serverErrors?.nombre && <p className="mt-1 text-sm text-danger">{serverErrors.nombre[0]}</p>}
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-slate-700">
+      <label className="flex items-center gap-2 text-sm text-ink">
         <input type="checkbox" checked={activo} onChange={(event) => setActivo(event.target.checked)} />
         Activo (disponible al registrar equipos nuevos)
       </label>
@@ -48,7 +48,7 @@ export function TipoEquipoForm({ initialValues, onSubmit, onCancel, isSubmitting
         <button
           type="submit"
           disabled={isSubmitting}
-          className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+          className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark disabled:opacity-50"
         >
           {isSubmitting ? 'Guardando...' : 'Guardar'}
         </button>

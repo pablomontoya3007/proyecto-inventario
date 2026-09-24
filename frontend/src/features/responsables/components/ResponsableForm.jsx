@@ -23,7 +23,7 @@ export function ResponsableForm({ initialValues, onSubmit, onCancel, isSubmittin
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor="nombre" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="nombre" className="block text-sm font-medium text-ink">
           Nombre
         </label>
         <input
@@ -33,13 +33,13 @@ export function ResponsableForm({ initialValues, onSubmit, onCancel, isSubmittin
           maxLength={150}
           value={nombre}
           onChange={(event) => setNombre(event.target.value)}
-          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
+          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
         />
-        {serverErrors?.nombre && <p className="mt-1 text-sm text-red-600">{serverErrors.nombre[0]}</p>}
+        {serverErrors?.nombre && <p className="mt-1 text-sm text-danger">{serverErrors.nombre[0]}</p>}
       </div>
 
       <div>
-        <label htmlFor="documento" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="documento" className="block text-sm font-medium text-ink">
           Documento (opcional)
         </label>
         <input
@@ -48,13 +48,13 @@ export function ResponsableForm({ initialValues, onSubmit, onCancel, isSubmittin
           maxLength={30}
           value={documento}
           onChange={(event) => setDocumento(event.target.value)}
-          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
+          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
         />
-        {serverErrors?.documento && <p className="mt-1 text-sm text-red-600">{serverErrors.documento[0]}</p>}
+        {serverErrors?.documento && <p className="mt-1 text-sm text-danger">{serverErrors.documento[0]}</p>}
       </div>
 
       <div>
-        <label htmlFor="cargo" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="cargo" className="block text-sm font-medium text-ink">
           Cargo (opcional)
         </label>
         <input
@@ -63,7 +63,7 @@ export function ResponsableForm({ initialValues, onSubmit, onCancel, isSubmittin
           maxLength={100}
           value={cargo}
           onChange={(event) => setCargo(event.target.value)}
-          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
+          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
         />
       </div>
 
@@ -78,7 +78,7 @@ export function ResponsableForm({ initialValues, onSubmit, onCancel, isSubmittin
         <button
           type="submit"
           disabled={isSubmitting}
-          className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+          className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark disabled:opacity-50"
         >
           {isSubmitting ? 'Guardando...' : 'Guardar'}
         </button>

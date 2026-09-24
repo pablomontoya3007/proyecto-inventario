@@ -8,6 +8,9 @@ import { ObservacionList } from '../components/ObservacionList';
 import { ObservacionForm } from '../components/ObservacionForm';
 import { Modal } from '../../../shared/components/Modal';
 
+const CAMPO =
+  'w-full max-w-sm rounded border border-slate-300 px-3 py-2 text-sm focus:border-sena focus:outline-none focus:ring-1 focus:ring-sena';
+
 export function ObservacionesPage() {
   const [page, setPage] = useState(1);
   const [placaFiltro, setPlacaFiltro] = useState('');
@@ -69,11 +72,11 @@ export function ObservacionesPage() {
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-800">Observaciones</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-ink">Observaciones</h1>
         <button
           onClick={() => setCreandoObservacion(true)}
-          className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+          className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark"
         >
           Nueva observación
         </button>
@@ -101,7 +104,7 @@ export function ObservacionesPage() {
             setPlacaFiltro(event.target.value);
             setPage(1);
           }}
-          className="w-full max-w-sm rounded border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+          className={CAMPO}
         />
         <input
           type="text"
@@ -111,12 +114,12 @@ export function ObservacionesPage() {
             setUsuarioFiltro(event.target.value);
             setPage(1);
           }}
-          className="w-full max-w-sm rounded border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+          className={CAMPO}
         />
       </div>
 
       {isLoading && <p className="text-sm text-slate-500">Cargando observaciones...</p>}
-      {isError && <p className="text-sm text-red-600">No se pudieron cargar las observaciones.</p>}
+      {isError && <p className="text-sm text-danger">No se pudieron cargar las observaciones.</p>}
 
       {data && (
         <>

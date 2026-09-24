@@ -71,7 +71,7 @@ export function Modal({ title, onClose, children, maxWidth = 'max-w-md' }) {
         className={`w-full ${maxWidth} max-h-[90vh] overflow-y-auto rounded-lg bg-white p-6 shadow-lg`}
       >
         <div className="mb-4 flex items-start justify-between gap-4">
-          <h2 id={titleId} className="text-lg font-semibold text-slate-800">
+          <h2 id={titleId} className="text-lg font-semibold text-ink">
             {title}
           </h2>
           <button

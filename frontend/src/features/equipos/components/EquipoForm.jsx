@@ -109,7 +109,7 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label htmlFor="placa_sena" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="placa_sena" className="block text-sm font-medium text-ink">
             Placa SENA
           </label>
           <input
@@ -119,13 +119,13 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
             maxLength={30}
             value={placaSena}
             onChange={(event) => setPlacaSena(event.target.value)}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
+            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
           />
-          {serverErrors?.placa_sena && <p className="mt-1 text-sm text-red-600">{serverErrors.placa_sena[0]}</p>}
+          {serverErrors?.placa_sena && <p className="mt-1 text-sm text-danger">{serverErrors.placa_sena[0]}</p>}
         </div>
 
         <div>
-          <label htmlFor="serial" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="serial" className="block text-sm font-medium text-ink">
             Serial
           </label>
           <input
@@ -135,15 +135,15 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
             maxLength={100}
             value={serial}
             onChange={(event) => setSerial(event.target.value)}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
+            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
           />
-          {serverErrors?.serial && <p className="mt-1 text-sm text-red-600">{serverErrors.serial[0]}</p>}
+          {serverErrors?.serial && <p className="mt-1 text-sm text-danger">{serverErrors.serial[0]}</p>}
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label htmlFor="mac" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="mac" className="block text-sm font-medium text-ink">
             MAC (inalámbrica, opcional)
           </label>
           <input
@@ -152,14 +152,14 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
             placeholder="AA:BB:CC:DD:EE:FF"
             value={mac}
             onChange={(event) => setMac(event.target.value)}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
+            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
           />
           {macInvalida && <p className="mt-1 text-sm text-amber-600">Formato esperado: AA:BB:CC:DD:EE:FF</p>}
-          {serverErrors?.mac && <p className="mt-1 text-sm text-red-600">{serverErrors.mac[0]}</p>}
+          {serverErrors?.mac && <p className="mt-1 text-sm text-danger">{serverErrors.mac[0]}</p>}
         </div>
 
         <div>
-          <label htmlFor="mac_cableada" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="mac_cableada" className="block text-sm font-medium text-ink">
             MAC (cableada, opcional)
           </label>
           <input
@@ -168,15 +168,15 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
             placeholder="AA:BB:CC:DD:EE:FF"
             value={macCableada}
             onChange={(event) => setMacCableada(event.target.value)}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
+            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
           />
           {macCableadaInvalida && <p className="mt-1 text-sm text-amber-600">Formato esperado: AA:BB:CC:DD:EE:FF</p>}
-          {serverErrors?.mac_cableada && <p className="mt-1 text-sm text-red-600">{serverErrors.mac_cableada[0]}</p>}
+          {serverErrors?.mac_cableada && <p className="mt-1 text-sm text-danger">{serverErrors.mac_cableada[0]}</p>}
         </div>
       </div>
 
       <div>
-        <label htmlFor="hostname" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="hostname" className="block text-sm font-medium text-ink">
           Hostname (opcional)
         </label>
         <input
@@ -185,13 +185,13 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
           maxLength={100}
           value={hostname}
           onChange={(event) => setHostname(event.target.value)}
-          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
+          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
         />
       </div>
 
       <div className="grid grid-cols-3 gap-4">
         <div>
-          <label htmlFor="tipo_equipo_id" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="tipo_equipo_id" className="block text-sm font-medium text-ink">
             Tipo de equipo
           </label>
           <select
@@ -199,7 +199,7 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
             required
             value={tipoEquipoId}
             onChange={(event) => setTipoEquipoId(event.target.value)}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
+            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
           >
             <option value="" disabled>
               Selecciona un tipo
@@ -211,19 +211,19 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
             ))}
           </select>
           {serverErrors?.tipo_equipo_id && (
-            <p className="mt-1 text-sm text-red-600">{serverErrors.tipo_equipo_id[0]}</p>
+            <p className="mt-1 text-sm text-danger">{serverErrors.tipo_equipo_id[0]}</p>
           )}
         </div>
 
         <div>
-          <label htmlFor="responsable_id" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="responsable_id" className="block text-sm font-medium text-ink">
             Responsable (opcional)
           </label>
           <select
             id="responsable_id"
             value={responsableId}
             onChange={(event) => setResponsableId(event.target.value)}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
+            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
           >
             <option value="">Sin asignar</option>
             {responsablesDisponibles.map((responsable) => (
@@ -235,7 +235,7 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
         </div>
 
         <div>
-          <label htmlFor="estado" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="estado" className="block text-sm font-medium text-ink">
             Estado
           </label>
           <select
@@ -243,7 +243,7 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
             required
             value={estado}
             onChange={(event) => setEstado(event.target.value)}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
+            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
           >
             {ESTADOS_EQUIPO.map((opcion) => (
               <option key={opcion.value} value={opcion.value}>
@@ -251,13 +251,13 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
               </option>
             ))}
           </select>
-          {serverErrors?.estado && <p className="mt-1 text-sm text-red-600">{serverErrors.estado[0]}</p>}
+          {serverErrors?.estado && <p className="mt-1 text-sm text-danger">{serverErrors.estado[0]}</p>}
         </div>
       </div>
 
       <div className="grid grid-cols-3 gap-4">
         <div>
-          <label htmlFor="sede_id_equipo" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="sede_id_equipo" className="block text-sm font-medium text-ink">
             Sede
           </label>
           <select
@@ -265,7 +265,7 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
             required
             value={sedeId}
             onChange={handleSedeChange}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
+            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
           >
             <option value="" disabled>
               Sede
@@ -279,7 +279,7 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
         </div>
 
         <div>
-          <label htmlFor="subsede_id_equipo" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="subsede_id_equipo" className="block text-sm font-medium text-ink">
             Subsede
           </label>
           <select
@@ -288,7 +288,7 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
             disabled={!sedeId}
             value={subsedeId}
             onChange={handleSubsedeChange}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none disabled:bg-slate-100"
+            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none disabled:bg-slate-100"
           >
             <option value="" disabled>
               Subsede
@@ -302,7 +302,7 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
         </div>
 
         <div>
-          <label htmlFor="ubicacion_formacion_id" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="ubicacion_formacion_id" className="block text-sm font-medium text-ink">
             Ubicación
           </label>
           <select
@@ -311,7 +311,7 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
             disabled={!subsedeId}
             value={ubicacionId}
             onChange={(event) => setUbicacionId(event.target.value)}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none disabled:bg-slate-100"
+            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none disabled:bg-slate-100"
           >
             <option value="" disabled>
               Ubicación
@@ -323,7 +323,7 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
             ))}
           </select>
           {serverErrors?.ubicacion_formacion_id && (
-            <p className="mt-1 text-sm text-red-600">{serverErrors.ubicacion_formacion_id[0]}</p>
+            <p className="mt-1 text-sm text-danger">{serverErrors.ubicacion_formacion_id[0]}</p>
           )}
         </div>
       </div>
@@ -347,7 +347,7 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
         <button
           type="submit"
           disabled={isSubmitting}
-          className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+          className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark disabled:opacity-50"
         >
           {isSubmitting ? 'Guardando...' : 'Guardar'}
         </button>

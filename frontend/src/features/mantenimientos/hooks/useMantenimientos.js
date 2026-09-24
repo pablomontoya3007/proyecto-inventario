@@ -26,6 +26,8 @@ export function useUpdateMantenimiento() {
   return useMutation({
     mutationFn: ({ id, payload }) => updateMantenimiento(id, payload),
     onSuccess: () => {
+      // Invalida ambas pestañas (activos + historial) a la vez, ya que
+      // comparten el mismo prefijo de queryKey.
       queryClient.invalidateQueries({ queryKey: ['mantenimientos'] });
       queryClient.invalidateQueries({ queryKey: ['equipos'] });
     },

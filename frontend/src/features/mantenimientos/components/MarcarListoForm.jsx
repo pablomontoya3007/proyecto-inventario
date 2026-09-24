@@ -11,7 +11,7 @@ export function MarcarListoForm({ onSubmit, onCancel, isSubmitting }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor="nota_finalizacion" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="nota_finalizacion" className="block text-sm font-medium text-ink">
           ¿Algún detalle importante?
         </label>
         <textarea
@@ -20,7 +20,7 @@ export function MarcarListoForm({ onSubmit, onCancel, isSubmitting }) {
           rows={3}
           value={nota}
           onChange={(event) => setNota(event.target.value)}
-          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
+          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
         />
       </div>
 
@@ -35,7 +35,7 @@ export function MarcarListoForm({ onSubmit, onCancel, isSubmitting }) {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+          className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark disabled:opacity-50"
         >
           {isSubmitting ? 'Guardando...' : 'Marcar como listo'}
         </button>

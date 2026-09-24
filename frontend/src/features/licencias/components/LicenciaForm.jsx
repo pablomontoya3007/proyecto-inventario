@@ -65,7 +65,7 @@ export function LicenciaForm({ initialValues, onSubmit, onCancel, isSubmitting, 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor="equipo_id" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="equipo_id" className="block text-sm font-medium text-ink">
           Equipo
         </label>
         <select
@@ -73,7 +73,7 @@ export function LicenciaForm({ initialValues, onSubmit, onCancel, isSubmitting, 
           required
           value={equipoId}
           onChange={(event) => setEquipoId(event.target.value)}
-          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
+          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
         >
           <option value="" disabled>
             Selecciona un equipo
@@ -84,11 +84,11 @@ export function LicenciaForm({ initialValues, onSubmit, onCancel, isSubmitting, 
             </option>
           ))}
         </select>
-        {serverErrors?.equipo_id && <p className="mt-1 text-sm text-red-600">{serverErrors.equipo_id[0]}</p>}
+        {serverErrors?.equipo_id && <p className="mt-1 text-sm text-danger">{serverErrors.equipo_id[0]}</p>}
       </div>
 
       <div>
-        <label htmlFor="correo" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="correo" className="block text-sm font-medium text-ink">
           Correo de la licencia
         </label>
         <input
@@ -98,13 +98,13 @@ export function LicenciaForm({ initialValues, onSubmit, onCancel, isSubmitting, 
           maxLength={150}
           value={correo}
           onChange={(event) => setCorreo(event.target.value)}
-          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
+          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
         />
-        {serverErrors?.correo && <p className="mt-1 text-sm text-red-600">{serverErrors.correo[0]}</p>}
+        {serverErrors?.correo && <p className="mt-1 text-sm text-danger">{serverErrors.correo[0]}</p>}
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="password" className="block text-sm font-medium text-ink">
           Contraseña {esEdicion && '(dejar en blanco para no cambiarla)'}
         </label>
         <input
@@ -115,13 +115,13 @@ export function LicenciaForm({ initialValues, onSubmit, onCancel, isSubmitting, 
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           autoComplete="new-password"
-          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
+          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
         />
-        {serverErrors?.password && <p className="mt-1 text-sm text-red-600">{serverErrors.password[0]}</p>}
+        {serverErrors?.password && <p className="mt-1 text-sm text-danger">{serverErrors.password[0]}</p>}
       </div>
 
       <div>
-        <label htmlFor="estado_licencia" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="estado_licencia" className="block text-sm font-medium text-ink">
           Estado
         </label>
         <select
@@ -129,7 +129,7 @@ export function LicenciaForm({ initialValues, onSubmit, onCancel, isSubmitting, 
           required
           value={estadoLicencia}
           onChange={(event) => setEstadoLicencia(event.target.value)}
-          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
+          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
         >
           {ESTADOS_LICENCIA.map((opcion) => (
             <option key={opcion.value} value={opcion.value}>
@@ -150,7 +150,7 @@ export function LicenciaForm({ initialValues, onSubmit, onCancel, isSubmitting, 
         <button
           type="submit"
           disabled={isSubmitting}
-          className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+          className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark disabled:opacity-50"
         >
           {isSubmitting ? 'Guardando...' : 'Guardar'}
         </button>

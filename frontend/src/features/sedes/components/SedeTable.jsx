@@ -20,7 +20,7 @@ export function SedeTable({ sedes, onEdit, onDelete }) {
 
                     return (
                         <tr key={sede.id} className="border-b border-slate-100">
-                            <td className="py-2 pr-4 text-slate-800">{sede.nombre}</td>
+                            <td className="py-2 pr-4 text-ink">{sede.nombre}</td>
                             <td className="py-2 pr-4 text-slate-500">{sede.subsedes_count ?? '—'}</td>
                             <td className="py-2 pr-4 text-right">
                                 <button onClick={() => onEdit(sede)} className="mr-3 text-sm text-slate-600 hover:underline">
@@ -33,7 +33,7 @@ export function SedeTable({ sedes, onEdit, onDelete }) {
                                     className={
                                         tieneSubsedes
                                             ? 'text-sm text-slate-300 cursor-not-allowed'
-                                            : 'text-sm text-red-600 hover:underline'
+                                            : 'text-sm text-danger hover:underline'
                                     }
                                 >
                                     Eliminar

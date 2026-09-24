@@ -19,7 +19,7 @@ export function TrasladoTable({ traslados }) {
       <tbody>
         {traslados.map((traslado) => (
           <tr key={traslado.id} className="border-b border-slate-100">
-            <td className="py-2 pr-4 text-slate-800">{traslado.equipo?.placa_sena ?? '—'}</td>
+            <td className="py-2 pr-4 text-ink">{traslado.equipo?.placa_sena ?? '—'}</td>
             <td className="py-2 pr-4 text-slate-500">{traslado.ubicacion_origen?.nombre ?? '—'}</td>
             <td className="py-2 pr-4 text-slate-500">{traslado.ubicacion_destino?.nombre ?? '—'}</td>
             <td className="py-2 pr-4 text-slate-500">{traslado.fecha_traslado}</td>

@@ -14,15 +14,15 @@ export function MantenimientoForm({ onSubmit, onCancel, isSubmitting, serverErro
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-slate-700">Equipo (busca por placa SENA)</label>
+        <label className="block text-sm font-medium text-ink">Equipo (busca por placa SENA)</label>
         <div className="mt-1">
           <EquipoAutocomplete value={equipo} onChange={setEquipo} />
         </div>
-        {serverErrors?.equipo_id && <p className="mt-1 text-sm text-red-600">{serverErrors.equipo_id[0]}</p>}
+        {serverErrors?.equipo_id && <p className="mt-1 text-sm text-danger">{serverErrors.equipo_id[0]}</p>}
       </div>
 
       <div>
-        <label htmlFor="fecha_programada" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="fecha_programada" className="block text-sm font-medium text-ink">
           Fecha del mantenimiento
         </label>
         <input
@@ -31,15 +31,15 @@ export function MantenimientoForm({ onSubmit, onCancel, isSubmitting, serverErro
           required
           value={fecha}
           onChange={(event) => setFecha(event.target.value)}
-          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
+          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
         />
         {serverErrors?.fecha_programada && (
-          <p className="mt-1 text-sm text-red-600">{serverErrors.fecha_programada[0]}</p>
+          <p className="mt-1 text-sm text-danger">{serverErrors.fecha_programada[0]}</p>
         )}
       </div>
 
       <div>
-        <label htmlFor="descripcion" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="descripcion" className="block text-sm font-medium text-ink">
           Descripción (opcional)
         </label>
         <textarea
@@ -48,9 +48,9 @@ export function MantenimientoForm({ onSubmit, onCancel, isSubmitting, serverErro
           rows={3}
           value={descripcion}
           onChange={(event) => setDescripcion(event.target.value)}
-          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
+          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
         />
-        {serverErrors?.descripcion && <p className="mt-1 text-sm text-red-600">{serverErrors.descripcion[0]}</p>}
+        {serverErrors?.descripcion && <p className="mt-1 text-sm text-danger">{serverErrors.descripcion[0]}</p>}
       </div>
 
       <div className="flex justify-end gap-2">
@@ -64,7 +64,7 @@ export function MantenimientoForm({ onSubmit, onCancel, isSubmitting, serverErro
         <button
           type="submit"
           disabled={isSubmitting || !equipo}
-          className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+          className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark disabled:opacity-50"
         >
           {isSubmitting ? 'Guardando...' : 'Programar'}
         </button>

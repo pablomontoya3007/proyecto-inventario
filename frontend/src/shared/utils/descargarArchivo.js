@@ -7,12 +7,12 @@
  * descarga manualmente. Antes vivía duplicada dentro de reportesApi.js;
  * se extrajo aquí al necesitarla por tercera vez (equiposApi.js).
  *
- * `params` es opcional: los llamadores que no filtran (como la hoja de
- * vida en PDF de un equipo) no necesitan pasar nada y siguen
- * funcionando igual que antes.
+ * params es opcional — lo usan los reportes filtrados por ubicación,
+ * para que el Excel/PDF descargado refleje el mismo filtro que se ve
+ * en pantalla.
  */
 export async function descargarBlob(httpClient, url, nombreArchivo, params = {}) {
-  const response = await httpClient.get(url, { responseType: 'blob', params });
+  const response = await httpClient.get(url, { params, responseType: 'blob' });
   const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
   const enlace = document.createElement('a');
   enlace.href = blobUrl;

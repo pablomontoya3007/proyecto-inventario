@@ -38,7 +38,7 @@ export function UbicacionForm({ initialValues, onSubmit, onCancel, isSubmitting,
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-                <label htmlFor="sede_id" className="block text-sm font-medium text-slate-700">
+                <label htmlFor="sede_id" className="block text-sm font-medium text-ink">
                     Sede
                 </label>
                 <select
@@ -46,7 +46,7 @@ export function UbicacionForm({ initialValues, onSubmit, onCancel, isSubmitting,
                     required
                     value={sedeId}
                     onChange={handleSedeChange}
-                    className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
+                    className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
                 >
                     <option value="" disabled>
                         Selecciona una sede
@@ -60,7 +60,7 @@ export function UbicacionForm({ initialValues, onSubmit, onCancel, isSubmitting,
             </div>
 
             <div>
-                <label htmlFor="subsede_id" className="block text-sm font-medium text-slate-700">
+                <label htmlFor="subsede_id" className="block text-sm font-medium text-ink">
                     Subsede
                 </label>
                 <select
@@ -69,7 +69,7 @@ export function UbicacionForm({ initialValues, onSubmit, onCancel, isSubmitting,
                     disabled={!sedeId}
                     value={subsedeId}
                     onChange={(event) => setSubsedeId(event.target.value)}
-                    className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none disabled:bg-slate-100"
+                    className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none disabled:bg-slate-100"
                 >
                     <option value="" disabled>
                         {sedeId ? 'Selecciona una subsede' : 'Primero elige una sede'}
@@ -80,11 +80,11 @@ export function UbicacionForm({ initialValues, onSubmit, onCancel, isSubmitting,
                         </option>
                     ))}
                 </select>
-                {serverErrors?.subsede_id && <p className="mt-1 text-sm text-red-600">{serverErrors.subsede_id[0]}</p>}
+                {serverErrors?.subsede_id && <p className="mt-1 text-sm text-danger">{serverErrors.subsede_id[0]}</p>}
             </div>
 
             <div>
-                <label htmlFor="nombre" className="block text-sm font-medium text-slate-700">
+                <label htmlFor="nombre" className="block text-sm font-medium text-ink">
                     Nombre de la ubicación
                 </label>
                 <input
@@ -94,9 +94,9 @@ export function UbicacionForm({ initialValues, onSubmit, onCancel, isSubmitting,
                     maxLength={150}
                     value={nombre}
                     onChange={(event) => setNombre(event.target.value)}
-                    className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
+                    className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
                 />
-                {serverErrors?.nombre && <p className="mt-1 text-sm text-red-600">{serverErrors.nombre[0]}</p>}
+                {serverErrors?.nombre && <p className="mt-1 text-sm text-danger">{serverErrors.nombre[0]}</p>}
             </div>
 
             <div className="flex justify-end gap-2">
@@ -110,7 +110,7 @@ export function UbicacionForm({ initialValues, onSubmit, onCancel, isSubmitting,
                 <button
                     type="submit"
                     disabled={isSubmitting || !subsedeId}
-                    className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+                    className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark disabled:opacity-50"
                 >
                     {isSubmitting ? 'Guardando...' : 'Guardar'}
                 </button>

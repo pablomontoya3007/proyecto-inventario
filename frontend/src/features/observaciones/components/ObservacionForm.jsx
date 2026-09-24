@@ -22,7 +22,7 @@ export function ObservacionForm({ equipoIdInicial, onSubmit, onCancel, isSubmitt
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor="equipo_id" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="equipo_id" className="block text-sm font-medium text-ink">
           Equipo
         </label>
         <select
@@ -30,7 +30,7 @@ export function ObservacionForm({ equipoIdInicial, onSubmit, onCancel, isSubmitt
           required
           value={equipoId}
           onChange={(event) => setEquipoId(event.target.value)}
-          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
+          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
         >
           <option value="" disabled>
             Selecciona un equipo
@@ -41,11 +41,11 @@ export function ObservacionForm({ equipoIdInicial, onSubmit, onCancel, isSubmitt
             </option>
           ))}
         </select>
-        {serverErrors?.equipo_id && <p className="mt-1 text-sm text-red-600">{serverErrors.equipo_id[0]}</p>}
+        {serverErrors?.equipo_id && <p className="mt-1 text-sm text-danger">{serverErrors.equipo_id[0]}</p>}
       </div>
 
       <div>
-        <label htmlFor="descripcion" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="descripcion" className="block text-sm font-medium text-ink">
           Observación
         </label>
         <textarea
@@ -56,12 +56,12 @@ export function ObservacionForm({ equipoIdInicial, onSubmit, onCancel, isSubmitt
           rows={4}
           value={descripcion}
           onChange={(event) => setDescripcion(event.target.value)}
-          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
+          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
         />
         <p className="mt-1 text-xs text-slate-400">
           {descripcion.length}/1000 — una vez guardada, no se puede editar ni borrar.
         </p>
-        {serverErrors?.descripcion && <p className="mt-1 text-sm text-red-600">{serverErrors.descripcion[0]}</p>}
+        {serverErrors?.descripcion && <p className="mt-1 text-sm text-danger">{serverErrors.descripcion[0]}</p>}
       </div>
 
       <div className="flex justify-end gap-2">
@@ -75,7 +75,7 @@ export function ObservacionForm({ equipoIdInicial, onSubmit, onCancel, isSubmitt
         <button
           type="submit"
           disabled={isSubmitting}
-          className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+          className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark disabled:opacity-50"
         >
           {isSubmitting ? 'Guardando...' : 'Registrar'}
         </button>

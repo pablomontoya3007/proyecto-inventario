@@ -80,7 +80,7 @@ export function CaracteristicasEditor({ value, onChange, tipoNombre, error }) {
   return (
     <div>
       <div className="mb-2 flex items-center justify-between">
-        <label className="block text-sm font-medium text-slate-700">Características técnicas</label>
+        <label className="block text-sm font-medium text-ink">Características técnicas</label>
         {haySugerencias && (
           <button type="button" onClick={sugerirCampos} className="text-xs text-slate-500 hover:underline">
             Sugerir campos para "{tipoNombre}"
@@ -96,16 +96,16 @@ export function CaracteristicasEditor({ value, onChange, tipoNombre, error }) {
               placeholder="campo"
               value={fila.clave}
               onChange={(event) => actualizarFila(indice, 'clave', event.target.value)}
-              className="w-1/3 rounded border border-slate-300 px-2 py-1 text-sm focus:border-slate-500 focus:outline-none"
+              className="w-1/3 rounded border border-slate-300 px-2 py-1 text-sm focus:border-sena focus:outline-none"
             />
             <input
               type="text"
               placeholder="valor"
               value={fila.valor}
               onChange={(event) => actualizarFila(indice, 'valor', event.target.value)}
-              className="flex-1 rounded border border-slate-300 px-2 py-1 text-sm focus:border-slate-500 focus:outline-none"
+              className="flex-1 rounded border border-slate-300 px-2 py-1 text-sm focus:border-sena focus:outline-none"
             />
-            <button type="button" onClick={() => eliminarFila(indice)} className="px-2 text-sm text-red-600 hover:underline">
+            <button type="button" onClick={() => eliminarFila(indice)} className="px-2 text-sm text-danger hover:underline">
               Quitar
             </button>
           </div>
@@ -118,7 +118,7 @@ export function CaracteristicasEditor({ value, onChange, tipoNombre, error }) {
 
       {/* Mensaje 422 real del backend, ya en español y con los nombres de
           campo que de verdad faltan — no algo calculado en el frontend. */}
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-2 text-sm text-danger">{error}</p>}
     </div>
   );
 }

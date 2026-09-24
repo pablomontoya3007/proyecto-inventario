@@ -43,8 +43,8 @@ export function MantenimientoTable({ mantenimientos, onCambiarEstado, onMarcarLi
 
           return (
             <tr key={mantenimiento.id} className="border-b border-slate-100">
-              <td className="py-2 pr-4 text-slate-800">{mantenimiento.equipo?.placa_sena ?? '—'}</td>
-              <td className={`py-2 pr-4 ${atrasado ? 'font-medium text-red-600' : 'text-slate-500'}`}>
+              <td className="py-2 pr-4 text-ink">{mantenimiento.equipo?.placa_sena ?? '—'}</td>
+              <td className={`py-2 pr-4 ${atrasado ? 'font-medium text-danger' : 'text-slate-500'}`}>
                 {mantenimiento.fecha_programada}
               </td>
               <td className="max-w-xs truncate py-2 pr-4 text-slate-500" title={mantenimiento.descripcion ?? ''}>
@@ -56,7 +56,7 @@ export function MantenimientoTable({ mantenimientos, onCambiarEstado, onMarcarLi
                     value={mantenimiento.estado}
                     onChange={(event) => onCambiarEstado(mantenimiento, event.target.value)}
                     className={`rounded border px-2 py-1 text-sm ${
-                      atrasado ? 'border-red-300 text-red-600' : 'border-slate-300'
+                      atrasado ? 'border-red-300 text-danger' : 'border-slate-300'
                     }`}
                   >
                     {ESTADOS_ACTIVOS.map((opcion) => (
@@ -65,17 +65,17 @@ export function MantenimientoTable({ mantenimientos, onCambiarEstado, onMarcarLi
                       </option>
                     ))}
                   </select>
-                  {atrasado && <span className="text-xs font-medium text-red-600">Atrasado</span>}
+                  {atrasado && <span className="text-xs font-medium text-danger">Atrasado</span>}
                 </div>
               </td>
               <td className="py-2 pr-4 text-right">
                 <button
                   onClick={() => onMarcarListo(mantenimiento)}
-                  className="mr-3 rounded bg-green-600 px-3 py-1 text-xs font-medium text-white hover:bg-green-700"
+                  className="mr-3 rounded bg-sena px-3 py-1 text-xs font-medium text-white hover:bg-sena-dark"
                 >
                   Marcar como listo
                 </button>
-                <button onClick={() => onDelete(mantenimiento)} className="text-sm text-red-600 hover:underline">
+                <button onClick={() => onDelete(mantenimiento)} className="text-sm text-danger hover:underline">
                   Eliminar
                 </button>
               </td>

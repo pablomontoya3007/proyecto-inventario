@@ -58,10 +58,10 @@ export function UbicacionesPage() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-800">Ubicaciones de Formación</h1>
+        <h1 className="text-xl font-semibold text-ink">Ubicaciones de Formación</h1>
         <button
           onClick={() => setEditingUbicacion({})}
-          className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+          className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark"
         >
           Nueva ubicación
         </button>
@@ -112,7 +112,7 @@ export function UbicacionesPage() {
       </div>
 
       {isLoading && <p className="text-sm text-slate-500">Cargando ubicaciones...</p>}
-      {isError && <p className="text-sm text-red-600">No se pudieron cargar las ubicaciones.</p>}
+      {isError && <p className="text-sm text-danger">No se pudieron cargar las ubicaciones.</p>}
 
       {data && (
         <>

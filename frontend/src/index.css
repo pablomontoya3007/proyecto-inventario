@@ -1,1 +1,48 @@
 @import "tailwindcss";
+
+/*
+ * Tokens de marca — ACTA_DE_TIPOGRAFIA_COLORES v1.0 (Agosto 2026).
+ * Cada @theme var genera utilidades de Tailwind automáticamente:
+ * --color-sena -> bg-sena / text-sena / border-sena, etc.
+ */
+@theme {
+  /* Paleta institucional SENA */
+  --color-sena: #39A900;       /* Verde SENA — color principal, CTAs, badges de éxito */
+  --color-sena-dark: #2D8600;  /* Hover/active sobre elementos sena */
+  --color-sena-soft: #E8F5E0;  /* Fondos suaves de éxito */
+  --color-ink: #1A1A1A;        /* Negro institucional — texto principal, sidebar */
+  --color-surface: #F5F5F5;    /* Fondo general de la aplicación */
+
+  /* Semánticos — SOLO para estados del sistema (nunca decorativos) */
+  --color-success: #39A900;
+  --color-success-dark: #2D8600;
+  --color-warning: #F59E0B;
+  --color-warning-dark: #D97706;
+  --color-danger: #EF4444;
+  --color-danger-dark: #DC2626;
+  --color-info: #3B82F6;
+  --color-info-dark: #2563EB;
+
+  /* Tipografías: Inter para títulos/encabezados, Roboto de cuerpo
+     (reemplaza el font-sans por defecto), Roboto Mono para datos
+     tabulares (reemplaza el font-mono por defecto). */
+  --font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Roboto", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Roboto Mono", ui-monospace, monospace;
+}
+
+/*
+ * Reglas base: h1/h2/h3 llevan Inter en todo el sistema sin tener que
+ * agregar font-display manualmente en cada página — coincide con "no
+ * más de tres familias tipográficas por pantalla" del acta (Inter +
+ * Roboto + Roboto Mono cubren todo el sistema).
+ */
+body {
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+}

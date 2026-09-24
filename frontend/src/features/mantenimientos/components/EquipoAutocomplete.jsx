@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { fetchEquipos } from '../../features/equipos/services/equiposApi';
+import { fetchEquipos } from '../../equipos/services/equiposApi';
 
 /**
  * No es un <select> como en el resto del proyecto: con potencialmente

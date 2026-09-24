@@ -48,10 +48,10 @@ export function SubsedesPage() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-800">Subsedes</h1>
+        <h1 className="text-xl font-semibold text-ink">Subsedes</h1>
         <button
           onClick={() => setEditingSubsede({})}
-          className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+          className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark"
         >
           Nueva subsede
         </button>
@@ -80,7 +80,7 @@ export function SubsedesPage() {
       </div>
 
       {isLoading && <p className="text-sm text-slate-500">Cargando subsedes...</p>}
-      {isError && <p className="text-sm text-red-600">No se pudieron cargar las subsedes.</p>}
+      {isError && <p className="text-sm text-danger">No se pudieron cargar las subsedes.</p>}
 
       {data && (
         <>

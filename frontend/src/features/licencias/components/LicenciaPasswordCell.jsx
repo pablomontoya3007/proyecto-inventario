@@ -41,7 +41,7 @@ export function LicenciaPasswordCell({ licenciaId }) {
 
   return (
     <div className="flex items-center gap-2">
-      <span className="font-mono text-slate-700">{password ?? '••••••••'}</span>
+      <span className="font-mono text-ink">{password ?? '••••••••'}</span>
       <button
         type="button"
         onClick={handleToggle}
@@ -55,7 +55,7 @@ export function LicenciaPasswordCell({ licenciaId }) {
           {copiado ? 'Copiado' : 'Copiar'}
         </button>
       )}
-      {error && <span className="text-xs text-red-600">{error}</span>}
+      {error && <span className="text-xs text-danger">{error}</span>}
     </div>
   );
 }

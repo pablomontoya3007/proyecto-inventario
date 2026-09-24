@@ -11,16 +11,16 @@ import {
   descargarReporteResponsablesPdf,
 } from '../services/reportesApi';
 
+// Las descargas reciben el filtro en el propio .mutate(filtroUbicacion),
+// no cerrado en el hook — así siempre usan el filtro que está activo en
+// pantalla en el momento del clic, no uno viejo capturado al montar.
+
 // --- Equipos ---
 
-// `filtros` entra en la queryKey a propósito: así TanStack Query trata
-// cada combinación de sede/subsede/ubicación como una consulta distinta
-// y vuelve a pedir los datos solo cuando cambia el filtro, sin invalidar
-// la caché a mano.
-export function useReporteEquipos(filtros) {
+export function useReporteEquipos(filtroUbicacion = {}) {
   return useQuery({
-    queryKey: ['reportes', 'equipos', filtros],
-    queryFn: () => fetchReporteEquipos(filtros),
+    queryKey: ['reportes', 'equipos', filtroUbicacion],
+    queryFn: () => fetchReporteEquipos(filtroUbicacion),
   });
 }
 
@@ -34,10 +34,10 @@ export function useDescargarReporteEquiposPdf() {
 
 // --- Licencias ---
 
-export function useReporteLicencias(filtros) {
+export function useReporteLicencias(filtroUbicacion = {}) {
   return useQuery({
-    queryKey: ['reportes', 'licencias', filtros],
-    queryFn: () => fetchReporteLicencias(filtros),
+    queryKey: ['reportes', 'licencias', filtroUbicacion],
+    queryFn: () => fetchReporteLicencias(filtroUbicacion),
   });
 }
 
@@ -51,10 +51,10 @@ export function useDescargarReporteLicenciasPdf() {
 
 // --- Responsables ---
 
-export function useReporteResponsables(filtros) {
+export function useReporteResponsables(filtroUbicacion = {}) {
   return useQuery({
-    queryKey: ['reportes', 'responsables', filtros],
-    queryFn: () => fetchReporteResponsables(filtros),
+    queryKey: ['reportes', 'responsables', filtroUbicacion],
+    queryFn: () => fetchReporteResponsables(filtroUbicacion),
   });
 }
 

@@ -20,7 +20,7 @@ export function UbicacionTable({ ubicaciones, onEdit, onDelete }) {
 
                     return (
                         <tr key={ubicacion.id} className="border-b border-slate-100">
-                            <td className="py-2 pr-4 text-slate-800">{ubicacion.nombre}</td>
+                            <td className="py-2 pr-4 text-ink">{ubicacion.nombre}</td>
                             <td className="py-2 pr-4 text-slate-500">{ubicacion.subsede?.nombre ?? '—'}</td>
                             <td className="py-2 pr-4 text-slate-500">{ubicacion.subsede?.sede?.nombre ?? '—'}</td>
                             <td className="py-2 pr-4 text-slate-500">{ubicacion.equipos_count ?? '—'}</td>
@@ -33,7 +33,7 @@ export function UbicacionTable({ ubicaciones, onEdit, onDelete }) {
                                     disabled={tieneEquipos}
                                     title={tieneEquipos ? 'No se puede eliminar: tiene equipos asociados' : undefined}
                                     className={
-                                        tieneEquipos ? 'text-sm text-slate-300 cursor-not-allowed' : 'text-sm text-red-600 hover:underline'
+                                        tieneEquipos ? 'text-sm text-slate-300 cursor-not-allowed' : 'text-sm text-danger hover:underline'
                                     }
                                 >
                                     Eliminar

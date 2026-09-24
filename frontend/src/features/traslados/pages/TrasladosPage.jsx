@@ -67,11 +67,11 @@ export function TrasladosPage() {
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-800">Traslados</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-ink">Traslados</h1>
         <button
           onClick={() => setCreando(true)}
-          className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+          className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark"
         >
           Registrar traslado
         </button>
@@ -91,7 +91,7 @@ export function TrasladosPage() {
       />
 
       {isLoading && <p className="text-sm text-slate-500">Cargando...</p>}
-      {isError && <p className="text-sm text-red-600">No se pudieron cargar los traslados.</p>}
+      {isError && <p className="text-sm text-danger">No se pudieron cargar los traslados.</p>}
 
       {data && (
         <>

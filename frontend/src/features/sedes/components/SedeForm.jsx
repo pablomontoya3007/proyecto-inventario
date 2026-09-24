@@ -21,7 +21,7 @@ export function SedeForm({ initialValues, onSubmit, onCancel, isSubmitting, serv
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-                <label htmlFor="nombre" className="block text-sm font-medium text-slate-700">
+                <label htmlFor="nombre" className="block text-sm font-medium text-ink">
                     Nombre de la sede
                 </label>
                 <input
@@ -31,11 +31,11 @@ export function SedeForm({ initialValues, onSubmit, onCancel, isSubmitting, serv
                     maxLength={150}
                     value={nombre}
                     onChange={(event) => setNombre(event.target.value)}
-                    className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
+                    className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
                 />
                 {/* Errores 422 de Laravel: { errors: { nombre: ["..."] } } */}
                 {serverErrors?.nombre && (
-                    <p className="mt-1 text-sm text-red-600">{serverErrors.nombre[0]}</p>
+                    <p className="mt-1 text-sm text-danger">{serverErrors.nombre[0]}</p>
                 )}
             </div>
 
@@ -50,7 +50,7 @@ export function SedeForm({ initialValues, onSubmit, onCancel, isSubmitting, serv
                 <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+                    className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark disabled:opacity-50"
                 >
                     {isSubmitting ? 'Guardando...' : 'Guardar'}
                 </button>

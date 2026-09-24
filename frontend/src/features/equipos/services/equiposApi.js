@@ -8,7 +8,7 @@ import { descargarBlob } from '../../../shared/utils/descargarArchivo';
  *          index() trae tipoEquipo, responsable y la cadena completa de
  *          ubicación (ubicacionFormacion.subsede.sede) — NO trae licencia
  *          ni observaciones (eso lo hace show(), para la hoja de vida
- *          completa que se arma en una fase más adelante).
+ *          completa).
  * - POST   /equipos      -> { data: EquipoResource }
  * - PUT    /equipos/{id} -> { data: EquipoResource }
  * - DELETE /equipos/{id} -> { mensaje: '...' } — siempre permitido, pero

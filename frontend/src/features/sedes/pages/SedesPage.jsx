@@ -49,17 +49,17 @@ export function SedesPage() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-800">Sedes</h1>
+        <h1 className="text-xl font-semibold text-ink">Sedes</h1>
         <button
           onClick={() => setEditingSede({})}
-          className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+          className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark"
         >
           Nueva sede
         </button>
       </div>
 
       {isLoading && <p className="text-sm text-slate-500">Cargando sedes...</p>}
-      {isError && <p className="text-sm text-red-600">No se pudieron cargar las sedes.</p>}
+      {isError && <p className="text-sm text-danger">No se pudieron cargar las sedes.</p>}
 
       {data && (
         <>

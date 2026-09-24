@@ -1,13 +1,13 @@
 /**
  * Filtro en cascada sede -> subsede -> ubicación, reutilizado por todas
  * las páginas que necesitan acotar sus datos a una parte de la
- * jerarquía. Antes cada página lo tenía copiado (Reportes, Licencias);
- * se extrajo aquí al necesitarse en cuatro secciones más de una vez.
+ * jerarquía (Equipos, Licencias, Responsables, Mantenimientos,
+ * Traslados, Observaciones, Reportes). Antes cada página lo tenía
+ * copiado con variaciones; se extrajo aquí al repetirse por quinta vez.
  *
  * `mostrarUbicacion = false` oculta el tercer selector para páginas
- * donde no aplica (por ejemplo, Ubicaciones, que solo puede filtrarse
- * por sede/subsede) — no se usa todavía, pero queda listo para cuando
- * esa página se migre a este mismo componente.
+ * donde no aplica (por ejemplo, la propia lista de Ubicaciones, que
+ * solo puede filtrarse por sede/subsede).
  */
 export function FiltroUbicacionCascada({
   sedesData,
@@ -27,14 +27,14 @@ export function FiltroUbicacionCascada({
   return (
     <div className="mb-4 flex flex-wrap items-end gap-4 rounded border border-slate-200 bg-white p-4">
       <div>
-        <label htmlFor="filtro-sede" className="mb-1 block text-sm text-slate-600">
+        <label htmlFor="filtro-sede" className="mb-1 block text-xs font-medium text-slate-600">
           Sede
         </label>
         <select
           id="filtro-sede"
           value={sedeFiltro}
           onChange={(event) => onSedeChange(event.target.value)}
-          className="rounded border border-slate-300 px-2 py-1 text-sm"
+          className="rounded border border-slate-300 px-2 py-1 text-sm focus:border-sena focus:outline-none focus:ring-1 focus:ring-sena"
         >
           <option value="">Todas las sedes</option>
           {sedesData?.data.map((sede) => (
@@ -46,7 +46,7 @@ export function FiltroUbicacionCascada({
       </div>
 
       <div>
-        <label htmlFor="filtro-subsede" className="mb-1 block text-sm text-slate-600">
+        <label htmlFor="filtro-subsede" className="mb-1 block text-xs font-medium text-slate-600">
           Subsede
         </label>
         <select
@@ -54,7 +54,7 @@ export function FiltroUbicacionCascada({
           value={subsedeFiltro}
           disabled={!sedeFiltro}
           onChange={(event) => onSubsedeChange(event.target.value)}
-          className="rounded border border-slate-300 px-2 py-1 text-sm disabled:bg-slate-100"
+          className="rounded border border-slate-300 px-2 py-1 text-sm focus:border-sena focus:outline-none focus:ring-1 focus:ring-sena disabled:bg-surface"
         >
           <option value="">Todas las subsedes</option>
           {subsedesData?.data.map((subsede) => (
@@ -67,7 +67,7 @@ export function FiltroUbicacionCascada({
 
       {mostrarUbicacion && (
         <div>
-          <label htmlFor="filtro-ubicacion" className="mb-1 block text-sm text-slate-600">
+          <label htmlFor="filtro-ubicacion" className="mb-1 block text-xs font-medium text-slate-600">
             Ubicación
           </label>
           <select
@@ -75,7 +75,7 @@ export function FiltroUbicacionCascada({
             value={ubicacionFiltro}
             disabled={!subsedeFiltro}
             onChange={(event) => onUbicacionChange(event.target.value)}
-            className="rounded border border-slate-300 px-2 py-1 text-sm disabled:bg-slate-100"
+            className="rounded border border-slate-300 px-2 py-1 text-sm focus:border-sena focus:outline-none focus:ring-1 focus:ring-sena disabled:bg-surface"
           >
             <option value="">Todas las ubicaciones</option>
             {ubicacionesData?.data.map((ubicacion) => (
@@ -88,10 +88,10 @@ export function FiltroUbicacionCascada({
       )}
 
       {hayFiltrosActivos && (
-        <button onClick={onLimpiar} className="text-sm text-slate-500 underline hover:text-slate-700">
+        <button type="button" onClick={onLimpiar} className="text-sm text-slate-500 underline hover:text-ink">
           Limpiar filtros
         </button>
       )}
     </div>
   );
-}   
+}

@@ -19,7 +19,7 @@ export function SubsedeTable({ subsedes, onEdit, onDelete }) {
 
                     return (
                         <tr key={subsede.id} className="border-b border-slate-100">
-                            <td className="py-2 pr-4 text-slate-800">{subsede.nombre}</td>
+                            <td className="py-2 pr-4 text-ink">{subsede.nombre}</td>
                             <td className="py-2 pr-4 text-slate-500">{subsede.sede?.nombre ?? '—'}</td>
                             <td className="py-2 pr-4 text-slate-500">{subsede.ubicaciones_formacion_count ?? '—'}</td>
                             <td className="py-2 pr-4 text-right">
@@ -33,7 +33,7 @@ export function SubsedeTable({ subsedes, onEdit, onDelete }) {
                                     className={
                                         tieneUbicaciones
                                             ? 'text-sm text-slate-300 cursor-not-allowed'
-                                            : 'text-sm text-red-600 hover:underline'
+                                            : 'text-sm text-danger hover:underline'
                                     }
                                 >
                                     Eliminar

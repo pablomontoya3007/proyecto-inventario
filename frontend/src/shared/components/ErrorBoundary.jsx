@@ -28,15 +28,15 @@ export class ErrorBoundary extends Component {
   render() {
     if (this.state.error) {
       return (
-        <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50 p-6 text-center">
-          <h1 className="text-lg font-semibold text-slate-800">Algo salió mal</h1>
+        <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-surface p-6 text-center">
+          <h1 className="text-lg font-semibold text-ink">Algo salió mal</h1>
           <p className="max-w-md text-sm text-slate-600">
             Ocurrió un error inesperado en esta pantalla. Intenta recargar la página; si el problema
             sigue, avísale al equipo de desarrollo.
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+            className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark"
           >
             Recargar página
           </button>

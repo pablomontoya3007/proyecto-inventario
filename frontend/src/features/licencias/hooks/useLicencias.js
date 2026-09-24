@@ -2,8 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchLicencias, createLicencia, updateLicencia, deleteLicencia } from '../services/licenciasApi';
 
 // `filtros` entra en la queryKey a propósito: cada combinación de
-// sede/subsede/ubicación es una consulta distinta para TanStack Query,
-// así que cambia el filtro y vuelve a pedir los datos solo.
+// sede/subsede/ubicación/correo/placa/estado/fecha es una consulta
+// distinta para TanStack Query.
 export function useLicencias(page = 1, filtros = {}) {
   return useQuery({
     queryKey: ['licencias-office', page, filtros],

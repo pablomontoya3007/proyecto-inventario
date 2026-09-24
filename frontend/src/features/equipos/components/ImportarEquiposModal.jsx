@@ -43,14 +43,14 @@ export function ImportarEquiposModal({ onClose }) {
         type="button"
         onClick={handleDescargarPlantilla}
         disabled={descargandoPlantilla}
-        className="text-sm text-slate-600 underline hover:text-slate-800 disabled:opacity-50"
+        className="text-sm font-medium text-sena underline hover:text-sena-dark disabled:opacity-50"
       >
         {descargandoPlantilla ? 'Generando...' : 'Descargar plantilla de ejemplo'}
       </button>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="archivo-importar" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="archivo-importar" className="block text-sm font-medium text-ink">
             Archivo Excel (.xlsx o .xls)
           </label>
           <input
@@ -58,28 +58,28 @@ export function ImportarEquiposModal({ onClose }) {
             type="file"
             accept=".xlsx,.xls"
             onChange={(event) => setArchivo(event.target.files?.[0] ?? null)}
-            className="mt-1 w-full text-sm"
+            className="mt-1 w-full text-sm file:mr-3 file:rounded file:border-0 file:bg-sena-soft file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-sena-dark hover:file:bg-sena/20"
           />
         </div>
 
         {importar.isError && (
-          <p className="text-sm text-red-600">
+          <p className="rounded bg-danger/10 px-3 py-2 text-sm text-danger">
             No se pudo procesar el archivo. Revisa que sea un Excel válido e intenta de nuevo.
           </p>
         )}
 
         {resultado && (
-          <div className="rounded border border-slate-200 bg-slate-50 p-3 text-sm">
-            <p className="font-medium text-slate-800">
+          <div className="rounded border border-slate-200 bg-surface p-3 text-sm">
+            <p className="font-medium text-sena-dark">
               {resultado.importados} equipo(s) importado(s) correctamente.
             </p>
             {resultado.fallidos > 0 && (
               <>
-                <p className="mt-1 text-red-600">{resultado.fallidos} fila(s) con errores:</p>
+                <p className="mt-1 font-medium text-danger">{resultado.fallidos} fila(s) con errores:</p>
                 <ul className="mt-2 max-h-48 space-y-1 overflow-y-auto">
                   {resultado.errores.map((error, indice) => (
                     <li key={indice} className="text-slate-600">
-                      Fila {error.fila} ({error.campo}): {error.errores.join(' ')}
+                      Fila <span className="font-mono">{error.fila}</span> ({error.campo}): {error.errores.join(' ')}
                     </li>
                   ))}
                 </ul>
@@ -89,13 +89,13 @@ export function ImportarEquiposModal({ onClose }) {
         )}
 
         <div className="flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="rounded px-4 py-2 text-sm text-slate-600 hover:bg-slate-100">
+          <button type="button" onClick={onClose} className="rounded px-4 py-2 text-sm text-slate-600 hover:bg-surface">
             {resultado ? 'Cerrar' : 'Cancelar'}
           </button>
           <button
             type="submit"
             disabled={!archivo || importar.isPending}
-            className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+            className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark disabled:opacity-50"
           >
             {importar.isPending ? 'Importando...' : 'Importar'}
           </button>

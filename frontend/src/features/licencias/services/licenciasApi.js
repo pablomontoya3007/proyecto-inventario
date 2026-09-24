@@ -3,7 +3,7 @@ import { ENDPOINTS } from '../../../api/endpoints';
 
 /**
  * Shapes confirmados contra LicenciaOfficeController.php / Resource:
- * - GET    /licencias-office?page=&sede_id=&subsede_id=&ubicacion_formacion_id= -> { data: [...], links, meta }
+ * - GET    /licencias-office?page=&sede_id=&subsede_id=&ubicacion_formacion_id=&correo=&placa_sena=&estado=&fecha_desde=&fecha_hasta= -> { data: [...], links, meta }
  * - POST   /licencias-office      -> { data: LicenciaOfficeResource }
  * - PUT    /licencias-office/{id} -> { data: LicenciaOfficeResource }
  * - DELETE /licencias-office/{id} -> { mensaje: '...' } — siempre permitido

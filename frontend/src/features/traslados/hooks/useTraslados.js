@@ -14,6 +14,9 @@ export function useCreateTraslado() {
     mutationFn: createTraslado,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['traslados'] });
+      // El equipo cambió de ubicación_formacion_id — sin esto, la
+      // sección de Equipos mostraría la ubicación vieja hasta un
+      // refresh manual.
       queryClient.invalidateQueries({ queryKey: ['equipos'] });
     },
   });

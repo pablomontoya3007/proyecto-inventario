@@ -17,6 +17,9 @@ const ESTADOS_LICENCIA = [
   { value: 'suspendida', label: 'Suspendida' },
 ];
 
+const CAMPO =
+  'rounded border border-slate-300 px-2 py-1 text-sm focus:border-sena focus:outline-none focus:ring-1 focus:ring-sena';
+
 export function LicenciasPage() {
   const [page, setPage] = useState(1);
   const [sedeFiltro, setSedeFiltro] = useState('');
@@ -108,11 +111,11 @@ export function LicenciasPage() {
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-800">Licencias de Office</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-ink">Licencias de Office</h1>
         <button
           onClick={() => setEditingLicencia({})}
-          className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+          className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark"
         >
           Nueva licencia
         </button>
@@ -131,7 +134,7 @@ export function LicenciasPage() {
         onLimpiar={handleLimpiarFiltros}
       />
 
-      <div className="mb-4 flex flex-wrap items-end gap-3">
+      <div className="mb-4 flex flex-wrap items-end gap-3 rounded border border-slate-200 bg-white p-4">
         <input
           type="text"
           placeholder="Buscar por correo..."
@@ -140,7 +143,7 @@ export function LicenciasPage() {
             setCorreoFiltro(event.target.value);
             setPage(1);
           }}
-          className="rounded border border-slate-300 px-2 py-1 text-sm"
+          className={CAMPO}
         />
         <input
           type="text"
@@ -150,7 +153,7 @@ export function LicenciasPage() {
             setPlacaFiltro(event.target.value);
             setPage(1);
           }}
-          className="rounded border border-slate-300 px-2 py-1 text-sm"
+          className={CAMPO}
         />
         <select
           value={estadoFiltro}
@@ -158,7 +161,7 @@ export function LicenciasPage() {
             setEstadoFiltro(event.target.value);
             setPage(1);
           }}
-          className="rounded border border-slate-300 px-2 py-1 text-sm"
+          className={CAMPO}
         >
           <option value="">Todos los estados</option>
           {ESTADOS_LICENCIA.map((estado) => (
@@ -168,7 +171,7 @@ export function LicenciasPage() {
           ))}
         </select>
         <div>
-          <label htmlFor="fecha-desde" className="mb-1 block text-xs text-slate-500">
+          <label htmlFor="fecha-desde" className="mb-1 block text-xs font-medium text-slate-600">
             Actualizada desde
           </label>
           <input
@@ -179,11 +182,11 @@ export function LicenciasPage() {
               setFechaDesdeFiltro(event.target.value);
               setPage(1);
             }}
-            className="rounded border border-slate-300 px-2 py-1 text-sm"
+            className={CAMPO}
           />
         </div>
         <div>
-          <label htmlFor="fecha-hasta" className="mb-1 block text-xs text-slate-500">
+          <label htmlFor="fecha-hasta" className="mb-1 block text-xs font-medium text-slate-600">
             Actualizada hasta
           </label>
           <input
@@ -194,13 +197,13 @@ export function LicenciasPage() {
               setFechaHastaFiltro(event.target.value);
               setPage(1);
             }}
-            className="rounded border border-slate-300 px-2 py-1 text-sm"
+            className={CAMPO}
           />
         </div>
       </div>
 
       {isLoading && <p className="text-sm text-slate-500">Cargando licencias...</p>}
-      {isError && <p className="text-sm text-red-600">No se pudieron cargar las licencias.</p>}
+      {isError && <p className="text-sm text-danger">No se pudieron cargar las licencias.</p>}
 
       {data && (
         <>
