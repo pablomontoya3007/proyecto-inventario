@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { label: 'Licencias', path: '/licencias-office' },
   { label: 'Observaciones', path: '/observaciones' },
   { label: 'Reportes', path: '/reportes' },
+  { label: 'Copias de seguridad', path: '/respaldos' },
 ];
 
 export function AdminLayout() {

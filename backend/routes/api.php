@@ -5,6 +5,7 @@ use App\Http\Controllers\EquipoController;
 use App\Http\Controllers\LicenciaOfficeController;
 use App\Http\Controllers\ObservacionController;
 use App\Http\Controllers\ReporteController;
+use App\Http\Controllers\RespaldoController;
 use App\Http\Controllers\ResponsableController;
 use App\Http\Controllers\SedeController;
 use App\Http\Controllers\SubsedeController;
@@ -62,5 +63,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('responsables', [ReporteController::class, 'responsables']);
         Route::get('responsables/excel', [ReporteController::class, 'responsablesExcel']);
         Route::get('responsables/pdf', [ReporteController::class, 'responsablesPdf']);
+    });
+
+    Route::prefix('respaldos')->group(function () {
+        Route::get('generar', [RespaldoController::class, 'generar']);
+        Route::post('restaurar', [RespaldoController::class, 'restaurar']);
     });
 });
