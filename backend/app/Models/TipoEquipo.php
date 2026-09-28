@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Observers\AuditoriaObserver;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -25,6 +26,11 @@ class TipoEquipo extends Model
         return [
             'activo' => 'boolean',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::observe(AuditoriaObserver::class);
     }
 
     public function equipos(): HasMany

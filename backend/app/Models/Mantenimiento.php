@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\EstadoMantenimiento;
+use App\Observers\AuditoriaObserver;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -38,6 +39,8 @@ class Mantenimiento extends Model
      */
     protected static function booted(): void
     {
+        static::observe(AuditoriaObserver::class);
+
         static::saving(function (self $mantenimiento) {
             if ($mantenimiento->isDirty('estado') && $mantenimiento->estado === EstadoMantenimiento::Listo) {
                 $mantenimiento->fecha_completado = now();

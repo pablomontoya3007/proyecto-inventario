@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Observers\AuditoriaObserver;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -21,6 +22,11 @@ class UbicacionFormacion extends Model
         'subsede_id',
         'nombre',
     ];
+
+    protected static function booted(): void
+    {
+        static::observe(AuditoriaObserver::class);
+    }
 
     public function subsede(): BelongsTo
     {

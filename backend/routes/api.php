@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\AuditoriaController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EquipoController;
 use App\Http\Controllers\LicenciaOfficeController;
 use App\Http\Controllers\ObservacionController;
@@ -20,6 +22,8 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'usuarioActual']);
+    Route::get('/dashboard', [DashboardController::class, 'resumen']);
+    Route::get('/auditorias', [AuditoriaController::class, 'index']);
 
     Route::apiResource('sedes', SedeController::class);
     Route::apiResource('subsedes', SubsedeController::class);

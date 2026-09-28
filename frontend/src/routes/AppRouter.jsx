@@ -4,6 +4,7 @@ import { AuthProvider } from '../features/auth/context/AuthContext';
 import { ProtectedRoute } from './ProtectedRoute';
 import { AdminLayout } from '../layouts/AdminLayout';
 import { LoginPage } from '../features/auth/pages/LoginPage';
+import { DashboardPage } from '../features/dashboard/pages/DashboardPage';
 import { SedesPage } from '../features/sedes/pages/SedesPage';
 import { SubsedesPage } from '../features/subsedes/pages/SubsedesPage';
 import { UbicacionesPage } from '../features/ubicaciones/pages/UbicacionesPage';
@@ -16,6 +17,7 @@ import { LicenciasPage } from '../features/licencias/pages/LicenciasPage';
 import { ObservacionesPage } from '../features/observaciones/pages/ObservacionesPage';
 import { ReportesPage } from '../features/reportes/pages/ReportesPage';
 import { RespaldosPage } from '../features/respaldos/pages/RespaldosPage';
+import { AuditoriaPage } from '../features/auditoria/pages/AuditoriaPage';
 import { ErrorBoundary } from '../shared/components/ErrorBoundary';
 
 // Instancia única a nivel de módulo: no hay que recrearla en cada render.
@@ -32,9 +34,7 @@ export function AppRouter() {
 
               <Route element={<ProtectedRoute />}>
                 <Route element={<AdminLayout />}>
-                  {/* Sin dashboard real todavía: Sedes es la primera pantalla
-                      funcional, así que "/" cae directo ahí. */}
-                  <Route path="/" element={<Navigate to="/sedes" replace />} />
+                  <Route path="/" element={<DashboardPage />} />
                   <Route path="/sedes" element={<SedesPage />} />
                   <Route path="/subsedes" element={<SubsedesPage />} />
                   <Route path="/ubicaciones-formacion" element={<UbicacionesPage />} />
@@ -47,6 +47,7 @@ export function AppRouter() {
                   <Route path="/observaciones" element={<ObservacionesPage />} />
                   <Route path="/reportes" element={<ReportesPage />} />
                   <Route path="/respaldos" element={<RespaldosPage />} />
+                  <Route path="/auditoria" element={<AuditoriaPage />} />
                 </Route>
               </Route>
 

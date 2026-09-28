@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Observers\AuditoriaObserver;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -26,6 +27,11 @@ class Traslado extends Model
         return [
             'fecha_traslado' => 'date',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::observe(AuditoriaObserver::class);
     }
 
     public function equipo(): BelongsTo

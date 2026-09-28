@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\EstadoLicencia;
+use App\Observers\AuditoriaObserver;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -46,11 +47,22 @@ class LicenciaOffice extends Model
      */
     protected static function booted(): void
     {
+        static::observe(AuditoriaObserver::class);
+
         static::saving(function (self $licencia) {
             if ($licencia->isDirty('password_cifrado')) {
                 $licencia->fecha_actualizacion = now();
             }
         });
+    }
+
+    /**
+     * password_cifrado NUNCA se audita, ni siquiera cifrada — sería un
+     * segundo lugar donde esta credencial podría quedar expuesta.
+     */
+    public function camposAuditablesExcluidos(): array
+    {
+        return ['password_cifrado'];
     }
 
     public function equipo(): BelongsTo

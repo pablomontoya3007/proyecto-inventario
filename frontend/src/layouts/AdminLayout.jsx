@@ -4,6 +4,7 @@ import { useAuth } from '../features/auth/hooks/useAuth';
 // Cada fase agrega su entrada aquí cuando el módulo queda listo
 // (Fase 1: Sedes; después Subsedes, Ubicaciones, Equipos...).
 const NAV_ITEMS = [
+  { label: 'Inicio', path: '/' },
   { label: 'Sedes', path: '/sedes' },
   { label: 'Subsedes', path: '/subsedes' },
   { label: 'Ubicaciones', path: '/ubicaciones-formacion' },
@@ -16,6 +17,7 @@ const NAV_ITEMS = [
   { label: 'Observaciones', path: '/observaciones' },
   { label: 'Reportes', path: '/reportes' },
   { label: 'Copias de seguridad', path: '/respaldos' },
+  { label: 'Auditoría', path: '/auditoria' },
 ];
 
 export function AdminLayout() {
@@ -34,6 +36,7 @@ export function AdminLayout() {
             <NavLink
               key={item.path}
               to={item.path}
+              end={item.path === '/'}
               className={({ isActive }) =>
                 `block rounded px-3 py-2 text-sm transition-colors ${
                   isActive ? 'bg-sena font-medium text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'

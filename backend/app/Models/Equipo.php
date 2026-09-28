@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\EstadoEquipo;
+use App\Observers\AuditoriaObserver;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -39,6 +40,11 @@ class Equipo extends Model
             // Request, no aquí.
             'caracteristicas_tecnicas' => 'array',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::observe(AuditoriaObserver::class);
     }
 
     public function tipoEquipo(): BelongsTo
@@ -111,9 +117,7 @@ class Equipo extends Model
     /**
      * Filtra equipos por tipo y/o estado — a diferencia de
      * filtrarPorUbicacion, estos son columnas propias de la tabla
-     * equipos, sin necesidad de whereHas. Lo usa el reporte de Equipos
-     * para acotar "Por sede/tipo/estado" y el listado a un tipo o
-     * estado puntual, además del filtro de ubicación.
+     * equipos, sin necesidad de whereHas.
      */
     public function scopeFiltrarPorAtributos(Builder $query, ?int $tipoEquipoId, ?string $estado): Builder
     {
