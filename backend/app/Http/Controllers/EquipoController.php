@@ -2,14 +2,16 @@
 
 namespace App\Http\Controllers;
 
-
+use App\Exports\EquiposImportPlantillaExport;
 use App\Http\Requests\EquipoRequest;
 use App\Http\Resources\EquipoResource;
+use App\Imports\EquiposImport;
 use App\Models\Equipo;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Barryvdh\DomPDF\Facade\Pdf;
+use Maatwebsite\Excel\Facades\Excel;
 
 class EquipoController extends Controller
 {
@@ -115,5 +117,49 @@ class EquipoController extends Controller
 
         return Pdf::loadView('equipos.hoja-de-vida', ['equipo' => $equipo])
             ->download('hoja-de-vida-'.$equipo->placa_sena.'.pdf');
+    }
+
+    /**
+     * Importación masiva desde Excel. Usa la misma autorización que
+     * crear un equipo individual (create) — en el fondo es exactamente
+     * eso, muchas veces. EquiposImport valida y transforma cada fila;
+     * las que fallan no detienen el resto (SkipsOnFailure) — se
+     * reportan aquí para corregir solo esas y volver a intentar.
+     */
+    public function importar(Request $request): JsonResponse
+    {
+        $this->authorize('create', Equipo::class);
+
+        $request->validate([
+            'archivo' => ['required', 'file', 'mimes:xlsx,xls'],
+        ]);
+
+        $import = new EquiposImport();
+        Excel::import($import, $request->file('archivo'));
+
+        $errores = collect($import->failures())->map(fn ($falla) => [
+            'fila' => $falla->row(),
+            'campo' => $falla->attribute(),
+            'errores' => $falla->errors(),
+        ]);
+
+        return response()->json([
+            'importados' => $import->importados,
+            'fallidos' => $errores->count(),
+            'errores' => $errores,
+        ]);
+    }
+
+    /**
+     * Plantilla vacía (encabezados + una fila de ejemplo) con las
+     * columnas exactas que espera importar() — para que la primera
+     * carga (o la corrección de errores de una carga anterior) parta de
+     * un archivo con el formato correcto.
+     */
+    public function plantillaImportacion()
+    {
+        $this->authorize('create', Equipo::class);
+
+        return Excel::download(new EquiposImportPlantillaExport(), 'plantilla-importar-equipos.xlsx');
     }
 }

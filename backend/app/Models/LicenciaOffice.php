@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\EstadoLicencia;
 use App\Observers\AuditoriaObserver;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,6 +12,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class LicenciaOffice extends Model
 {
     use HasFactory;
+
+    /**
+     * Meses sin cambiar la contraseña a partir de los cuales una licencia
+     * se considera "sin actualizar" (ver scopeSinActualizar). Para cambiar
+     * la regla basta con editar este número.
+     */
+    public const MESES_SIN_ACTUALIZAR = 3;
 
     protected $table = 'licencias_office';
 
@@ -43,14 +51,16 @@ class LicenciaOffice extends Model
 
     /**
      * Actualiza fecha_actualizacion automáticamente cada vez que cambia la
-     * contraseña, para que ningún controlador tenga que acordarse de hacerlo.
+     * contraseña O el correo, para que ningún controlador tenga que
+     * acordarse de hacerlo. Cambiar solo el estado no cuenta: no es una
+     * "actualización" de la licencia en sí, es un cambio de situación.
      */
     protected static function booted(): void
     {
         static::observe(AuditoriaObserver::class);
 
         static::saving(function (self $licencia) {
-            if ($licencia->isDirty('password_cifrado')) {
+            if ($licencia->isDirty(['password_cifrado', 'correo'])) {
                 $licencia->fecha_actualizacion = now();
             }
         });
@@ -63,6 +73,25 @@ class LicenciaOffice extends Model
     public function camposAuditablesExcluidos(): array
     {
         return ['password_cifrado'];
+    }
+
+    /**
+     * Licencias con MÁS de N meses sin actualizarse: fecha_actualizacion
+     * anterior a hoy menos N meses (exactamente N meses todavía no cuenta).
+     * Una fecha vacía también se incluye — que nunca haya quedado
+     * registrada es motivo de aviso, no algo que dejar pasar en silencio.
+     *
+     * fecha_actualizacion cambia cuando cambia la contraseña o el correo
+     * (ver booted()) — no al editar solo el estado.
+     */
+    public function scopeSinActualizar(Builder $query, ?int $meses = null): Builder
+    {
+        $limite = now()->subMonthsNoOverflow($meses ?? self::MESES_SIN_ACTUALIZAR)->toDateString();
+
+        return $query->where(function (Builder $q) use ($limite) {
+            $q->where('fecha_actualizacion', '<', $limite)
+                ->orWhereNull('fecha_actualizacion');
+        });
     }
 
     public function equipo(): BelongsTo

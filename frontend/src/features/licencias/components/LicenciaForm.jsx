@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { useEquipos } from '../../equipos/hooks/useEquipos';
+import { useState } from 'react';
+import { EquipoAutocomplete } from '../../../shared/components/EquipoAutocomplete';
 
 // Confirmado contra app/Enums/EstadoLicencia.php.
 const ESTADOS_LICENCIA = [
@@ -15,40 +15,42 @@ const ESTADOS_LICENCIA = [
  * conserva la contraseña actual (así lo maneja el Controller); escribir
  * algo la reemplaza.
  *
+ * El equipo se elige escribiendo su placa (EquipoAutocomplete), no con
+ * un <select>: el select solo cargaba los primeros 15 equipos. Al
+ * editar, arranca con el equipo que ya tiene la licencia; si ese equipo
+ * ya no existe (fue eliminado), hay que elegir otro para poder guardar.
+ *
  * equipo_id tiene una restricción única (un equipo, máximo una
  * licencia) que no se valida aquí de antemano — si ya existe una para
  * el equipo elegido, el 422 llega bajo ese mismo campo, igual que
  * cualquier otro error de servidor.
- *
- * El listado de equipos del select viene de la página 1 (máx. 15),
- * mismo límite conocido que en Equipos/Responsables — el equipo ya
- * asignado se agrega igual si no cae ahí, para no perder la selección
- * al editar.
  */
 export function LicenciaForm({ initialValues, onSubmit, onCancel, isSubmitting, serverErrors }) {
-  const [equipoId, setEquipoId] = useState(initialValues?.equipo_id ?? '');
+  const [equipo, setEquipo] = useState(initialValues?.equipo ?? null);
+  const [falloEquipo, setFalloEquipo] = useState(false);
   const [correo, setCorreo] = useState(initialValues?.correo ?? '');
   const [password, setPassword] = useState('');
   const [estadoLicencia, setEstadoLicencia] = useState(initialValues?.estado_licencia ?? 'activa');
 
-  const { data: equiposData } = useEquipos({}, 1);
-
-  const equiposDisponibles = useMemo(() => {
-    const lista = equiposData?.data ?? [];
-    const actual = initialValues?.equipo;
-    if (actual && !lista.some((e) => e.id === actual.id)) {
-      return [...lista, actual];
-    }
-    return lista;
-  }, [equiposData, initialValues]);
-
   const esEdicion = Boolean(initialValues?.id);
+
+  function handleEquipoChange(nuevoEquipo) {
+    setEquipo(nuevoEquipo);
+    if (nuevoEquipo) setFalloEquipo(false);
+  }
 
   function handleSubmit(event) {
     event.preventDefault();
 
+    // Escribir una placa no basta: tiene que haberse elegido un equipo
+    // de la lista (o haber coincidido exacto), porque el backend recibe su id.
+    if (!equipo) {
+      setFalloEquipo(true);
+      return;
+    }
+
     const payload = {
-      equipo_id: Number(equipoId),
+      equipo_id: equipo.id,
       correo,
       estado_licencia: estadoLicencia,
     };
@@ -66,24 +68,14 @@ export function LicenciaForm({ initialValues, onSubmit, onCancel, isSubmitting, 
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label htmlFor="equipo_id" className="block text-sm font-medium text-ink">
-          Equipo
+          Equipo (escribe la placa SENA)
         </label>
-        <select
-          id="equipo_id"
-          required
-          value={equipoId}
-          onChange={(event) => setEquipoId(event.target.value)}
-          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
-        >
-          <option value="" disabled>
-            Selecciona un equipo
-          </option>
-          {equiposDisponibles.map((equipo) => (
-            <option key={equipo.id} value={equipo.id}>
-              {equipo.placa_sena}
-            </option>
-          ))}
-        </select>
+        <div className="mt-1">
+          <EquipoAutocomplete id="equipo_id" value={equipo} onChange={handleEquipoChange} />
+        </div>
+        {falloEquipo && !equipo && (
+          <p className="mt-1 text-sm text-danger">Elige un equipo de la lista para poder guardar.</p>
+        )}
         {serverErrors?.equipo_id && <p className="mt-1 text-sm text-danger">{serverErrors.equipo_id[0]}</p>}
       </div>
 

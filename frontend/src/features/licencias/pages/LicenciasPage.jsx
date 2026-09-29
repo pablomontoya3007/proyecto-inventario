@@ -6,6 +6,7 @@ import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
 import { FiltroUbicacionCascada } from '../../../shared/components/FiltroUbicacionCascada';
 import { LicenciaTable } from '../components/LicenciaTable';
 import { LicenciaForm } from '../components/LicenciaForm';
+import { LicenciasSinActualizarPanel } from '../components/LicenciasSinActualizarPanel';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 import { Modal } from '../../../shared/components/Modal';
 
@@ -65,6 +66,13 @@ export function LicenciasPage() {
     setPage(1);
   }
 
+  // Desde la notificación de vencimiento: limpia cualquier otro filtro y
+  // deja solo la placa, para que la licencia aparezca sí o sí en la lista.
+  function handleVerLicencia(placa) {
+    handleLimpiarFiltros();
+    setPlacaFiltro(placa);
+  }
+
   const filtros = {
     ...(ubicacionFiltro
       ? { ubicacion_formacion_id: ubicacionFiltro }
@@ -120,6 +128,8 @@ export function LicenciasPage() {
           Nueva licencia
         </button>
       </div>
+
+      <LicenciasSinActualizarPanel onVerLicencia={handleVerLicencia} />
 
       <FiltroUbicacionCascada
         sedesData={sedesData}

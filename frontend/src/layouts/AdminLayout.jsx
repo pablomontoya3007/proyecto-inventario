@@ -1,5 +1,6 @@
 import { Outlet, NavLink } from 'react-router-dom';
 import { useAuth } from '../features/auth/hooks/useAuth';
+import { useLicenciasSinActualizar } from '../features/licencias/hooks/useLicencias';
 
 // Cada fase agrega su entrada aquí cuando el módulo queda listo
 // (Fase 1: Sedes; después Subsedes, Ubicaciones, Equipos...).
@@ -23,6 +24,11 @@ const NAV_ITEMS = [
 export function AdminLayout() {
   const { user, logout } = useAuth();
 
+  // Comparte caché con el panel de Licencias (misma página 1), así que
+  // no es una petición extra cuando se abre esa pantalla.
+  const { data: sinActualizar } = useLicenciasSinActualizar();
+  const totalSinActualizar = sinActualizar?.meta?.total ?? 0;
+
   return (
     <div className="flex min-h-screen bg-surface">
       {/* Panel lateral en Negro institucional (#1A1A1A) — norma del acta
@@ -38,12 +44,20 @@ export function AdminLayout() {
               to={item.path}
               end={item.path === '/'}
               className={({ isActive }) =>
-                `block rounded px-3 py-2 text-sm transition-colors ${
+                `flex items-center justify-between rounded px-3 py-2 text-sm transition-colors ${
                   isActive ? 'bg-sena font-medium text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'
                 }`
               }
             >
-              {item.label}
+              <span>{item.label}</span>
+              {item.path === '/licencias-office' && totalSinActualizar > 0 && (
+                <span
+                  className="rounded-full bg-warning px-2 py-0.5 text-xs font-semibold text-ink"
+                  title={`${totalSinActualizar} licencia(s) sin actualizar`}
+                >
+                  {totalSinActualizar}
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>

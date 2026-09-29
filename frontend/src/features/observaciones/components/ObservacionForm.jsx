@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useEquipos } from '../../equipos/hooks/useEquipos';
+import { EquipoAutocomplete } from '../../../shared/components/EquipoAutocomplete';
 
 /**
  * Sin campo de usuario: el backend siempre usa el autenticado del token,
@@ -7,40 +7,46 @@ import { useEquipos } from '../../equipos/hooks/useEquipos';
  * ObservacionRequest.php). Sin modo "editar" — este formulario solo
  * existe para crear, porque las observaciones son inmutables una vez
  * guardadas.
+ *
+ * El equipo se elige escribiendo su placa (EquipoAutocomplete), no con
+ * un <select>: el select solo cargaba los primeros 15 equipos, así que
+ * el resto no se podía elegir.
  */
-export function ObservacionForm({ equipoIdInicial, onSubmit, onCancel, isSubmitting, serverErrors }) {
-  const [equipoId, setEquipoId] = useState(equipoIdInicial ?? '');
+export function ObservacionForm({ onSubmit, onCancel, isSubmitting, serverErrors }) {
+  const [equipo, setEquipo] = useState(null);
+  const [falloEquipo, setFalloEquipo] = useState(false);
   const [descripcion, setDescripcion] = useState('');
 
-  const { data: equiposData } = useEquipos({}, 1);
+  function handleEquipoChange(nuevoEquipo) {
+    setEquipo(nuevoEquipo);
+    if (nuevoEquipo) setFalloEquipo(false);
+  }
 
   function handleSubmit(event) {
     event.preventDefault();
-    onSubmit({ equipo_id: Number(equipoId), descripcion });
+
+    // Escribir una placa no basta: tiene que haberse elegido un equipo
+    // de la lista (o haber coincidido exacto), porque el backend recibe su id.
+    if (!equipo) {
+      setFalloEquipo(true);
+      return;
+    }
+
+    onSubmit({ equipo_id: equipo.id, descripcion });
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label htmlFor="equipo_id" className="block text-sm font-medium text-ink">
-          Equipo
+          Equipo (escribe la placa SENA)
         </label>
-        <select
-          id="equipo_id"
-          required
-          value={equipoId}
-          onChange={(event) => setEquipoId(event.target.value)}
-          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
-        >
-          <option value="" disabled>
-            Selecciona un equipo
-          </option>
-          {equiposData?.data.map((equipo) => (
-            <option key={equipo.id} value={equipo.id}>
-              {equipo.placa_sena}
-            </option>
-          ))}
-        </select>
+        <div className="mt-1">
+          <EquipoAutocomplete id="equipo_id" value={equipo} onChange={handleEquipoChange} />
+        </div>
+        {falloEquipo && !equipo && (
+          <p className="mt-1 text-sm text-danger">Elige un equipo de la lista para poder guardar.</p>
+        )}
         {serverErrors?.equipo_id && <p className="mt-1 text-sm text-danger">{serverErrors.equipo_id[0]}</p>}
       </div>
 

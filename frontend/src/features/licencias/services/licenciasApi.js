@@ -7,6 +7,9 @@ import { ENDPOINTS } from '../../../api/endpoints';
  * - POST   /licencias-office      -> { data: LicenciaOfficeResource }
  * - PUT    /licencias-office/{id} -> { data: LicenciaOfficeResource }
  * - DELETE /licencias-office/{id} -> { mensaje: '...' } — siempre permitido
+ * - GET    /notificaciones/licencias?page= -> { data: [...], links, meta, meses_limite }
+ *          Licencias con más de meses_limite meses sin actualizarse (global,
+ *          no depende de los filtros de la pantalla). Nunca trae contraseña.
  *
  * El backend nunca devuelve la contraseña (ni cifrada): "password" solo
  * se manda AL SERVIDOR (obligatoria al crear, opcional al editar — si se
@@ -42,4 +45,9 @@ export async function deleteLicencia(id) {
 export async function fetchLicenciaPassword(id) {
   const { data } = await httpClient.get(`${ENDPOINTS.licenciasOffice}/${id}/password`);
   return data.password;
+}
+
+export async function fetchLicenciasSinActualizar(page = 1) {
+  const { data } = await httpClient.get('/notificaciones/licencias', { params: { page } });
+  return data;
 }

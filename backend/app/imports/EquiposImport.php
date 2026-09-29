@@ -34,9 +34,7 @@ use Maatwebsite\Excel\Concerns\WithValidation;
  * Cualquier columna que NO esté en la lista de arriba se guarda tal
  * cual en caracteristicas_tecnicas (la columna JSON de Equipo), con el
  * nombre de columna ya normalizado (minúsculas, guion bajo — ej.
- * "RAM (GB)" se guarda con la clave "ram_gb") como clave. El archivo
- * no necesita una plantilla rígida distinta por tipo de equipo:
- * "Procesador", "RAM (GB)" o "Marca" simplemente viajan como vengan.
+ * "RAM (GB)" se guarda con la clave "ram_gb") como clave.
  */
 class EquiposImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFailure, WithBatchInserts, WithChunkReading
 {
@@ -145,20 +143,26 @@ class EquiposImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
      * nombre exista en su tabla) — aquí se valida que la COMBINACIÓN de
      * los tres exista junta: que ese ambiente exacto pertenezca a esa
      * subsede exacta, que a su vez pertenezca a esa sede exacta.
+     *
+     * Laravel Excel valida por LOTES: getData() devuelve todas las filas
+     * del lote (indexadas por número de fila), no una sola — por eso se
+     * recorre, y el error se registra con la clave "{fila}.ambiente"
+     * para que se asocie a la fila correcta en el reporte de fallos.
      */
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
-            $datos = $validator->getData();
+            foreach ($validator->getData() as $fila => $datos) {
+                if (empty($datos['sede']) || empty($datos['subsede']) || empty($datos['ambiente'])) {
+                    continue;
+                }
 
-            if (
-                !empty($datos['sede']) && !empty($datos['subsede']) && !empty($datos['ambiente'])
-                && !$this->resolverUbicacion($datos['sede'], $datos['subsede'], $datos['ambiente'])
-            ) {
-                $validator->errors()->add(
-                    'ambiente',
-                    'Ese ambiente no existe dentro de esa sede/subsede exacta (revisa nombres y tildes).'
-                );
+                if (!$this->resolverUbicacion($datos['sede'], $datos['subsede'], $datos['ambiente'])) {
+                    $validator->errors()->add(
+                        $fila.'.ambiente',
+                        'Ese ambiente no existe dentro de esa sede/subsede exacta (revisa nombres y tildes).'
+                    );
+                }
             }
         });
     }

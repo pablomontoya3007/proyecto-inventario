@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EquipoController;
 use App\Http\Controllers\LicenciaOfficeController;
+use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\ObservacionController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\RespaldoController;
@@ -24,10 +25,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'usuarioActual']);
     Route::get('/dashboard', [DashboardController::class, 'resumen']);
     Route::get('/auditorias', [AuditoriaController::class, 'index']);
+    Route::get('/notificaciones/licencias', [NotificacionController::class, 'licenciasSinActualizar']);
 
     Route::apiResource('sedes', SedeController::class);
     Route::apiResource('subsedes', SubsedeController::class);
-    
 
     Route::apiResource('ubicaciones-formacion', UbicacionFormacionController::class)
         ->parameters(['ubicaciones-formacion' => 'ubicacion_formacion']);
@@ -36,10 +37,15 @@ Route::middleware('auth:sanctum')->group(function () {
         ->parameters(['tipos-equipo' => 'tipo_equipo']);
 
     Route::apiResource('responsables', ResponsableController::class);
-    Route::apiResource('equipos', EquipoController::class);
-    Route::get('equipos/{equipo}/hoja-de-vida/pdf', [EquipoController::class, 'hojaDeVidaPdf']);
+
+    // Estas dos van ANTES del apiResource de equipos: si van después,
+    // GET equipos/{equipo} captura "plantilla-importacion" como si fuera
+    // un id de equipo y responde 404.
     Route::post('equipos/importar', [EquipoController::class, 'importar']);
     Route::get('equipos/plantilla-importacion', [EquipoController::class, 'plantillaImportacion']);
+
+    Route::apiResource('equipos', EquipoController::class);
+    Route::get('equipos/{equipo}/hoja-de-vida/pdf', [EquipoController::class, 'hojaDeVidaPdf']);
 
     Route::apiResource('licencias-office', LicenciaOfficeController::class)
         ->parameters(['licencias-office' => 'licencia_office']);
@@ -47,13 +53,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::apiResource('observaciones', ObservacionController::class)
         ->only(['index', 'store', 'show']);
-            
+
     Route::apiResource('mantenimientos', MantenimientoController::class)
         ->only(['index', 'store', 'update', 'destroy']);
 
     Route::apiResource('traslados', TrasladoController::class)
         ->only(['index', 'store']);
-
 
     Route::prefix('reportes')->group(function () {
         Route::get('equipos', [ReporteController::class, 'equipos']);
