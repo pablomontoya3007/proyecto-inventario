@@ -1,10 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchUbicaciones, createUbicacion, updateUbicacion, deleteUbicacion } from '../services/ubicacionesApi';
 
-export function useUbicaciones({ page = 1, subsedeId } = {}) {
+// id entra en la queryKey: cada búsqueda por ID es una consulta distinta.
+export function useUbicaciones({ page = 1, subsedeId, id } = {}) {
   return useQuery({
-    queryKey: ['ubicaciones-formacion', page, subsedeId ?? null],
-    queryFn: () => fetchUbicaciones({ page, subsedeId }),
+    queryKey: ['ubicaciones-formacion', page, subsedeId ?? null, id ?? null],
+    queryFn: () => fetchUbicaciones({ page, subsedeId, id }),
   });
 }
 

@@ -11,6 +11,12 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class SubsedeController extends Controller
 {
+    /**
+     * Filtros: sede_id e id — opcionales y combinables. El id es
+     * coincidencia EXACTA (whereKey), no LIKE: buscar "1" no debe traer
+     * también la 10, 11, 100... Un valor no numérico se convierte en 0
+     * con integer(), así que simplemente no encuentra nada.
+     */
     public function index(Request $request): AnonymousResourceCollection
     {
         $this->authorize('viewAny', Subsede::class);
@@ -21,6 +27,7 @@ class SubsedeController extends Controller
             // cargar cada ubicación completa solo para contarlas.
             ->withCount('ubicacionesFormacion')
             ->when($request->filled('sede_id'), fn ($q) => $q->where('sede_id', $request->input('sede_id')))
+            ->when($request->filled('id'), fn ($q) => $q->whereKey($request->integer('id')))
             ->orderBy('nombre')
             ->paginate(15);
 

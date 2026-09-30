@@ -11,11 +11,16 @@ export function UbicacionesPage() {
   const [page, setPage] = useState(1);
   const [sedeFiltro, setSedeFiltro] = useState('');
   const [subsedeFiltro, setSubsedeFiltro] = useState('');
+  const [idFiltro, setIdFiltro] = useState('');
   const [editingUbicacion, setEditingUbicacion] = useState(null);
   const [deletingUbicacion, setDeletingUbicacion] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
 
-  const { data, isLoading, isError } = useUbicaciones({ page, subsedeId: subsedeFiltro || undefined });
+  const { data, isLoading, isError } = useUbicaciones({
+    page,
+    subsedeId: subsedeFiltro || undefined,
+    id: idFiltro || undefined,
+  });
   const { data: sedesData } = useSedes(1);
   const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeFiltro || undefined });
 
@@ -67,7 +72,25 @@ export function UbicacionesPage() {
         </button>
       </div>
 
-      <div className="mb-4 flex gap-4">
+      <div className="mb-4 flex flex-wrap items-center gap-4">
+        <div>
+          <label htmlFor="filtro-id-ubicacion" className="mr-2 text-sm text-slate-600">
+            ID:
+          </label>
+          <input
+            id="filtro-id-ubicacion"
+            type="number"
+            min="1"
+            placeholder="Buscar por ID..."
+            value={idFiltro}
+            onChange={(event) => {
+              setIdFiltro(event.target.value);
+              setPage(1);
+            }}
+            className="w-36 rounded border border-slate-300 px-2 py-1 text-sm"
+          />
+        </div>
+
         <div>
           <label htmlFor="filtro-sede" className="mr-2 text-sm text-slate-600">
             Sede:

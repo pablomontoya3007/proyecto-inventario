@@ -1,12 +1,13 @@
 export function UbicacionTable({ ubicaciones, onEdit, onDelete }) {
     if (ubicaciones.length === 0) {
-        return <p className="text-sm text-slate-500">No hay ubicaciones de formación registradas todavía.</p>;
+        return <p className="text-sm text-slate-500">No se encontraron ubicaciones de formación.</p>;
     }
 
     return (
         <table className="w-full text-left text-sm">
             <thead>
                 <tr className="border-b border-slate-200 text-slate-500">
+                    <th className="py-2 pr-4 font-medium">ID</th>
                     <th className="py-2 pr-4 font-medium">Nombre</th>
                     <th className="py-2 pr-4 font-medium">Subsede</th>
                     <th className="py-2 pr-4 font-medium">Sede</th>
@@ -20,6 +21,7 @@ export function UbicacionTable({ ubicaciones, onEdit, onDelete }) {
 
                     return (
                         <tr key={ubicacion.id} className="border-b border-slate-100">
+                            <td className="py-2 pr-4 font-mono text-slate-500">{ubicacion.id}</td>
                             <td className="py-2 pr-4 text-ink">{ubicacion.nombre}</td>
                             <td className="py-2 pr-4 text-slate-500">{ubicacion.subsede?.nombre ?? '—'}</td>
                             <td className="py-2 pr-4 text-slate-500">{ubicacion.subsede?.sede?.nombre ?? '—'}</td>

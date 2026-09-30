@@ -3,17 +3,25 @@ import { ENDPOINTS } from '../../../api/endpoints';
 
 /**
  * Shapes confirmados contra UbicacionFormacionController.php / Resource:
- * - GET    /ubicaciones-formacion?subsede_id=&page= -> { data: [...], links, meta }
+ * - GET    /ubicaciones-formacion?subsede_id=&id=&page= -> { data: [...], links, meta }
  *          index() trae subsede Y su sede (->with('subsede.sede')), así
  *          que cada fila llega con la cadena completa sede → subsede.
+ *          "id" es coincidencia exacta.
  * - POST   /ubicaciones-formacion      -> { data: UbicacionFormacionResource }
  * - PUT    /ubicaciones-formacion/{id} -> { data: UbicacionFormacionResource }
  * - DELETE /ubicaciones-formacion/{id} -> { mensaje: '...' } (o 403 si tiene equipos)
+ *
+ * "id" es opcional: los selects en cascada de otros módulos no lo
+ * mandan y siguen funcionando igual.
  */
 
-export async function fetchUbicaciones({ page = 1, subsedeId } = {}) {
+export async function fetchUbicaciones({ page = 1, subsedeId, id } = {}) {
   const { data } = await httpClient.get(ENDPOINTS.ubicacionesFormacion, {
-    params: { page, ...(subsedeId ? { subsede_id: subsedeId } : {}) },
+    params: {
+      page,
+      ...(subsedeId ? { subsede_id: subsedeId } : {}),
+      ...(id ? { id } : {}),
+    },
   });
   return data;
 }

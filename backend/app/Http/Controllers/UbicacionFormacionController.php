@@ -11,6 +11,10 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class UbicacionFormacionController extends Controller
 {
+    /**
+     * Filtros: subsede_id e id — opcionales y combinables. El id es
+     * coincidencia exacta, igual que en SubsedeController.
+     */
     public function index(Request $request): AnonymousResourceCollection
     {
         $this->authorize('viewAny', UbicacionFormacion::class);
@@ -21,6 +25,7 @@ class UbicacionFormacionController extends Controller
             // cargar cada equipo completo solo para contarlos.
             ->withCount('equipos')
             ->when($request->filled('subsede_id'), fn ($q) => $q->where('subsede_id', $request->input('subsede_id')))
+            ->when($request->filled('id'), fn ($q) => $q->whereKey($request->integer('id')))
             ->orderBy('nombre')
             ->paginate(15);
 

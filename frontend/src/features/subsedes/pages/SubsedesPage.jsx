@@ -9,11 +9,16 @@ import { Modal } from '../../../shared/components/Modal';
 export function SubsedesPage() {
   const [page, setPage] = useState(1);
   const [sedeFiltro, setSedeFiltro] = useState('');
+  const [idFiltro, setIdFiltro] = useState('');
   const [editingSubsede, setEditingSubsede] = useState(null);
   const [deletingSubsede, setDeletingSubsede] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
 
-  const { data, isLoading, isError } = useSubsedes({ page, sedeId: sedeFiltro || undefined });
+  const { data, isLoading, isError } = useSubsedes({
+    page,
+    sedeId: sedeFiltro || undefined,
+    id: idFiltro || undefined,
+  });
   const { data: sedesData } = useSedes(1);
   const createSubsede = useCreateSubsede();
   const updateSubsede = useUpdateSubsede();
@@ -57,26 +62,46 @@ export function SubsedesPage() {
         </button>
       </div>
 
-      <div className="mb-4">
-        <label htmlFor="filtro-sede" className="mr-2 text-sm text-slate-600">
-          Filtrar por sede:
-        </label>
-        <select
-          id="filtro-sede"
-          value={sedeFiltro}
-          onChange={(event) => {
-            setSedeFiltro(event.target.value);
-            setPage(1);
-          }}
-          className="rounded border border-slate-300 px-2 py-1 text-sm"
-        >
-          <option value="">Todas las sedes</option>
-          {sedesData?.data.map((sede) => (
-            <option key={sede.id} value={sede.id}>
-              {sede.nombre}
-            </option>
-          ))}
-        </select>
+      <div className="mb-4 flex flex-wrap items-center gap-4">
+        <div>
+          <label htmlFor="filtro-id-subsede" className="mr-2 text-sm text-slate-600">
+            ID:
+          </label>
+          <input
+            id="filtro-id-subsede"
+            type="number"
+            min="1"
+            placeholder="Buscar por ID..."
+            value={idFiltro}
+            onChange={(event) => {
+              setIdFiltro(event.target.value);
+              setPage(1);
+            }}
+            className="w-36 rounded border border-slate-300 px-2 py-1 text-sm"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="filtro-sede" className="mr-2 text-sm text-slate-600">
+            Filtrar por sede:
+          </label>
+          <select
+            id="filtro-sede"
+            value={sedeFiltro}
+            onChange={(event) => {
+              setSedeFiltro(event.target.value);
+              setPage(1);
+            }}
+            className="rounded border border-slate-300 px-2 py-1 text-sm"
+          >
+            <option value="">Todas las sedes</option>
+            {sedesData?.data.map((sede) => (
+              <option key={sede.id} value={sede.id}>
+                {sede.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {isLoading && <p className="text-sm text-slate-500">Cargando subsedes...</p>}

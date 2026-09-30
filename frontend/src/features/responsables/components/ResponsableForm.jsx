@@ -11,11 +11,14 @@ export function ResponsableForm({ initialValues, onSubmit, onCancel, isSubmittin
     setCargo(initialValues?.cargo ?? '');
   }, [initialValues]);
 
+  // documento ahora es obligatorio (cambio de requisito): se envía
+  // recortado y nunca como null. El "required" del input frena el caso
+  // vacío en el navegador; ResponsableRequest lo vuelve a validar.
   function handleSubmit(event) {
     event.preventDefault();
     onSubmit({
       nombre,
-      documento: documento || null,
+      documento: documento.trim(),
       cargo: cargo || null,
     });
   }
@@ -40,11 +43,12 @@ export function ResponsableForm({ initialValues, onSubmit, onCancel, isSubmittin
 
       <div>
         <label htmlFor="documento" className="block text-sm font-medium text-ink">
-          Documento (opcional)
+          Documento
         </label>
         <input
           id="documento"
           type="text"
+          required
           maxLength={30}
           value={documento}
           onChange={(event) => setDocumento(event.target.value)}
