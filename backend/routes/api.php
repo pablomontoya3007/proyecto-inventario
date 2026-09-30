@@ -47,6 +47,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('equipos', EquipoController::class);
     Route::get('equipos/{equipo}/hoja-de-vida/pdf', [EquipoController::class, 'hojaDeVidaPdf']);
 
+    // Mismo motivo que en equipos: ANTES del apiResource.
+    Route::post('licencias-office/importar', [LicenciaOfficeController::class, 'importar']);
+    Route::get('licencias-office/plantilla-importacion', [LicenciaOfficeController::class, 'plantillaImportacion']);
+
     Route::apiResource('licencias-office', LicenciaOfficeController::class)
         ->parameters(['licencias-office' => 'licencia_office']);
     Route::get('licencias-office/{licencia_office}/password', [LicenciaOfficeController::class, 'mostrarPassword']);

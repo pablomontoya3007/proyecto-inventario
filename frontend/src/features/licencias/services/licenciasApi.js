@@ -1,5 +1,6 @@
 import httpClient from '../../../api/httpClient';
 import { ENDPOINTS } from '../../../api/endpoints';
+import { descargarBlob } from '../../../shared/utils/descargarArchivo';
 
 /**
  * Shapes confirmados contra LicenciaOfficeController.php / Resource:
@@ -10,6 +11,10 @@ import { ENDPOINTS } from '../../../api/endpoints';
  * - GET    /notificaciones/licencias?page= -> { data: [...], links, meta, meses_limite }
  *          Licencias con más de meses_limite meses sin actualizarse (global,
  *          no depende de los filtros de la pantalla). Nunca trae contraseña.
+ * - POST   /licencias-office/importar (multipart/form-data, campo "archivo") ->
+ *          { importados: number, fallidos: number (filas), errores: [{fila, campo, errores}] }
+ *          Los errores nunca incluyen los valores de la fila (ni la contraseña).
+ * - GET    /licencias-office/plantilla-importacion -> descarga un .xlsx
  *
  * El backend nunca devuelve la contraseña (ni cifrada): "password" solo
  * se manda AL SERVIDOR (obligatoria al crear, opcional al editar — si se
@@ -50,4 +55,22 @@ export async function fetchLicenciaPassword(id) {
 export async function fetchLicenciasSinActualizar(page = 1) {
   const { data } = await httpClient.get('/notificaciones/licencias', { params: { page } });
   return data;
+}
+
+// axios detecta el FormData solo y pone el Content-Type multipart con
+// el boundary correcto — no hay que fijarlo a mano.
+export async function importarLicencias(archivo) {
+  const formData = new FormData();
+  formData.append('archivo', archivo);
+
+  const { data } = await httpClient.post(`${ENDPOINTS.licenciasOffice}/importar`, formData);
+  return data;
+}
+
+export function descargarPlantillaImportacion() {
+  return descargarBlob(
+    httpClient,
+    `${ENDPOINTS.licenciasOffice}/plantilla-importacion`,
+    'plantilla-importar-licencias.xlsx'
+  );
 }

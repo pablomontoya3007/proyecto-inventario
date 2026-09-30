@@ -5,6 +5,7 @@ import {
   createLicencia,
   updateLicencia,
   deleteLicencia,
+  importarLicencias,
 } from '../services/licenciasApi';
 
 // `filtros` entra en la queryKey a propósito: cada combinación de
@@ -53,5 +54,20 @@ export function useDeleteLicencia() {
   return useMutation({
     mutationFn: deleteLicencia,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['licencias-office'] }),
+  });
+}
+
+// Además de las licencias, invalida 'equipos': la hoja de vida de cada
+// equipo muestra su licencia, y una importación puede tocar muchos a la
+// vez — sin esto, una hoja de vida ya cacheada seguiría diciendo "sin
+// licencia" hasta recargar la página.
+export function useImportarLicencias() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: importarLicencias,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['licencias-office'] });
+      queryClient.invalidateQueries({ queryKey: ['equipos'] });
+    },
   });
 }

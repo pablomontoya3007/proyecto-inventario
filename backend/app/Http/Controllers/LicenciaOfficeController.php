@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\LicenciasImportPlantillaExport;
 use App\Http\Controllers\Concerns\FiltraPorUbicacion;
 use App\Http\Requests\LicenciaOfficeRequest;
 use App\Http\Resources\LicenciaOfficeResource;
+use App\Imports\LicenciasImport;
 use App\Models\LicenciaOffice;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Maatwebsite\Excel\Facades\Excel;
 
 class LicenciaOfficeController extends Controller
 {
@@ -117,5 +120,48 @@ class LicenciaOfficeController extends Controller
         $licenciaOffice->delete();
 
         return response()->json(['mensaje' => 'Licencia eliminada correctamente.']);
+    }
+
+    /**
+     * Importación masiva desde Excel — misma autorización que crear una
+     * licencia individual. Las filas que fallan no detienen el resto
+     * (SkipsOnFailure) y se reportan para corregir solo esas.
+     *
+     * SEGURIDAD: cada falla trae también los valores de la fila
+     * ($falla->values()), contraseña incluida. Por eso aquí solo se
+     * devuelven fila, campo y mensajes — nunca los valores.
+     *
+     * "fallidos" cuenta FILAS distintas, no errores: una fila con correo
+     * y contraseña inválidos genera dos fallas, pero es una sola fila.
+     */
+    public function importar(Request $request): JsonResponse
+    {
+        $this->authorize('create', LicenciaOffice::class);
+
+        $request->validate([
+            'archivo' => ['required', 'file', 'mimes:xlsx,xls'],
+        ]);
+
+        $import = new LicenciasImport();
+        Excel::import($import, $request->file('archivo'));
+
+        $errores = collect($import->failures())->map(fn ($falla) => [
+            'fila' => $falla->row(),
+            'campo' => $falla->attribute(),
+            'errores' => $falla->errors(),
+        ])->values();
+
+        return response()->json([
+            'importados' => $import->importados,
+            'fallidos' => $errores->pluck('fila')->unique()->count(),
+            'errores' => $errores,
+        ]);
+    }
+
+    public function plantillaImportacion()
+    {
+        $this->authorize('create', LicenciaOffice::class);
+
+        return Excel::download(new LicenciasImportPlantillaExport(), 'plantilla-importar-licencias.xlsx');
     }
 }

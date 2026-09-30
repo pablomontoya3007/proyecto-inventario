@@ -7,6 +7,7 @@ import { FiltroUbicacionCascada } from '../../../shared/components/FiltroUbicaci
 import { LicenciaTable } from '../components/LicenciaTable';
 import { LicenciaForm } from '../components/LicenciaForm';
 import { LicenciasSinActualizarPanel } from '../components/LicenciasSinActualizarPanel';
+import { ImportarLicenciasModal } from '../components/ImportarLicenciasModal';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 import { Modal } from '../../../shared/components/Modal';
 
@@ -35,6 +36,7 @@ export function LicenciasPage() {
   const [editingLicencia, setEditingLicencia] = useState(null);
   const [deletingLicencia, setDeletingLicencia] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
+  const [importando, setImportando] = useState(false);
 
   function handleSedeChange(valor) {
     setSedeFiltro(valor);
@@ -121,12 +123,20 @@ export function LicenciasPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-bold text-ink">Licencias de Office</h1>
-        <button
-          onClick={() => setEditingLicencia({})}
-          className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark"
-        >
-          Nueva licencia
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setImportando(true)}
+            className="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-surface"
+          >
+            Importar Excel
+          </button>
+          <button
+            onClick={() => setEditingLicencia({})}
+            className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark"
+          >
+            Nueva licencia
+          </button>
+        </div>
       </div>
 
       <LicenciasSinActualizarPanel onVerLicencia={handleVerLicencia} />
@@ -255,6 +265,12 @@ export function LicenciasPage() {
             isSubmitting={createLicencia.isPending || updateLicencia.isPending}
             serverErrors={serverErrors}
           />
+        </Modal>
+      )}
+
+      {importando && (
+        <Modal title="Importar licencias desde Excel" onClose={() => setImportando(false)} maxWidth="max-w-2xl">
+          <ImportarLicenciasModal onClose={() => setImportando(false)} />
         </Modal>
       )}
 
