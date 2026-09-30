@@ -1,8 +1,8 @@
 /**
  * Descarga un archivo binario (Excel, PDF) recibido como blob y dispara
  * la descarga en el navegador. Necesario para cualquier endpoint
- * protegido por Sanctum: un <a href="..."> normal no funciona, porque
- * la navegación del navegador no manda el header Authorization — el
+ * protegido por Sanctum: un enlace normal no funciona, porque la
+ * navegación del navegador no manda el header Authorization — el
  * archivo se pide por código (con axios, que sí lo manda) y se
  * descarga manualmente. Antes vivía duplicada dentro de reportesApi.js;
  * se extrajo aquí al necesitarla por tercera vez (equiposApi.js).
@@ -21,4 +21,27 @@ export async function descargarBlob(httpClient, url, nombreArchivo, params = {})
   enlace.click();
   enlace.remove();
   window.URL.revokeObjectURL(blobUrl);
+}
+
+/**
+ * Con responseType: 'blob', axios entrega TAMBIÉN las respuestas de
+ * error como Blob (no como JSON ya interpretado). Esta función lo lee
+ * como texto y saca el "message" que manda Laravel (404, 403, 500...).
+ * Si no hay nada legible, devuelve el mensaje genérico recibido.
+ */
+export async function mensajeDeErrorDescarga(error, mensajeGenerico) {
+  const datos = error?.response?.data;
+
+  if (datos instanceof Blob) {
+    try {
+      const texto = await datos.text();
+      const mensaje = JSON.parse(texto).message;
+      if (mensaje) return mensaje;
+    } catch {
+      // El blob no era JSON legible — se usa el mensaje genérico.
+    }
+  }
+
+  const estado = error?.response?.status;
+  return estado ? `${mensajeGenerico} (código ${estado})` : mensajeGenerico;
 }
