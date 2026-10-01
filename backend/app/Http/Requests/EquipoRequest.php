@@ -4,13 +4,12 @@ namespace App\Http\Requests;
 
 use App\Enums\EstadoEquipo;
 use App\Models\TipoEquipo;
+use App\Support\NormalizadorEquipo;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Validation\Rule;
 
 class EquipoRequest extends BaseFormRequest
 {
-    private const FORMATO_MAC = '/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/';
-
     /**
      * Campos técnicos esperados por tipo de equipo. Es una guía, no una
      * restricción de base de datos: si un tipo no aparece aquí (como
@@ -28,6 +27,40 @@ class EquipoRequest extends BaseFormRequest
         'Switch' => ['marca', 'modelo', 'numero_puertos'],
     ];
 
+    /**
+     * Se ejecuta ANTES de las reglas. La placa y el serial aceptan
+     * cualquier valor (números, letras, símbolos): si llegan como número
+     * se convierten a texto aquí, así la regla "string" de abajo nunca
+     * rechaza un dato real — solo bloquea listas u objetos, que no
+     * pueden venir del formulario.
+     *
+     * La MAC se acepta en cualquier formato (ver NormalizadorEquipo::mac).
+     */
+    protected function prepareForValidation(): void
+    {
+        parent::prepareForValidation();
+
+        $normalizados = [];
+
+        foreach (['placa_sena', 'serial'] as $campo) {
+            if ($this->has($campo)) {
+                $normalizados[$campo] = NormalizadorEquipo::texto($this->input($campo));
+            }
+        }
+
+        foreach (['mac', 'mac_cableada'] as $campo) {
+            if ($this->has($campo)) {
+                $normalizados[$campo] = NormalizadorEquipo::mac($this->input($campo));
+            }
+        }
+
+        $this->merge($normalizados);
+    }
+
+    /**
+     * Lo que se mantiene es solo lo que impone la base de datos:
+     * obligatoriedad, unicidad y longitud máxima de cada columna.
+     */
     public function rules(): array
     {
         return [
@@ -40,11 +73,11 @@ class EquipoRequest extends BaseFormRequest
                 Rule::unique('equipos', 'serial')->ignore($this->route('equipo')),
             ],
             'mac' => [
-                'nullable', 'string', 'regex:' . self::FORMATO_MAC,
+                'nullable', 'string', 'max:50',
                 Rule::unique('equipos', 'mac')->ignore($this->route('equipo')),
             ],
             'mac_cableada' => [
-                'nullable', 'string', 'regex:' . self::FORMATO_MAC,
+                'nullable', 'string', 'max:50',
                 Rule::unique('equipos', 'mac_cableada')->ignore($this->route('equipo')),
             ],
             'hostname' => ['nullable', 'string', 'max:100'],
@@ -59,8 +92,12 @@ class EquipoRequest extends BaseFormRequest
     public function messages(): array
     {
         return [
-            'mac.regex' => 'El formato de la MAC debe ser AA:BB:CC:DD:EE:FF.',
-            'mac_cableada.regex' => 'El formato de la MAC cableada debe ser AA:BB:CC:DD:EE:FF.',
+            'placa_sena.max' => 'La placa SENA no puede superar 30 caracteres.',
+            'serial.max' => 'El serial no puede superar 100 caracteres.',
+            'mac.max' => 'La MAC no puede superar 50 caracteres.',
+            'mac.unique' => 'Ya existe un equipo con esta MAC.',
+            'mac_cableada.max' => 'La MAC cableada no puede superar 50 caracteres.',
+            'mac_cableada.unique' => 'Ya existe un equipo con esta MAC cableada.',
         ];
     }
 

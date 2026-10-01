@@ -5,6 +5,7 @@ namespace App\Imports;
 use App\Enums\EstadoLicencia;
 use App\Models\Equipo;
 use App\Models\LicenciaOffice;
+use App\Support\NormalizadorEquipo;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Concerns\Importable;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
@@ -22,18 +23,21 @@ use Maatwebsite\Excel\Concerns\WithValidation;
  *
  *   Placa SENA | Correo | Contraseña | Estado
  *
- * El equipo se identifica por Placa SENA (única y conocida por la
- * gente), no por su id interno. Estado es opcional: vacío = "activa".
+ * El equipo se identifica por Placa SENA, no por su id interno. Estado
+ * es opcional: vacío = "activa".
+ *
+ * Criterio de validación: solo se rechaza lo que la base de datos no
+ * permitiría (placa inexistente, un equipo con dos licencias, correo de
+ * más de 150 caracteres, campos obligatorios vacíos). Ya no se exige
+ * formato de correo ni longitud mínima de contraseña.
  *
  * A DIFERENCIA de EquiposImport, aquí NO se usa WithBatchInserts a
  * propósito: los inserts masivos se saltan los eventos de Eloquent, y
  * LicenciaOffice depende de ellos — el evento "saving" fija
- * fecha_actualizacion y AuditoriaObserver registra la creación. Sin
- * eventos, toda licencia importada nacería "sin actualizar" y sin
- * rastro en la auditoría. Guardar fila por fila tiene además un efecto
- * útil: cada fila ya está en la BD cuando se valida la siguiente, así
- * que la regla "un equipo, una licencia" cubre con la misma consulta
- * tanto lo que ya existía como las filas repetidas dentro del archivo.
+ * fecha_actualizacion y AuditoriaObserver registra la creación. Guardar
+ * fila por fila tiene además un efecto útil: cada fila ya está en la BD
+ * cuando se valida la siguiente, así que la regla "un equipo, una
+ * licencia" cubre también las filas repetidas dentro del archivo.
  *
  * El cifrado de la contraseña no requiere nada especial: el cast
  * "encrypted" del modelo cifra al asignar, igual que en store().
@@ -70,8 +74,8 @@ class LicenciasImport implements ToModel, WithHeadingRow, WithValidation, SkipsO
 
     /**
      * Excel entrega números cuando la celda es numérica (ej. una
-     * contraseña "12345678" o una placa "000123"): sin convertirlos a
-     * texto, la regla "string" los rechazaría.
+     * contraseña "12345678" o una placa "123456"): se convierten a texto
+     * antes de validar para que la regla "string" no los rechace.
      */
     public function prepareForValidation($data, $index)
     {
@@ -87,9 +91,8 @@ class LicenciasImport implements ToModel, WithHeadingRow, WithValidation, SkipsO
                 'required', 'string',
                 Rule::exists('equipos', 'placa_sena')->whereNull('deleted_at'),
             ],
-            'correo' => ['required', 'email', 'max:150'],
-            // Mismas reglas que LicenciaOfficeRequest al crear.
-            'contrasena' => ['required', 'string', 'min:8'],
+            'correo' => ['required', 'string', 'max:150'],
+            'contrasena' => ['required', 'string'],
             'estado' => ['nullable', Rule::enum(EstadoLicencia::class)],
         ];
     }
@@ -104,10 +107,8 @@ class LicenciasImport implements ToModel, WithHeadingRow, WithValidation, SkipsO
             'placa_sena.required' => 'La placa SENA es obligatoria.',
             'placa_sena.exists' => 'No existe un equipo (activo) con esa placa SENA.',
             'correo.required' => 'El correo es obligatorio.',
-            'correo.email' => 'El correo no tiene un formato válido.',
             'correo.max' => 'El correo no puede superar 150 caracteres.',
             'contrasena.required' => 'La contraseña es obligatoria.',
-            'contrasena.min' => 'La contraseña debe tener al menos 8 caracteres.',
             'estado.enum' => 'El estado debe ser uno de: activa, vencida, suspendida.',
         ];
     }
@@ -155,6 +156,9 @@ class LicenciasImport implements ToModel, WithHeadingRow, WithValidation, SkipsO
     }
 
     /**
+     * La placa usa el mismo normalizador que la importación de equipos,
+     * para que una placa numérica se busque igual a como se guardó.
+     *
      * La contraseña NO se recorta: un espacio al inicio o al final puede
      * ser parte real de ella (el formulario tampoco la recorta — el
      * middleware TrimStrings de Laravel excluye "password").
@@ -162,22 +166,17 @@ class LicenciasImport implements ToModel, WithHeadingRow, WithValidation, SkipsO
      */
     private function normalizar(array $row): array
     {
-        $row['placa_sena'] = $this->texto($row['placa_sena'] ?? null);
-        $row['correo'] = $this->texto($row['correo'] ?? null);
+        $row['placa_sena'] = NormalizadorEquipo::texto($row['placa_sena'] ?? null);
+        $row['correo'] = NormalizadorEquipo::texto($row['correo'] ?? null);
 
         $contrasena = $row['contrasena'] ?? null;
-        $row['contrasena'] = ($contrasena === null || $contrasena === '') ? null : (string) $contrasena;
+        $row['contrasena'] = ($contrasena === null || $contrasena === '' || !is_scalar($contrasena))
+            ? null
+            : (string) $contrasena;
 
-        $estado = $this->texto($row['estado'] ?? null);
+        $estado = NormalizadorEquipo::texto($row['estado'] ?? null);
         $row['estado'] = $estado !== null ? mb_strtolower($estado) : null;
 
         return $row;
-    }
-
-    private function texto($valor): ?string
-    {
-        $valor = trim((string) $valor);
-
-        return $valor === '' ? null : $valor;
     }
 }

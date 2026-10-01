@@ -37,10 +37,9 @@ export function ImportarLicenciasModal({ onClose }) {
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-600">
-        El archivo debe tener las columnas: Placa SENA, Correo, Contraseña y Estado. La placa se busca por valor
-        exacto contra los equipos ya registrados, y cada equipo puede tener una sola licencia. Estado es opcional
-        (activa, vencida o suspendida); si se deja vacío, la licencia queda activa. La contraseña debe tener al
-        menos 8 caracteres.
+        El archivo debe tener las columnas: Placa SENA, Correo, Contraseña y Estado. La placa debe corresponder a un
+        equipo ya registrado, y cada equipo puede tener una sola licencia. Estado es opcional (activa, vencida o
+        suspendida); si se deja vacío, la licencia queda activa.
       </p>
 
       <p className="rounded border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-ink">

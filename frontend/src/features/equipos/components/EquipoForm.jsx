@@ -1,12 +1,10 @@
 import { useState, useMemo } from 'react';
 import { useTiposEquipo } from '../../tipos-equipo/hooks/useTiposEquipo';
-import { useResponsables } from '../../responsables/hooks/useResponsables';
 import { useSedes } from '../../sedes/hooks/useSedes';
 import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
 import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
+import { BuscadorResponsable } from '../../responsables/components/BuscadorResponsable';
 import { CaracteristicasEditor } from './CaracteristicasEditor';
-
-const FORMATO_MAC = /^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/;
 
 // Confirmado contra app/Enums/EstadoEquipo.php — valores y etiquetas reales.
 const ESTADOS_EQUIPO = [
@@ -16,14 +14,24 @@ const ESTADOS_EQUIPO = [
   { value: 'extraviado', label: 'Extraviado' },
 ];
 
+const INPUT = 'rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none';
+
 /**
+ * Placa SENA, serial y MAC no tienen formato obligatorio: la
+ * institución maneja muchas variaciones según el equipo. El backend
+ * (NormalizadorEquipo) convierte números a texto y, cuando lo escrito
+ * tiene forma de MAC, la guarda como AA:BB:CC:DD:EE:FF.
+ *
+ * El responsable se elige con BuscadorResponsable (autocompletado
+ * contra el backend), porque hay demasiados para un <select>. Por eso
+ * el estado guarda el OBJETO responsable completo, no solo su id: el
+ * buscador necesita el nombre para mostrarlo.
+ *
  * Sedes/Subsedes/Ubicaciones se listan sin paginar más allá de la
  * página 1 (máx. 15 cada una), igual que en los módulos anteriores. Si
  * este proyecto llega a superar esos 15 en algún nivel, un equipo ya
  * asignado a algo fuera de esa página no se va a ver seleccionado
- * correctamente al editar — lo dejo como límite conocido por ahora
- * (Responsables sí lo cubrí abajo, porque es mucho más probable que
- * superen los 15 en una institución real).
+ * correctamente al editar — lo dejo como límite conocido por ahora.
  */
 export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, serverErrors }) {
   const [placaSena, setPlacaSena] = useState(initialValues?.placa_sena ?? '');
@@ -32,7 +40,7 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
   const [macCableada, setMacCableada] = useState(initialValues?.mac_cableada ?? '');
   const [hostname, setHostname] = useState(initialValues?.hostname ?? '');
   const [tipoEquipoId, setTipoEquipoId] = useState(initialValues?.tipo_equipo?.id ?? '');
-  const [responsableId, setResponsableId] = useState(initialValues?.responsable?.id ?? '');
+  const [responsable, setResponsable] = useState(initialValues?.responsable ?? null);
   const [sedeId, setSedeId] = useState(initialValues?.ubicacion_formacion?.subsede?.sede?.id ?? '');
   const [subsedeId, setSubsedeId] = useState(initialValues?.ubicacion_formacion?.subsede?.id ?? '');
   const [ubicacionId, setUbicacionId] = useState(initialValues?.ubicacion_formacion?.id ?? '');
@@ -43,7 +51,6 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
   const [estado, setEstado] = useState(initialValues?.estado ?? 'activo');
 
   const { data: tiposData } = useTiposEquipo();
-  const { data: responsablesData } = useResponsables({ page: 1 });
   const { data: sedesData } = useSedes(1);
   const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeId || undefined });
   const { data: ubicacionesData } = useUbicaciones({ page: 1, subsedeId: subsedeId || undefined });
@@ -61,22 +68,7 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
     return activos;
   }, [tiposData, initialValues]);
 
-  // Mismo motivo: si el responsable ya asignado no cae en la primera
-  // página (15), se agrega igual para que el <select> no lo muestre
-  // como "sin asignar" por error.
-  const responsablesDisponibles = useMemo(() => {
-    const lista = responsablesData?.data ?? [];
-    const actual = initialValues?.responsable;
-    if (actual && !lista.some((r) => r.id === actual.id)) {
-      return [...lista, actual];
-    }
-    return lista;
-  }, [responsablesData, initialValues]);
-
   const tipoSeleccionado = tiposDisponibles.find((t) => t.id === Number(tipoEquipoId));
-
-  const macInvalida = mac.trim() !== '' && !FORMATO_MAC.test(mac);
-  const macCableadaInvalida = macCableada.trim() !== '' && !FORMATO_MAC.test(macCableada);
 
   function handleSedeChange(event) {
     setSedeId(event.target.value);
@@ -98,7 +90,7 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
       mac_cableada: macCableada.trim() || null,
       hostname: hostname.trim() || null,
       tipo_equipo_id: Number(tipoEquipoId),
-      responsable_id: responsableId ? Number(responsableId) : null,
+      responsable_id: responsable?.id ?? null,
       ubicacion_formacion_id: Number(ubicacionId),
       estado,
       caracteristicas_tecnicas: caracteristicas,
@@ -119,7 +111,7 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
             maxLength={30}
             value={placaSena}
             onChange={(event) => setPlacaSena(event.target.value)}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
+            className={`mt-1 w-full ${INPUT}`}
           />
           {serverErrors?.placa_sena && <p className="mt-1 text-sm text-danger">{serverErrors.placa_sena[0]}</p>}
         </div>
@@ -135,7 +127,7 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
             maxLength={100}
             value={serial}
             onChange={(event) => setSerial(event.target.value)}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
+            className={`mt-1 w-full ${INPUT}`}
           />
           {serverErrors?.serial && <p className="mt-1 text-sm text-danger">{serverErrors.serial[0]}</p>}
         </div>
@@ -149,12 +141,12 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
           <input
             id="mac"
             type="text"
-            placeholder="AA:BB:CC:DD:EE:FF"
+            maxLength={50}
+            placeholder="Cualquier formato"
             value={mac}
             onChange={(event) => setMac(event.target.value)}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
+            className={`mt-1 w-full ${INPUT}`}
           />
-          {macInvalida && <p className="mt-1 text-sm text-amber-600">Formato esperado: AA:BB:CC:DD:EE:FF</p>}
           {serverErrors?.mac && <p className="mt-1 text-sm text-danger">{serverErrors.mac[0]}</p>}
         </div>
 
@@ -165,12 +157,12 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
           <input
             id="mac_cableada"
             type="text"
-            placeholder="AA:BB:CC:DD:EE:FF"
+            maxLength={50}
+            placeholder="Cualquier formato"
             value={macCableada}
             onChange={(event) => setMacCableada(event.target.value)}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
+            className={`mt-1 w-full ${INPUT}`}
           />
-          {macCableadaInvalida && <p className="mt-1 text-sm text-amber-600">Formato esperado: AA:BB:CC:DD:EE:FF</p>}
           {serverErrors?.mac_cableada && <p className="mt-1 text-sm text-danger">{serverErrors.mac_cableada[0]}</p>}
         </div>
       </div>
@@ -185,8 +177,9 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
           maxLength={100}
           value={hostname}
           onChange={(event) => setHostname(event.target.value)}
-          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
+          className={`mt-1 w-full ${INPUT}`}
         />
+        {serverErrors?.hostname && <p className="mt-1 text-sm text-danger">{serverErrors.hostname[0]}</p>}
       </div>
 
       <div className="grid grid-cols-3 gap-4">
@@ -199,7 +192,7 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
             required
             value={tipoEquipoId}
             onChange={(event) => setTipoEquipoId(event.target.value)}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
+            className={`mt-1 w-full ${INPUT}`}
           >
             <option value="" disabled>
               Selecciona un tipo
@@ -216,22 +209,21 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
         </div>
 
         <div>
-          <label htmlFor="responsable_id" className="block text-sm font-medium text-ink">
+          <label htmlFor="responsable_buscador" className="block text-sm font-medium text-ink">
             Responsable (opcional)
           </label>
-          <select
-            id="responsable_id"
-            value={responsableId}
-            onChange={(event) => setResponsableId(event.target.value)}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
-          >
-            <option value="">Sin asignar</option>
-            {responsablesDisponibles.map((responsable) => (
-              <option key={responsable.id} value={responsable.id}>
-                {responsable.nombre}
-              </option>
-            ))}
-          </select>
+          <BuscadorResponsable
+            id="responsable_buscador"
+            value={responsable}
+            onChange={setResponsable}
+            placeholder="Nombre o documento..."
+            className="mt-1"
+            inputClassName={INPUT}
+          />
+          {!responsable && <p className="mt-1 text-xs text-slate-500">Vacío = sin asignar</p>}
+          {serverErrors?.responsable_id && (
+            <p className="mt-1 text-sm text-danger">{serverErrors.responsable_id[0]}</p>
+          )}
         </div>
 
         <div>
@@ -243,7 +235,7 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
             required
             value={estado}
             onChange={(event) => setEstado(event.target.value)}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
+            className={`mt-1 w-full ${INPUT}`}
           >
             {ESTADOS_EQUIPO.map((opcion) => (
               <option key={opcion.value} value={opcion.value}>
@@ -265,7 +257,7 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
             required
             value={sedeId}
             onChange={handleSedeChange}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
+            className={`mt-1 w-full ${INPUT}`}
           >
             <option value="" disabled>
               Sede
@@ -288,7 +280,7 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
             disabled={!sedeId}
             value={subsedeId}
             onChange={handleSubsedeChange}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none disabled:bg-slate-100"
+            className={`mt-1 w-full ${INPUT} disabled:bg-slate-100`}
           >
             <option value="" disabled>
               Subsede
@@ -311,7 +303,7 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
             disabled={!subsedeId}
             value={ubicacionId}
             onChange={(event) => setUbicacionId(event.target.value)}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none disabled:bg-slate-100"
+            className={`mt-1 w-full ${INPUT} disabled:bg-slate-100`}
           >
             <option value="" disabled>
               Ubicación
