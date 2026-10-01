@@ -1,0 +1,11 @@
+# SPA fallback para Apache: cualquier ruta que no sea un archivo real
+# (por ejemplo /proyecto-inventario-front/equipos al recargar) se
+# entrega a index.html, y React Router decide qué mostrar.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /proyecto-inventario-front/
+    RewriteRule ^index\.html$ - [L]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule . /proyecto-inventario-front/index.html [L]
+</IfModule>

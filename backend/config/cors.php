@@ -24,12 +24,17 @@ return [
 
     'allowed_methods' => ['*'],
 
-    // Orígenes permitidos. Vite usa el puerto 5173 por defecto en dev.
-    // Si tu Vite corre en otro puerto (lo dice la terminal al hacer
-    // "npm run dev"), agrégalo aquí.
+    // Orígenes permitidos.
+    // - localhost:5173 / 127.0.0.1:5173: Vite en desarrollo.
+    // - 26.148.0.0: frontend compilado y servido por Apache (puerto 80)
+    //   en el servidor, accedido por Radmin VPN. El origen es solo
+    //   protocolo + IP + puerto (sin /proyecto-inventario-front).
+    // Si cambia la IP de Radmin del servidor, actualizarla aquí y en
+    // frontend/.env.production, y luego correr "php artisan config:clear".
     'allowed_origins' => [
         'http://localhost:5173',
         'http://127.0.0.1:5173',
+        'http://26.148.0.0',
     ],
 
     'allowed_origins_patterns' => [],

@@ -26,7 +26,11 @@ const queryClient = new QueryClient();
 export function AppRouter() {
   return (
     <ErrorBoundary>
-      <BrowserRouter>
+      {/* basename viene del "base" de vite.config.js: '/' en desarrollo y
+          '/proyecto-inventario-front/' en el build desplegado en Apache.
+          Así las rutas como "/equipos" funcionan igual en ambos entornos
+          sin tocar ningún Navigate ni navigate() de la app. */}
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <Routes>
