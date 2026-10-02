@@ -10,15 +10,17 @@ const NAV_ITEMS = [
   { label: 'Subsedes', path: '/subsedes' },
   { label: 'Ubicaciones', path: '/ubicaciones-formacion' },
   { label: 'Tipos de Equipo', path: '/tipos-equipo' },
-  { label: 'Responsables', path: '/responsables' },
+  { label: 'Cuentadantes', path: '/responsables' },
   { label: 'Equipos', path: '/equipos' },
   { label: 'Mantenimientos', path: '/mantenimientos' },
   { label: 'Traslados', path: '/traslados' },
   { label: 'Licencias', path: '/licencias-office' },
   { label: 'Observaciones', path: '/observaciones' },
+  { label: 'Correos', path: '/correos' },
   { label: 'Reportes', path: '/reportes' },
   { label: 'Copias de seguridad', path: '/respaldos' },
   { label: 'Auditoría', path: '/auditoria' },
+  { label: 'Usuarios', path: '/usuarios' },
 ];
 
 export function AdminLayout() {
@@ -78,4 +80,4 @@ export function AdminLayout() {
       </div>
     </div>
   );
-}
+} 

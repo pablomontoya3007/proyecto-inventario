@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuditoriaController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CorreoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EquipoController;
 use App\Http\Controllers\LicenciaOfficeController;
@@ -17,6 +18,7 @@ use App\Http\Controllers\SubsedeController;
 use App\Http\Controllers\TipoEquipoController;
 use App\Http\Controllers\TrasladoController;
 use App\Http\Controllers\UbicacionFormacionController;
+use App\Http\Controllers\UsuarioController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
@@ -27,6 +29,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'resumen']);
     Route::get('/auditorias', [AuditoriaController::class, 'index']);
     Route::get('/notificaciones/licencias', [NotificacionController::class, 'licenciasSinActualizar']);
+
+    // Gestión de usuarios: solo con sesión iniciada (no hay registro público).
+    Route::apiResource('usuarios', UsuarioController::class)
+        ->only(['index', 'store', 'update', 'destroy']);
+
+    // Correos: el envío limitado a 10 por minuto por usuario, para que
+    // nadie pueda usar el sistema para enviar spam con la cuenta Gmail.
+    Route::get('correos', [CorreoController::class, 'index']);
+    Route::post('correos', [CorreoController::class, 'store'])->middleware('throttle:10,1');
 
     Route::apiResource('sedes', SedeController::class);
     Route::apiResource('subsedes', SubsedeController::class);

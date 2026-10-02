@@ -9,6 +9,12 @@ export const ENDPOINTS = {
     me: '/me', // AuthController::usuarioActual
   },
 
+  // Gestión de usuarios (solo con sesión iniciada; no hay registro público)
+  usuarios: '/usuarios', // parámetro de ruta: usuario
+
+  // Correos redactados desde el sistema (GET historial, POST enviar)
+  correos: '/correos',
+
   // Fase 1
   sedes: '/sedes',
   subsedes: '/subsedes',

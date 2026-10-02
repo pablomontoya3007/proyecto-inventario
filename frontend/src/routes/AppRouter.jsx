@@ -18,6 +18,8 @@ import { ObservacionesPage } from '../features/observaciones/pages/Observaciones
 import { ReportesPage } from '../features/reportes/pages/ReportesPage';
 import { RespaldosPage } from '../features/respaldos/pages/RespaldosPage';
 import { AuditoriaPage } from '../features/auditoria/pages/AuditoriaPage';
+import { UsuariosPage } from '../features/usuarios/pages/UsuariosPage';
+import { CorreosPage } from '../features/correos/pages/CorreosPage';
 import { ErrorBoundary } from '../shared/components/ErrorBoundary';
 
 // Instancia única a nivel de módulo: no hay que recrearla en cada render.
@@ -52,6 +54,8 @@ export function AppRouter() {
                   <Route path="/reportes" element={<ReportesPage />} />
                   <Route path="/respaldos" element={<RespaldosPage />} />
                   <Route path="/auditoria" element={<AuditoriaPage />} />
+                  <Route path="/usuarios" element={<UsuariosPage />} />
+                  <Route path="/correos" element={<CorreosPage />} />
                 </Route>
               </Route>
 

@@ -210,7 +210,7 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
 
         <div>
           <label htmlFor="responsable_buscador" className="block text-sm font-medium text-ink">
-            Responsable (opcional)
+            Cuentadante (opcional)
           </label>
           <BuscadorResponsable
             id="responsable_buscador"
