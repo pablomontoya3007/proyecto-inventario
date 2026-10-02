@@ -19,6 +19,8 @@ export const ENDPOINTS = {
   responsables: '/responsables',
   equipos: '/equipos',
   mantenimientos: '/mantenimientos',
+  mantenimientosMasivo: '/mantenimientos/masivo', // POST: crea un lote
+  mantenimientosMasivoEquipos: '/mantenimientos/masivo/equipos', // GET ?ubicacion_formacion_id=
   traslados: '/traslados',
 
   // Fase 3

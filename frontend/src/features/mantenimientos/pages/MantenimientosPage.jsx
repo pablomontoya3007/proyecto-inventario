@@ -12,6 +12,7 @@ import { FiltroUbicacionCascada } from '../../../shared/components/FiltroUbicaci
 import { MantenimientoTable } from '../components/MantenimientoTable';
 import { HistorialMantenimientoTable } from '../components/HistorialMantenimientoTable';
 import { MantenimientoForm } from '../components/MantenimientoForm';
+import { MantenimientoMasivoModal } from '../components/MantenimientoMasivoModal';
 import { MarcarListoForm } from '../components/MarcarListoForm';
 import { Modal } from '../../../shared/components/Modal';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
@@ -23,6 +24,7 @@ export function MantenimientosPage() {
   const [subsedeFiltro, setSubsedeFiltro] = useState('');
   const [ubicacionFiltro, setUbicacionFiltro] = useState('');
   const [creando, setCreando] = useState(false);
+  const [creandoMasivo, setCreandoMasivo] = useState(false);
   const [completandoMantenimiento, setCompletandoMantenimiento] = useState(null);
   const [deletingMantenimiento, setDeletingMantenimiento] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
@@ -132,12 +134,20 @@ export function MantenimientosPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-bold text-ink">Mantenimientos</h1>
-        <button
-          onClick={() => setCreando(true)}
-          className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark"
-        >
-          Programar mantenimiento
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setCreandoMasivo(true)}
+            className="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-surface"
+          >
+            Mantenimiento masivo
+          </button>
+          <button
+            onClick={() => setCreando(true)}
+            className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark"
+          >
+            Programar mantenimiento
+          </button>
+        </div>
       </div>
 
       <FiltroUbicacionCascada
@@ -226,6 +236,12 @@ export function MantenimientosPage() {
             isSubmitting={createMantenimiento.isPending}
             serverErrors={serverErrors}
           />
+        </Modal>
+      )}
+
+      {creandoMasivo && (
+        <Modal title="Mantenimiento masivo" onClose={() => setCreandoMasivo(false)} maxWidth="max-w-3xl">
+          <MantenimientoMasivoModal onClose={() => setCreandoMasivo(false)} />
         </Modal>
       )}
 

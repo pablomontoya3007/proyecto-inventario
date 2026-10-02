@@ -27,3 +27,24 @@ export async function deleteMantenimiento(id) {
   const { data } = await httpClient.delete(`${ENDPOINTS.mantenimientos}/${id}`);
   return data;
 }
+
+/**
+ * Mantenimiento masivo — shapes confirmados contra MantenimientoMasivoController:
+ * - GET  /mantenimientos/masivo/equipos?ubicacion_formacion_id=
+ *        -> { data: [{ id, placa_sena, serial, tipo_equipo, estado, estado_label, tiene_mantenimiento_activo }] }
+ *        (lista completa, sin paginar)
+ * - POST /mantenimientos/masivo  { equipo_ids: [], fecha_programada, descripcion }
+ *        -> { mensaje, creados, omitidos: [{ equipo_id, placa_sena, motivo }] }
+ */
+
+export async function fetchEquiposParaMasivo(ubicacionId) {
+  const { data } = await httpClient.get(ENDPOINTS.mantenimientosMasivoEquipos, {
+    params: { ubicacion_formacion_id: ubicacionId },
+  });
+  return data.data;
+}
+
+export async function createMantenimientosMasivos(payload) {
+  const { data } = await httpClient.post(ENDPOINTS.mantenimientosMasivo, payload);
+  return data;
+}

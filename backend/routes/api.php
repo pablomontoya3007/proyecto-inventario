@@ -5,6 +5,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EquipoController;
 use App\Http\Controllers\LicenciaOfficeController;
+use App\Http\Controllers\MantenimientoController;
+use App\Http\Controllers\MantenimientoMasivoController;
 use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\ObservacionController;
 use App\Http\Controllers\ReporteController;
@@ -13,9 +15,8 @@ use App\Http\Controllers\ResponsableController;
 use App\Http\Controllers\SedeController;
 use App\Http\Controllers\SubsedeController;
 use App\Http\Controllers\TipoEquipoController;
-use App\Http\Controllers\UbicacionFormacionController;
-use App\Http\Controllers\MantenimientoController;
 use App\Http\Controllers\TrasladoController;
+use App\Http\Controllers\UbicacionFormacionController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
@@ -57,6 +58,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::apiResource('observaciones', ObservacionController::class)
         ->only(['index', 'store', 'show']);
+
+    // Mantenimiento masivo — ANTES del apiResource, por la misma razón
+    // que en equipos (que "masivo" nunca se confunda con un id).
+    Route::get('mantenimientos/masivo/equipos', [MantenimientoMasivoController::class, 'equipos']);
+    Route::post('mantenimientos/masivo', [MantenimientoMasivoController::class, 'store']);
 
     Route::apiResource('mantenimientos', MantenimientoController::class)
         ->only(['index', 'store', 'update', 'destroy']);
