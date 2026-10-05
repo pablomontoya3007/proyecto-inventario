@@ -14,6 +14,7 @@ class ResponsableResource extends JsonResource
             'nombre' => $this->nombre,
             'documento' => $this->documento,
             'cargo' => $this->cargo,
+            'correo' => $this->correo,
         ];
     }
 }

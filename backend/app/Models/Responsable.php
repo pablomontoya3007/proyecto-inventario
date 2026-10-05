@@ -18,6 +18,7 @@ class Responsable extends Model
         'nombre',
         'documento',
         'cargo',
+        'correo',
     ];
 
     protected static function booted(): void

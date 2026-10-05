@@ -19,6 +19,16 @@ class MantenimientoRequest extends BaseFormRequest
             // campo, así que puede superar el límite de una sola nota.
             'descripcion' => ['nullable', 'string', 'max:2000'],
             'estado' => ['sometimes', Rule::enum(EstadoMantenimiento::class)],
+            // Usuario del sistema que hará el mantenimiento (opcional).
+            // Al programar, se le notifica por correo.
+            'asignado_a' => ['nullable', 'integer', 'exists:users,id'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'asignado_a.exists' => 'El usuario asignado ya no existe.',
         ];
     }
 }

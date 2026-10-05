@@ -85,6 +85,15 @@ class Equipo extends Model
     }
 
     /**
+     * Sin orden a propósito: se usa sobre todo con withCount (indicador
+     * de novedades abiertas en el listado de Equipos).
+     */
+    public function novedades(): HasMany
+    {
+        return $this->hasMany(Novedad::class);
+    }
+
+    /**
      * Filtra equipos por ubicación jerárquica (sede / subsede / ubicación
      * de formación). Cada nivel se aplica de forma independiente si viene
      * informado — la precedencia "el más específico gana" la resuelve el

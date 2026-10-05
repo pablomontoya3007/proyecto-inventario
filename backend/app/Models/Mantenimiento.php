@@ -20,6 +20,7 @@ class Mantenimiento extends Model
         'descripcion',
         'estado',
         'fecha_completado',
+        'asignado_a',
     ];
 
     protected function casts(): array
@@ -51,5 +52,11 @@ class Mantenimiento extends Model
     public function equipo(): BelongsTo
     {
         return $this->belongsTo(Equipo::class);
+    }
+
+    // Usuario del sistema que debe hacer el mantenimiento.
+    public function asignado(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'asignado_a');
     }
 }

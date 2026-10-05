@@ -10,12 +10,10 @@ class MantenimientoMasivoRequest extends BaseFormRequest
      * equipo_ids: los equipos que quedaron MARCADOS en el frontend
      * (todos los de la ubicación menos los que se desmarcaron).
      *
-     * max:500 es un tope de seguridad, no una regla de negocio: evita
-     * que una petición accidentalmente enorme bloquee el servidor
-     * creando miles de registros en una sola transacción.
+     * max:500 es un tope de seguridad, no una regla de negocio.
      *
-     * whereNull('deleted_at'): un equipo eliminado (soft delete) no
-     * debe recibir mantenimientos nuevos.
+     * asignado_a: usuario del sistema que hará el mantenimiento — se
+     * guarda en cada registro y recibe UN correo con todos los equipos.
      */
     public function rules(): array
     {
@@ -27,6 +25,7 @@ class MantenimientoMasivoRequest extends BaseFormRequest
             ],
             'fecha_programada' => ['required', 'date'],
             'descripcion' => ['nullable', 'string', 'max:2000'],
+            'asignado_a' => ['nullable', 'integer', 'exists:users,id'],
         ];
     }
 
@@ -41,6 +40,7 @@ class MantenimientoMasivoRequest extends BaseFormRequest
             'fecha_programada.required' => 'La fecha del mantenimiento es obligatoria.',
             'fecha_programada.date' => 'La fecha del mantenimiento no es válida.',
             'descripcion.max' => 'La descripción no puede superar 2000 caracteres.',
+            'asignado_a.exists' => 'El usuario asignado ya no existe.',
         ];
     }
 }

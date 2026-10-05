@@ -60,8 +60,10 @@ class EnvioCorreoService
     }
 
     /**
-     * Resumen para devolverle al frontend junto con el mantenimiento o la
-     * novedad: { estado: enviado|fallido|omitida, mensaje }.
+     * Resumen de UN envío para devolverle al frontend:
+     * { estado: enviado|fallido|omitida, mensaje }. El mensaje nombra el
+     * destinatario, porque una misma acción puede generar varios avisos
+     * (ej. novedad: responsable + usuario asignado).
      */
     public function resumen(?CorreoEnviado $correo, string $motivoOmision = ''): array
     {
@@ -69,14 +71,13 @@ class EnvioCorreoService
             return ['estado' => 'omitida', 'mensaje' => $motivoOmision];
         }
 
+        $para = implode(', ', $correo->destinatarios);
+
         return $correo->estado === EstadoCorreo::Enviado
-            ? [
-                'estado' => 'enviado',
-                'mensaje' => 'Se envió la notificación a ' . implode(', ', $correo->destinatarios) . '.',
-            ]
+            ? ['estado' => 'enviado', 'mensaje' => "Se notificó por correo a {$para}."]
             : [
                 'estado' => 'fallido',
-                'mensaje' => 'No se pudo enviar la notificación por correo. Quedó como fallida en Correos, desde donde se puede reintentar.',
+                'mensaje' => "No se pudo notificar a {$para}: quedó como fallido en Correos, desde donde se puede reintentar.",
             ];
     }
 

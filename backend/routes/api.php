@@ -9,6 +9,7 @@ use App\Http\Controllers\LicenciaOfficeController;
 use App\Http\Controllers\MantenimientoController;
 use App\Http\Controllers\MantenimientoMasivoController;
 use App\Http\Controllers\NotificacionController;
+use App\Http\Controllers\NovedadController;
 use App\Http\Controllers\ObservacionController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\RespaldoController;
@@ -38,6 +39,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // nadie pueda usar el sistema para enviar spam con la cuenta Gmail.
     Route::get('correos', [CorreoController::class, 'index']);
     Route::post('correos', [CorreoController::class, 'store'])->middleware('throttle:10,1');
+
+    // Novedades — rutas explícitas en vez de apiResource: Laravel
+    // singularizaría "novedades" como "novedade" para el parámetro.
+    Route::get('novedades', [NovedadController::class, 'index']);
+    Route::post('novedades', [NovedadController::class, 'store']);
+    Route::patch('novedades/{novedad}/resolver', [NovedadController::class, 'resolver']);
 
     Route::apiResource('sedes', SedeController::class);
     Route::apiResource('subsedes', SubsedeController::class);

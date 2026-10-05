@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EstadoNovedad;
 use App\Exports\EquiposImportPlantillaExport;
 use App\Http\Requests\EquipoRequest;
 use App\Http\Resources\EquipoResource;
@@ -22,6 +23,9 @@ class EquipoController extends Controller
      * sede_id/subsede_id no son columnas de "equipos" (viven más arriba en
      * la jerarquía), así que se filtran con whereHas a través de la
      * relación en vez de un where directo.
+     *
+     * novedades_abiertas_count: alimenta el indicador de novedades de la
+     * tabla de Equipos (una sola subconsulta COUNT por fila).
      */
     public function index(Request $request): AnonymousResourceCollection
     {
@@ -29,6 +33,9 @@ class EquipoController extends Controller
 
         $equipos = Equipo::query()
             ->with(['tipoEquipo', 'responsable', 'ubicacionFormacion.subsede.sede'])
+            ->withCount([
+                'novedades as novedades_abiertas_count' => fn ($q) => $q->where('estado', EstadoNovedad::Abierta),
+            ])
             ->when($request->filled('placa_sena'), fn ($q) => $q->where('placa_sena', 'like', '%' . $request->input('placa_sena') . '%'))
             ->when($request->filled('serial'), fn ($q) => $q->where('serial', 'like', '%' . $request->input('serial') . '%'))
             ->when($request->filled('mac'), fn ($q) => $q->where('mac', 'like', '%' . $request->input('mac') . '%'))

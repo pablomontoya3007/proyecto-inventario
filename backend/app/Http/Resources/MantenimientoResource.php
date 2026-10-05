@@ -18,6 +18,11 @@ class MantenimientoResource extends JsonResource
             'fecha_completado' => $this->fecha_completado?->toDateString(),
             'estado' => $this->estado?->value,
             'estado_label' => $this->estado?->label(),
+            'asignado' => $this->whenLoaded('asignado', fn () => $this->asignado ? [
+                'id' => $this->asignado->id,
+                'nombre' => $this->asignado->name,
+                'correo' => $this->asignado->email,
+            ] : null),
             'creado_en' => $this->created_at,
         ];
     }
