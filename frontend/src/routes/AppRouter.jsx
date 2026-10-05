@@ -15,6 +15,7 @@ import { MantenimientosPage } from '../features/mantenimientos/pages/Mantenimien
 import { TrasladosPage } from '../features/traslados/pages/TrasladosPage';
 import { LicenciasPage } from '../features/licencias/pages/LicenciasPage';
 import { ObservacionesPage } from '../features/observaciones/pages/ObservacionesPage';
+import { NovedadesPage } from '../features/novedades/pages/NovedadesPage';
 import { ReportesPage } from '../features/reportes/pages/ReportesPage';
 import { RespaldosPage } from '../features/respaldos/pages/RespaldosPage';
 import { AuditoriaPage } from '../features/auditoria/pages/AuditoriaPage';
@@ -51,6 +52,7 @@ export function AppRouter() {
                   <Route path="/traslados" element={<TrasladosPage />} />
                   <Route path="/licencias-office" element={<LicenciasPage />} />
                   <Route path="/observaciones" element={<ObservacionesPage />} />
+                  <Route path="/novedades" element={<NovedadesPage />} />
                   <Route path="/reportes" element={<ReportesPage />} />
                   <Route path="/respaldos" element={<RespaldosPage />} />
                   <Route path="/auditoria" element={<AuditoriaPage />} />

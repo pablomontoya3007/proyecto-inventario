@@ -2,14 +2,14 @@ import { useState } from 'react';
 import { useSedes } from '../../sedes/hooks/useSedes';
 import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
 import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
+import { BuscadorUsuario } from '../../usuarios/components/BuscadorUsuario';
 import { useEquiposParaMasivo, useCreateMantenimientosMasivos } from '../hooks/useMantenimientos';
 
 const CAMPO =
   'mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-sena focus:outline-none disabled:bg-slate-100';
 
-// Equipos en estos estados aparecen DESMARCADOS al cargar la ubicación
-// (normalmente no tiene sentido programarles mantenimiento), pero se
-// pueden marcar a mano si hace falta.
+// Equipos en estos estados aparecen DESMARCADOS al cargar la ubicación,
+// pero se pueden marcar a mano si hace falta.
 const ESTADOS_SIN_PRESELECCION = ['de_baja', 'extraviado'];
 
 function obtenerFechaHoyLocal() {
@@ -26,21 +26,15 @@ function seleccionadoPorDefecto(equipo) {
 
 /**
  * Flujo: Sede → Subsede → Ubicación → lista de equipos (todos marcados
- * por defecto) → desmarcar los que no requieren mantenimiento → fecha y
- * descripción → enviar.
+ * por defecto) → desmarcar los que no requieren mantenimiento → fecha,
+ * usuario asignado y descripción → enviar.
  *
- * La selección NO se guarda como "lista de marcados", sino como los
- * CAMBIOS que hizo la persona respecto a la selección por defecto
- * (Map id → true/false). Así no hace falta un useEffect que
- * "inicialice" la selección cuando llegan los datos: lo marcado se
- * calcula al vuelo. Al cambiar de ubicación, basta con vaciar el Map.
+ * La selección se guarda como los CAMBIOS respecto a la selección por
+ * defecto (Map id → true/false): así no hace falta un useEffect que la
+ * "inicialice" cuando llegan los datos.
  *
- * Los equipos que ya tienen un mantenimiento pendiente se muestran
- * deshabilitados (nunca se envían): evita duplicar mantenimientos.
- *
- * Mismo patrón que ImportarEquiposModal: al terminar, el resultado se
- * queda visible (cuántos se programaron y cuáles se omitieron) en vez
- * de cerrar el modal solo.
+ * Al terminar, el resultado se queda visible: cuántos se programaron,
+ * cuáles se omitieron y si la notificación al usuario asignado salió.
  */
 export function MantenimientoMasivoModal({ onClose }) {
   const [sedeId, setSedeId] = useState('');
@@ -49,6 +43,7 @@ export function MantenimientoMasivoModal({ onClose }) {
   const [cambios, setCambios] = useState(() => new Map());
   const [busqueda, setBusqueda] = useState('');
   const [fecha, setFecha] = useState(obtenerFechaHoyLocal);
+  const [asignado, setAsignado] = useState(null);
   const [descripcion, setDescripcion] = useState('');
 
   const { data: sedesData } = useSedes(1);
@@ -126,12 +121,15 @@ export function MantenimientoMasivoModal({ onClose }) {
       equipo_ids: idsSeleccionados,
       fecha_programada: fecha,
       descripcion: descripcion.trim() || null,
+      asignado_a: asignado?.id ?? null,
     });
   }
 
   const resultado = crear.data;
 
   if (resultado) {
+    const notificaciones = resultado.notificaciones ?? [];
+
     return (
       <div className="space-y-4">
         <div className="rounded border border-slate-200 bg-surface p-3 text-sm">
@@ -139,6 +137,18 @@ export function MantenimientoMasivoModal({ onClose }) {
           <p className="mt-1 text-slate-600">
             Ya aparecen en la pestaña Activos y en la hoja de vida de cada equipo.
           </p>
+
+          {notificaciones.map((notificacion, indice) => (
+            <p
+              key={indice}
+              className={`mt-3 rounded px-3 py-2 ${
+                notificacion.estado === 'enviado' ? 'bg-sena-soft text-sena-dark' : 'bg-warning/20 text-ink'
+              }`}
+            >
+              {notificacion.mensaje}
+            </p>
+          ))}
+
           {resultado.omitidos.length > 0 && (
             <>
               <p className="mt-3 font-medium text-warning">
@@ -337,7 +347,7 @@ export function MantenimientoMasivoModal({ onClose }) {
         </section>
       )}
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <div>
           <label htmlFor="masivo_fecha" className="block text-sm font-medium text-ink">
             Fecha del mantenimiento
@@ -355,20 +365,40 @@ export function MantenimientoMasivoModal({ onClose }) {
           )}
         </div>
 
-        <div className="col-span-2">
-          <label htmlFor="masivo_descripcion" className="block text-sm font-medium text-ink">
-            Descripción (opcional, se aplica a todos)
+        <div>
+          <label htmlFor="masivo_asignado" className="block text-sm font-medium text-ink">
+            Asignar a (opcional)
           </label>
-          <textarea
-            id="masivo_descripcion"
-            maxLength={500}
-            rows={2}
-            value={descripcion}
-            onChange={(event) => setDescripcion(event.target.value)}
-            className={CAMPO}
+          <BuscadorUsuario
+            id="masivo_asignado"
+            value={asignado}
+            onChange={setAsignado}
+            placeholder="Usuario que hará el mantenimiento..."
+            className="mt-1"
+            inputClassName="rounded border border-slate-300 px-3 py-2 text-sm focus:border-sena focus:outline-none"
           />
-          {serverErrors?.descripcion && <p className="mt-1 text-sm text-danger">{serverErrors.descripcion[0]}</p>}
+          {serverErrors?.asignado_a && <p className="mt-1 text-sm text-danger">{serverErrors.asignado_a[0]}</p>}
         </div>
+      </div>
+
+      <div>
+        <label htmlFor="masivo_descripcion" className="block text-sm font-medium text-ink">
+          Descripción (opcional, se aplica a todos)
+        </label>
+        <textarea
+          id="masivo_descripcion"
+          maxLength={500}
+          rows={2}
+          value={descripcion}
+          onChange={(event) => setDescripcion(event.target.value)}
+          className={CAMPO}
+        />
+        {serverErrors?.descripcion && <p className="mt-1 text-sm text-danger">{serverErrors.descripcion[0]}</p>}
+        <p className="mt-1 text-xs text-slate-500">
+          {asignado
+            ? `${asignado.nombre} quedará asignado a todos los mantenimientos y recibirá UN correo (${asignado.correo}) con la lista de equipos.`
+            : 'Si asignas un usuario, recibirá UN correo con la lista de todos los equipos programados.'}
+        </p>
       </div>
 
       {crear.isError && !serverErrors && (

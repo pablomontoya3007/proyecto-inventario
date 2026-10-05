@@ -9,6 +9,7 @@ export function HistorialMantenimientoTable({ mantenimientos, onDelete }) {
         <tr className="border-b border-slate-200 text-slate-500">
           <th className="py-2 pr-4 font-medium">Equipo</th>
           <th className="py-2 pr-4 font-medium">Fecha programada</th>
+          <th className="py-2 pr-4 font-medium">Asignado a</th>
           <th className="py-2 pr-4 font-medium">Descripción</th>
           <th className="py-2 pr-4 font-medium">Fecha completado</th>
           <th className="py-2 pr-4 font-medium text-right">Acciones</th>
@@ -19,6 +20,9 @@ export function HistorialMantenimientoTable({ mantenimientos, onDelete }) {
           <tr key={mantenimiento.id} className="border-b border-slate-100">
             <td className="py-2 pr-4 text-ink">{mantenimiento.equipo?.placa_sena ?? '—'}</td>
             <td className="py-2 pr-4 text-slate-500">{mantenimiento.fecha_programada}</td>
+            <td className="py-2 pr-4 text-slate-600">
+              {mantenimiento.asignado?.nombre ?? <span className="text-slate-400">Sin asignar</span>}
+            </td>
             <td className="max-w-xs truncate py-2 pr-4 text-slate-500" title={mantenimiento.descripcion ?? ''}>
               {mantenimiento.descripcion || '—'}
             </td>

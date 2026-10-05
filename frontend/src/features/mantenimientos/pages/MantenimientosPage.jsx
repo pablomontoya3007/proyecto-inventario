@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAuth } from '../../auth/hooks/useAuth';
 import {
   useMantenimientos,
   useCreateMantenimiento,
@@ -9,6 +10,8 @@ import { useSedes } from '../../sedes/hooks/useSedes';
 import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
 import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
 import { FiltroUbicacionCascada } from '../../../shared/components/FiltroUbicacionCascada';
+import { AvisoBanner } from '../../../shared/components/AvisoBanner';
+import { avisoDeNotificacion } from '../../../shared/utils/avisoNotificacion';
 import { MantenimientoTable } from '../components/MantenimientoTable';
 import { HistorialMantenimientoTable } from '../components/HistorialMantenimientoTable';
 import { MantenimientoForm } from '../components/MantenimientoForm';
@@ -18,17 +21,21 @@ import { Modal } from '../../../shared/components/Modal';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 
 export function MantenimientosPage() {
+  const { user } = useAuth();
+
   const [pestana, setPestana] = useState('activos'); // 'activos' | 'historial'
   const [page, setPage] = useState(1);
   const [sedeFiltro, setSedeFiltro] = useState('');
   const [subsedeFiltro, setSubsedeFiltro] = useState('');
   const [ubicacionFiltro, setUbicacionFiltro] = useState('');
+  const [soloMios, setSoloMios] = useState(false);
   const [creando, setCreando] = useState(false);
   const [creandoMasivo, setCreandoMasivo] = useState(false);
   const [completandoMantenimiento, setCompletandoMantenimiento] = useState(null);
   const [deletingMantenimiento, setDeletingMantenimiento] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
   const [errorCambioEstado, setErrorCambioEstado] = useState(null);
+  const [aviso, setAviso] = useState(null);
 
   function cambiarPestana(nueva) {
     setPestana(nueva);
@@ -68,6 +75,7 @@ export function MantenimientosPage() {
         : sedeFiltro
           ? { sede_id: sedeFiltro }
           : {}),
+    ...(soloMios && user?.id ? { asignado_a: user.id } : {}),
   };
 
   const { data: sedesData } = useSedes(1);
@@ -81,8 +89,24 @@ export function MantenimientosPage() {
 
   const serverErrors = createMantenimiento.error?.response?.data?.errors;
 
+  function abrirIndividual() {
+    createMantenimiento.reset();
+    setAviso(null);
+    setCreando(true);
+  }
+
+  function abrirMasivo() {
+    setAviso(null);
+    setCreandoMasivo(true);
+  }
+
   function handleSubmit(payload) {
-    createMantenimiento.mutate(payload, { onSuccess: () => setCreando(false) });
+    createMantenimiento.mutate(payload, {
+      onSuccess: (mantenimiento) => {
+        setCreando(false);
+        setAviso(avisoDeNotificacion(mantenimiento.notificaciones, 'Mantenimiento programado.'));
+      },
+    });
   }
 
   function handleCambiarEstado(mantenimiento, nuevoEstado) {
@@ -136,19 +160,21 @@ export function MantenimientosPage() {
         <h1 className="text-3xl font-bold text-ink">Mantenimientos</h1>
         <div className="flex gap-2">
           <button
-            onClick={() => setCreandoMasivo(true)}
+            onClick={abrirMasivo}
             className="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-surface"
           >
             Mantenimiento masivo
           </button>
           <button
-            onClick={() => setCreando(true)}
+            onClick={abrirIndividual}
             className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark"
           >
             Programar mantenimiento
           </button>
         </div>
       </div>
+
+      <AvisoBanner aviso={aviso} onCerrar={() => setAviso(null)} />
 
       <FiltroUbicacionCascada
         sedesData={sedesData}
@@ -162,6 +188,19 @@ export function MantenimientosPage() {
         onUbicacionChange={handleUbicacionChange}
         onLimpiar={handleLimpiarFiltros}
       />
+
+      <label className="mb-4 flex w-fit cursor-pointer items-center gap-2 text-sm text-slate-600">
+        <input
+          type="checkbox"
+          checked={soloMios}
+          onChange={(event) => {
+            setSoloMios(event.target.checked);
+            setPage(1);
+          }}
+          className="h-4 w-4 accent-sena"
+        />
+        Solo los asignados a mí
+      </label>
 
       <div className="mb-4 flex gap-1 border-b border-slate-200">
         <button

@@ -4,6 +4,7 @@ import { ENDPOINTS } from '../../../api/endpoints';
 /**
  * completado: true trae solo "listo" (pestaña Historial); false trae
  * en_espera + en_mantenimiento (pestaña Activos); omitido no filtra.
+ * filtros admite asignado_a (usuario encargado).
  */
 
 export async function fetchMantenimientos({ page = 1, completado, filtros = {} } = {}) {
@@ -13,9 +14,15 @@ export async function fetchMantenimientos({ page = 1, completado, filtros = {} }
   return data;
 }
 
+/**
+ * POST /mantenimientos { equipo_id, fecha_programada, descripcion, asignado_a }
+ *   -> { data: Mantenimiento, notificaciones: [{ estado, mensaje }] }
+ * Se devuelve el mantenimiento con "notificaciones" adjunta, para que la
+ * página pueda avisar si el correo al usuario asignado salió o no.
+ */
 export async function createMantenimiento(payload) {
   const { data } = await httpClient.post(ENDPOINTS.mantenimientos, payload);
-  return data.data;
+  return { ...data.data, notificaciones: data.notificaciones ?? [] };
 }
 
 export async function updateMantenimiento(id, payload) {
@@ -32,9 +39,8 @@ export async function deleteMantenimiento(id) {
  * Mantenimiento masivo — shapes confirmados contra MantenimientoMasivoController:
  * - GET  /mantenimientos/masivo/equipos?ubicacion_formacion_id=
  *        -> { data: [{ id, placa_sena, serial, tipo_equipo, estado, estado_label, tiene_mantenimiento_activo }] }
- *        (lista completa, sin paginar)
- * - POST /mantenimientos/masivo  { equipo_ids: [], fecha_programada, descripcion }
- *        -> { mensaje, creados, omitidos: [{ equipo_id, placa_sena, motivo }] }
+ * - POST /mantenimientos/masivo  { equipo_ids: [], fecha_programada, descripcion, asignado_a }
+ *        -> { mensaje, creados, omitidos: [{ equipo_id, placa_sena, motivo }], notificaciones: [] }
  */
 
 export async function fetchEquiposParaMasivo(ubicacionId) {

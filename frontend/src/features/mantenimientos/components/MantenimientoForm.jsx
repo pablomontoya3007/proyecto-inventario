@@ -1,14 +1,27 @@
 import { useState } from 'react';
 import { EquipoAutocomplete } from '../../../shared/components/EquipoAutocomplete';
+import { BuscadorUsuario } from '../../usuarios/components/BuscadorUsuario';
 
+const INPUT = 'mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none';
+
+/**
+ * asignado_a: usuario del sistema que hará el mantenimiento. Opcional;
+ * si se elige, recibe un correo con el equipo, la fecha y la descripción.
+ */
 export function MantenimientoForm({ onSubmit, onCancel, isSubmitting, serverErrors }) {
   const [equipo, setEquipo] = useState(null);
   const [fecha, setFecha] = useState('');
   const [descripcion, setDescripcion] = useState('');
+  const [asignado, setAsignado] = useState(null);
 
   function handleSubmit(event) {
     event.preventDefault();
-    onSubmit({ equipo_id: equipo?.id, fecha_programada: fecha, descripcion: descripcion.trim() || null });
+    onSubmit({
+      equipo_id: equipo?.id,
+      fecha_programada: fecha,
+      descripcion: descripcion.trim() || null,
+      asignado_a: asignado?.id ?? null,
+    });
   }
 
   return (
@@ -31,11 +44,31 @@ export function MantenimientoForm({ onSubmit, onCancel, isSubmitting, serverErro
           required
           value={fecha}
           onChange={(event) => setFecha(event.target.value)}
-          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
+          className={INPUT}
         />
         {serverErrors?.fecha_programada && (
           <p className="mt-1 text-sm text-danger">{serverErrors.fecha_programada[0]}</p>
         )}
+      </div>
+
+      <div>
+        <label htmlFor="mantenimiento_asignado" className="block text-sm font-medium text-ink">
+          Asignar a (opcional)
+        </label>
+        <BuscadorUsuario
+          id="mantenimiento_asignado"
+          value={asignado}
+          onChange={setAsignado}
+          placeholder="Usuario que hará el mantenimiento..."
+          className="mt-1"
+          inputClassName="rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
+        />
+        <p className="mt-1 text-xs text-slate-500">
+          {asignado
+            ? `Se le enviará un correo a ${asignado.nombre} (${asignado.correo}).`
+            : 'El usuario asignado recibe un correo con el equipo, la fecha y la descripción.'}
+        </p>
+        {serverErrors?.asignado_a && <p className="mt-1 text-sm text-danger">{serverErrors.asignado_a[0]}</p>}
       </div>
 
       <div>
@@ -48,7 +81,7 @@ export function MantenimientoForm({ onSubmit, onCancel, isSubmitting, serverErro
           rows={3}
           value={descripcion}
           onChange={(event) => setDescripcion(event.target.value)}
-          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
+          className={INPUT}
         />
         {serverErrors?.descripcion && <p className="mt-1 text-sm text-danger">{serverErrors.descripcion[0]}</p>}
       </div>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Monitor } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 export function LoginPage() {
@@ -39,9 +40,14 @@ export function LoginPage() {
         <div className="h-1.5 bg-sena" />
 
         <div className="space-y-4 p-8">
-          <div>
-            <h1 className="text-xl font-bold text-ink">SPY</h1>
-            <p className="text-sm text-slate-500">Sistema de Gestión de Inventario de Equipos SENA</p>
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-sena text-white">
+              <Monitor size={22} aria-hidden="true" />
+            </span>
+            <div>
+              <h1 className="text-xl font-bold text-ink">Inventario SENA</h1>
+              <p className="text-sm text-slate-500">Sistema de Gestión de Inventario de Equipos</p>
+            </div>
           </div>
 
           {sessionExpired && !error && (

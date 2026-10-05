@@ -15,6 +15,9 @@ export const ENDPOINTS = {
   // Correos redactados desde el sistema (GET historial, POST enviar)
   correos: '/correos',
 
+  // Novedades: GET listado, POST registrar, PATCH /{id}/resolver
+  novedades: '/novedades',
+
   // Fase 1
   sedes: '/sedes',
   subsedes: '/subsedes',
