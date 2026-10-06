@@ -20,6 +20,7 @@ use App\Http\Controllers\TipoEquipoController;
 use App\Http\Controllers\TrasladoController;
 use App\Http\Controllers\UbicacionFormacionController;
 use App\Http\Controllers\UsuarioController;
+use App\Http\Controllers\VerificacionController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
@@ -57,11 +58,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::apiResource('responsables', ResponsableController::class);
 
-    // Estas dos van ANTES del apiResource de equipos: si van después,
-    // GET equipos/{equipo} captura "plantilla-importacion" como si fuera
-    // un id de equipo y responde 404.
+    // Estas van ANTES del apiResource de equipos: si van después,
+    // GET equipos/{equipo} captura "plantilla-importacion" o "verificar"
+    // como si fueran un id de equipo y responde 404.
     Route::post('equipos/importar', [EquipoController::class, 'importar']);
     Route::get('equipos/plantilla-importacion', [EquipoController::class, 'plantillaImportacion']);
+    Route::get('equipos/verificar', [VerificacionController::class, 'equipo']);
 
     Route::apiResource('equipos', EquipoController::class);
     Route::get('equipos/{equipo}/hoja-de-vida/pdf', [EquipoController::class, 'hojaDeVidaPdf']);
@@ -69,6 +71,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Mismo motivo que en equipos: ANTES del apiResource.
     Route::post('licencias-office/importar', [LicenciaOfficeController::class, 'importar']);
     Route::get('licencias-office/plantilla-importacion', [LicenciaOfficeController::class, 'plantillaImportacion']);
+    Route::get('licencias-office/verificar', [VerificacionController::class, 'licencia']);
 
     Route::apiResource('licencias-office', LicenciaOfficeController::class)
         ->parameters(['licencias-office' => 'licencia_office']);

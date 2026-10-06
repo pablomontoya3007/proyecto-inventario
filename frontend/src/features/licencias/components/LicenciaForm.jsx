@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { EquipoAutocomplete } from '../../../shared/components/EquipoAutocomplete';
+import { useVerificarLicencia } from '../hooks/useVerificarLicencia';
 
 // Confirmado contra app/Enums/EstadoLicencia.php.
 const ESTADOS_LICENCIA = [
@@ -12,18 +13,13 @@ const ESTADOS_LICENCIA = [
  * La contraseña nunca llega desde el backend (ni cifrada) — por diseño,
  * LicenciaOfficeResource la omite siempre. Por eso este campo SIEMPRE
  * arranca vacío, incluso al editar: dejarlo en blanco al guardar
- * conserva la contraseña actual (así lo maneja el Controller); escribir
- * algo la reemplaza.
+ * conserva la contraseña actual; escribir algo la reemplaza.
  *
- * El equipo se elige escribiendo su placa (EquipoAutocomplete), no con
- * un <select>: el select solo cargaba los primeros 15 equipos. Al
- * editar, arranca con el equipo que ya tiene la licencia; si ese equipo
- * ya no existe (fue eliminado), hay que elegir otro para poder guardar.
- *
- * equipo_id tiene una restricción única (un equipo, máximo una
- * licencia) que no se valida aquí de antemano — si ya existe una para
- * el equipo elegido, el 422 llega bajo ese mismo campo, igual que
- * cualquier otro error de servidor.
+ * El equipo se elige escribiendo su placa (EquipoAutocomplete). Al
+ * elegirlo se verifica en vivo si ya tiene licencia (un equipo, una
+ * licencia) y se bloquea "Guardar" si es así. El correo se verifica al
+ * escribirlo: si ya está en otras licencias, solo se advierte (la BD lo
+ * permite). El backend sigue validando de todas formas.
  */
 export function LicenciaForm({ initialValues, onSubmit, onCancel, isSubmitting, serverErrors }) {
   const [equipo, setEquipo] = useState(initialValues?.equipo ?? null);
@@ -33,6 +29,12 @@ export function LicenciaForm({ initialValues, onSubmit, onCancel, isSubmitting, 
   const [estadoLicencia, setEstadoLicencia] = useState(initialValues?.estado_licencia ?? 'activa');
 
   const esEdicion = Boolean(initialValues?.id);
+
+  const { licenciaDelEquipo, licenciasConCorreo, verificandoEquipo } = useVerificarLicencia({
+    equipoId: equipo?.id,
+    correo,
+    ignorarId: initialValues?.id,
+  });
 
   function handleEquipoChange(nuevoEquipo) {
     setEquipo(nuevoEquipo);
@@ -48,6 +50,8 @@ export function LicenciaForm({ initialValues, onSubmit, onCancel, isSubmitting, 
       setFalloEquipo(true);
       return;
     }
+
+    if (licenciaDelEquipo) return;
 
     const payload = {
       equipo_id: equipo.id,
@@ -76,6 +80,16 @@ export function LicenciaForm({ initialValues, onSubmit, onCancel, isSubmitting, 
         {falloEquipo && !equipo && (
           <p className="mt-1 text-sm text-danger">Elige un equipo de la lista para poder guardar.</p>
         )}
+        {verificandoEquipo && !licenciaDelEquipo && (
+          <p className="mt-1 text-xs text-slate-400">Verificando si el equipo ya tiene licencia...</p>
+        )}
+        {licenciaDelEquipo && (
+          <p className="mt-1 text-sm text-danger">
+            Este equipo ya tiene una licencia asociada (correo {licenciaDelEquipo.correo}
+            {licenciaDelEquipo.estado_label ? `, ${licenciaDelEquipo.estado_label.toLowerCase()}` : ''}). Edita esa
+            licencia en vez de crear otra, o elige un equipo distinto.
+          </p>
+        )}
         {serverErrors?.equipo_id && <p className="mt-1 text-sm text-danger">{serverErrors.equipo_id[0]}</p>}
       </div>
 
@@ -92,6 +106,15 @@ export function LicenciaForm({ initialValues, onSubmit, onCancel, isSubmitting, 
           onChange={(event) => setCorreo(event.target.value)}
           className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
         />
+        {licenciasConCorreo.length > 0 && (
+          <p className="mt-1 rounded bg-warning/20 px-3 py-2 text-xs text-ink">
+            Este correo ya está asociado a {licenciasConCorreo.length === 1 ? 'la placa' : 'las placas'}{' '}
+            <span className="font-mono">
+              {licenciasConCorreo.map((licencia) => licencia.placa_sena ?? 'equipo eliminado').join(', ')}
+            </span>
+            . Puedes guardar igual si la cuenta se comparte entre equipos.
+          </p>
+        )}
         {serverErrors?.correo && <p className="mt-1 text-sm text-danger">{serverErrors.correo[0]}</p>}
       </div>
 
@@ -141,7 +164,7 @@ export function LicenciaForm({ initialValues, onSubmit, onCancel, isSubmitting, 
         </button>
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || Boolean(licenciaDelEquipo)}
           className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark disabled:opacity-50"
         >
           {isSubmitting ? 'Guardando...' : 'Guardar'}

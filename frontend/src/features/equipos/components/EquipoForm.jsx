@@ -4,6 +4,7 @@ import { useSedes } from '../../sedes/hooks/useSedes';
 import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
 import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
 import { BuscadorResponsable } from '../../responsables/components/BuscadorResponsable';
+import { useVerificarEquipo } from '../hooks/useVerificarEquipo';
 import { CaracteristicasEditor } from './CaracteristicasEditor';
 
 // Confirmado contra app/Enums/EstadoEquipo.php — valores y etiquetas reales.
@@ -15,6 +16,38 @@ const ESTADOS_EQUIPO = [
 ];
 
 const INPUT = 'rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none';
+const INPUT_ERROR = 'rounded border border-danger px-3 py-2 focus:border-danger focus:outline-none';
+
+/**
+ * Aviso en vivo de placa o serial repetidos. Si el duplicado es un
+ * equipo ELIMINADO, se explica aparte: su placa/serial siguen ocupados
+ * en la BD y no se pueden reutilizar.
+ */
+function AvisoDuplicado({ campo, coincidencia }) {
+  if (coincidencia.eliminado) {
+    return (
+      <p className="mt-1 text-sm text-danger">
+        Ya existe un equipo <strong>eliminado</strong> con {campo === 'placa' ? 'esta placa' : 'este serial'}; no se
+        puede reutilizar.
+      </p>
+    );
+  }
+
+  const detalle = [coincidencia.tipo_equipo, coincidencia.ubicacion].filter(Boolean).join(' · ');
+
+  return (
+    <p className="mt-1 text-sm text-danger">
+      Ya existe un equipo con {campo === 'placa' ? 'esta placa' : 'este serial'}
+      {campo === 'serial' && (
+        <>
+          {' '}
+          (placa <span className="font-mono">{coincidencia.placa_sena}</span>)
+        </>
+      )}
+      {detalle && `: ${detalle}`}.
+    </p>
+  );
+}
 
 /**
  * Placa SENA, serial y MAC no tienen formato obligatorio: la
@@ -22,20 +55,19 @@ const INPUT = 'rounded border border-slate-300 px-3 py-2 focus:border-sena focus
  * (NormalizadorEquipo) convierte números a texto y, cuando lo escrito
  * tiene forma de MAC, la guarda como AA:BB:CC:DD:EE:FF.
  *
+ * Mientras se escribe la placa o el serial, se verifica en vivo si ya
+ * existen (useVerificarEquipo) y se bloquea "Guardar" si hay duplicado,
+ * sin tener que intentar guardar primero. El backend sigue validando.
+ *
  * El responsable se elige con BuscadorResponsable (autocompletado
- * contra el backend), porque hay demasiados para un <select>. Por eso
- * el estado guarda el OBJETO responsable completo, no solo su id: el
- * buscador necesita el nombre para mostrarlo.
+ * contra el backend), porque hay demasiados para un <select>.
  *
  * Sedes/Subsedes/Ubicaciones se listan sin paginar más allá de la
- * página 1 (máx. 15 cada una), igual que en los módulos anteriores. Si
- * este proyecto llega a superar esos 15 en algún nivel, un equipo ya
- * asignado a algo fuera de esa página no se va a ver seleccionado
- * correctamente al editar — lo dejo como límite conocido por ahora.
+ * página 1 (máx. 15 cada una) — límite conocido.
  */
 export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, serverErrors }) {
-  const [placaSena, setPlacaSena] = useState(initialValues?.placa_sena ?? '');
-  const [serial, setSerial] = useState(initialValues?.serial ?? '');
+  const [placaSena, setPlacaSena] = useState(String(initialValues?.placa_sena ?? ''));
+  const [serial, setSerial] = useState(String(initialValues?.serial ?? ''));
   const [mac, setMac] = useState(initialValues?.mac ?? '');
   const [macCableada, setMacCableada] = useState(initialValues?.mac_cableada ?? '');
   const [hostname, setHostname] = useState(initialValues?.hostname ?? '');
@@ -45,15 +77,19 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
   const [subsedeId, setSubsedeId] = useState(initialValues?.ubicacion_formacion?.subsede?.id ?? '');
   const [ubicacionId, setUbicacionId] = useState(initialValues?.ubicacion_formacion?.id ?? '');
   const [caracteristicas, setCaracteristicas] = useState(initialValues?.caracteristicas_tecnicas ?? {});
-  // 'activo' como default sensato para equipos nuevos; al editar, parte
-  // del valor real que ya tenga (initialValues.estado — el string crudo
-  // del enum, no estado_label, que es solo para mostrar en la tabla).
   const [estado, setEstado] = useState(initialValues?.estado ?? 'activo');
 
   const { data: tiposData } = useTiposEquipo();
   const { data: sedesData } = useSedes(1);
   const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeId || undefined });
   const { data: ubicacionesData } = useUbicaciones({ page: 1, subsedeId: subsedeId || undefined });
+
+  const { duplicadoPlaca, duplicadoSerial, verificandoPlaca, verificandoSerial } = useVerificarEquipo({
+    placa: placaSena,
+    serial,
+    ignorarId: initialValues?.id,
+  });
+  const hayDuplicado = Boolean(duplicadoPlaca || duplicadoSerial);
 
   // Solo tipos activos para elegir, salvo que el equipo que se edita ya
   // tenga asignado uno inactivo — ahí se deja visible para no "perder"
@@ -83,6 +119,8 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
 
   function handleSubmit(event) {
     event.preventDefault();
+    if (hayDuplicado) return;
+
     onSubmit({
       placa_sena: placaSena,
       serial,
@@ -111,8 +149,11 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
             maxLength={30}
             value={placaSena}
             onChange={(event) => setPlacaSena(event.target.value)}
-            className={`mt-1 w-full ${INPUT}`}
+            aria-invalid={Boolean(duplicadoPlaca)}
+            className={`mt-1 w-full ${duplicadoPlaca ? INPUT_ERROR : INPUT}`}
           />
+          {verificandoPlaca && <p className="mt-1 text-xs text-slate-400">Verificando placa...</p>}
+          {duplicadoPlaca && <AvisoDuplicado campo="placa" coincidencia={duplicadoPlaca} />}
           {serverErrors?.placa_sena && <p className="mt-1 text-sm text-danger">{serverErrors.placa_sena[0]}</p>}
         </div>
 
@@ -127,8 +168,11 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
             maxLength={100}
             value={serial}
             onChange={(event) => setSerial(event.target.value)}
-            className={`mt-1 w-full ${INPUT}`}
+            aria-invalid={Boolean(duplicadoSerial)}
+            className={`mt-1 w-full ${duplicadoSerial ? INPUT_ERROR : INPUT}`}
           />
+          {verificandoSerial && <p className="mt-1 text-xs text-slate-400">Verificando serial...</p>}
+          {duplicadoSerial && <AvisoDuplicado campo="serial" coincidencia={duplicadoSerial} />}
           {serverErrors?.serial && <p className="mt-1 text-sm text-danger">{serverErrors.serial[0]}</p>}
         </div>
       </div>
@@ -210,7 +254,7 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
 
         <div>
           <label htmlFor="responsable_buscador" className="block text-sm font-medium text-ink">
-            Cuentadante (opcional)
+            Responsable (opcional)
           </label>
           <BuscadorResponsable
             id="responsable_buscador"
@@ -328,7 +372,10 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
         error={serverErrors?.caracteristicas_tecnicas?.[0]}
       />
 
-      <div className="flex justify-end gap-2 border-t pt-4">
+      <div className="flex items-center justify-end gap-2 border-t pt-4">
+        {hayDuplicado && (
+          <p className="mr-auto text-sm text-danger">Corrige la placa o el serial repetido para poder guardar.</p>
+        )}
         <button
           type="button"
           onClick={onCancel}
@@ -338,7 +385,7 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
         </button>
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || hayDuplicado}
           className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark disabled:opacity-50"
         >
           {isSubmitting ? 'Guardando...' : 'Guardar'}
