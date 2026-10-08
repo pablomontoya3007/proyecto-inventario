@@ -13,9 +13,13 @@ use Illuminate\Support\Collection;
  * controladores para que cambiar la redacción no obligue a tocar lógica.
  * Devuelven [asunto, cuerpo] en texto plano; CorreoSistemaMail se
  * encarga de escaparlo y darle formato HTML.
+ *
+ * El nombre que ven los destinatarios es "Inventario SENA".
  */
 final class PlantillasCorreo
 {
+    private const NOMBRE_SISTEMA = 'Inventario SENA';
+
     /**
      * Al usuario asignado a un mantenimiento (individual o masivo).
      *
@@ -43,7 +47,7 @@ final class PlantillasCorreo
         $lineas = [
             "Hola {$asignado->name},",
             '',
-            'Se te asignó un mantenimiento en el sistema de inventario SPY.',
+            'Se te asignó un mantenimiento en el sistema ' . self::NOMBRE_SISTEMA . '.',
             '',
             "Fecha programada: {$fecha}",
             "Programado por: {$programadoPor->name}",
@@ -97,7 +101,7 @@ final class PlantillasCorreo
         $lineas = [
             'Hola' . ($novedad->asignado ? " {$novedad->asignado->name}" : '') . ',',
             '',
-            'Se te asignó revisar una novedad registrada en el sistema de inventario SPY.',
+            'Se te asignó revisar una novedad registrada en el sistema ' . self::NOMBRE_SISTEMA . '.',
             '',
             ...self::datosNovedad($novedad, incluirResponsable: true, incluirAsignado: false),
         ];
@@ -137,7 +141,11 @@ final class PlantillasCorreo
         return $lineas;
     }
 
-    private static function ubicacion(Equipo $equipo): string
+    /**
+     * Pública: NovedadResource la usa para mostrar la ubicación en
+     * pantalla con el mismo formato que el correo.
+     */
+    public static function ubicacion(Equipo $equipo): string
     {
         $ubicacion = $equipo->ubicacionFormacion;
 

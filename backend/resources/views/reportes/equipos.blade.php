@@ -12,7 +12,7 @@
     </style>
 </head>
 <body>
-    <h1>Reporte de Equipos — SPY Inventario SENA</h1>
+    <h1>Reporte de Equipos — Inventario SENA</h1>
     <p>Generado el {{ now()->format('d/m/Y H:i') }}</p>
 
     <h2>Equipos por sede</h2>

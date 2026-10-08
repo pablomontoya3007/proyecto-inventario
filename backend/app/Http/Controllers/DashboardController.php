@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Enums\EstadoEquipo;
 use App\Enums\EstadoLicencia;
 use App\Enums\EstadoMantenimiento;
+use App\Enums\EstadoNovedad;
 use App\Models\Equipo;
 use App\Models\LicenciaOffice;
 use App\Models\Mantenimiento;
+use App\Models\Novedad;
 use App\Models\Observacion;
 use App\Models\Responsable;
 use App\Models\Sede;
@@ -39,6 +41,12 @@ class DashboardController extends Controller
             'licencias' => [
                 'vencidas' => LicenciaOffice::where('estado_licencia', EstadoLicencia::Vencida)->count(),
                 'suspendidas' => LicenciaOffice::where('estado_licencia', EstadoLicencia::Suspendida)->count(),
+            ],
+            // Sin atender = abiertas (aún no resueltas). Sin asignar = abiertas
+            // que todavía no tienen a nadie encargado de revisarlas.
+            'novedades' => [
+                'sin_atender' => Novedad::where('estado', EstadoNovedad::Abierta)->count(),
+                'sin_asignar' => Novedad::where('estado', EstadoNovedad::Abierta)->whereNull('asignado_a')->count(),
             ],
             'mantenimientos_pendientes' => Mantenimiento::where('estado', '!=', EstadoMantenimiento::Listo)->count(),
             'responsables_total' => Responsable::count(),

@@ -12,7 +12,7 @@
     </style>
 </head>
 <body>
-    <h1>Reporte de Licencias de Office — SPY Inventario SENA</h1>
+    <h1>Reporte de Licencias de Office — Inventario SENA</h1>
     <p>Generado el {{ now()->format('d/m/Y H:i') }}</p>
 
     <h2>Licencias por estado</h2>

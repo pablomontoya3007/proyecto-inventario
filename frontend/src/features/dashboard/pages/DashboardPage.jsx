@@ -1,9 +1,11 @@
+import { useNavigate } from 'react-router-dom';
 import { useDashboard } from '../hooks/useDashboard';
 
 // Tarjeta de estadística simple — se define aquí mismo (no en
 // shared/) porque es un patrón visual propio de esta página, igual
-// que BotonesExportar en ReportesPage.
-function TarjetaEstadistica({ titulo, valor, tono = 'neutral' }) {
+// que BotonesExportar en ReportesPage. Si recibe alHacerClic, se
+// renderiza como botón (lleva al módulo correspondiente).
+function TarjetaEstadistica({ titulo, valor, tono = 'neutral', alHacerClic, ayuda }) {
   const colores = {
     neutral: 'text-ink',
     success: 'text-sena-dark',
@@ -12,23 +14,65 @@ function TarjetaEstadistica({ titulo, valor, tono = 'neutral' }) {
     info: 'text-info',
   };
 
-  return (
-    <div className="rounded border border-slate-200 bg-white p-4">
+  const contenido = (
+    <>
       <p className="text-sm text-slate-500">{titulo}</p>
       <p className={`mt-1 font-mono text-3xl font-bold ${colores[tono]}`}>{valor}</p>
-    </div>
+      {ayuda && <p className="mt-1 text-xs text-slate-400">{ayuda}</p>}
+    </>
   );
+
+  if (alHacerClic) {
+    return (
+      <button
+        type="button"
+        onClick={alHacerClic}
+        className="rounded border border-slate-200 bg-white p-4 text-left transition hover:border-sena hover:shadow-sm"
+      >
+        {contenido}
+      </button>
+    );
+  }
+
+  return <div className="rounded border border-slate-200 bg-white p-4">{contenido}</div>;
 }
 
 export function DashboardPage() {
+  const navigate = useNavigate();
   const { data, isLoading, isError } = useDashboard();
 
   if (isLoading) return <p className="text-sm text-slate-500">Cargando resumen...</p>;
   if (isError) return <p className="text-sm text-danger">No se pudo cargar el resumen del sistema.</p>;
 
+  // ?? 0: si el backend todavía no tiene la versión con novedades (por
+  // ejemplo, en un servidor sin actualizar), la página no se rompe.
+  const novedadesSinAtender = data.novedades?.sin_atender ?? 0;
+  const novedadesSinAsignar = data.novedades?.sin_asignar ?? 0;
+  const verNovedadesAbiertas = () => navigate('/novedades?estado=abierta');
+
   return (
     <div className="space-y-8">
       <h1 className="text-3xl font-bold text-ink">Inicio</h1>
+
+      <section>
+        <h2 className="mb-3 text-lg font-medium text-ink">Novedades</h2>
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <TarjetaEstadistica
+            titulo="Novedades sin atender"
+            valor={novedadesSinAtender}
+            tono={novedadesSinAtender > 0 ? 'warning' : 'success'}
+            alHacerClic={verNovedadesAbiertas}
+            ayuda={novedadesSinAtender > 0 ? 'Clic para revisarlas' : 'Todo al día'}
+          />
+          <TarjetaEstadistica
+            titulo="Sin asignar a nadie"
+            valor={novedadesSinAsignar}
+            tono={novedadesSinAsignar > 0 ? 'danger' : 'success'}
+            alHacerClic={verNovedadesAbiertas}
+            ayuda={novedadesSinAsignar > 0 ? 'Necesitan un responsable de revisión' : 'Todas tienen encargado'}
+          />
+        </div>
+      </section>
 
       <section>
         <h2 className="mb-3 text-lg font-medium text-ink">Equipos</h2>

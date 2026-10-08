@@ -23,6 +23,9 @@ import {
 import { useAuth } from '../features/auth/hooks/useAuth';
 import { useLicenciasSinActualizar } from '../features/licencias/hooks/useLicencias';
 
+// Se calcula al cargar la app: el año del pie se actualiza solo.
+const ANIO_ACTUAL = new Date().getFullYear();
+
 /**
  * Menú agrupado por secciones para que los módulos sean fáciles de
  * encontrar. Cada entrada lleva su ícono de lucide-react (solo los
@@ -89,8 +92,8 @@ export function AdminLayout() {
     <div className="flex min-h-screen bg-surface">
       {/* Panel lateral en Negro institucional (#1A1A1A) — norma del acta
           de colores para el "panel lateral de navegación". sticky + h-screen
-          + overflow-y-auto: con tantos módulos, el menú se desplaza solo
-          sin mover el contenido de la página. */}
+          + overflow-y-auto en el nav: el menú se desplaza solo, y el pie de
+          propiedad queda siempre visible abajo. */}
       <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col bg-ink">
         <div className="flex items-center gap-2 border-b border-white/10 px-4 py-4">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-sena text-white">
@@ -138,6 +141,12 @@ export function AdminLayout() {
             </div>
           ))}
         </nav>
+
+        <footer className="border-t border-white/10 px-4 py-3 text-[11px] leading-snug text-white/40">
+          <p className="font-semibold text-white/60">© {ANIO_ACTUAL} SENA – CIAA</p>
+          <p>Centro de la Innovación, la Agroindustria y la Aviación</p>
+          <p className="mt-1">Todos los derechos reservados.</p>
+        </footer>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">

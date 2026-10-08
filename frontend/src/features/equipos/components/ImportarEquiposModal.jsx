@@ -1,12 +1,17 @@
 import { useState } from 'react';
 import { useImportarEquipos } from '../hooks/useEquipos';
 import { descargarPlantillaImportacion } from '../services/equiposApi';
+import { ResumenImportacion } from '../../../shared/components/ResumenImportacion';
+
+const ETIQUETAS_RESUMEN = {
+  importados: 'Equipos importados',
+  yaRegistrados: 'Ya estaban registrados',
+  listaYaRegistrados: 'Ver equipos que ya estaban registrados (se omitieron)',
+};
 
 /**
- * El resultado de una importación (importados/fallidos/errores) se
- * queda visible después de subir — a propósito no se cierra el modal
- * solo al terminar: si hay filas fallidas, la persona necesita leer
- * cuáles y por qué antes de decidir qué hacer.
+ * El resultado se queda visible después de subir (no se cierra solo):
+ * si hay filas con errores, la persona necesita ver cuáles corregir.
  */
 export function ImportarEquiposModal({ onClose }) {
   const [archivo, setArchivo] = useState(null);
@@ -32,40 +37,46 @@ export function ImportarEquiposModal({ onClose }) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-slate-600">
-        El archivo debe tener las columnas: Placa SENA, Serial, MAC, MAC Cableada, Hostname, Tipo de equipo,
-        Responsable, Sede, Subsede, Ambiente y Estado. Cualquier columna adicional (ej. "RAM (GB)", "Procesador")
-        se guarda como característica técnica del equipo.
-      </p>
+      {!resultado && (
+        <>
+          <p className="text-sm text-slate-600">
+            El archivo debe tener las columnas: Placa SENA, Serial, MAC, MAC Cableada, Hostname, Tipo de equipo,
+            Responsable, Sede, Subsede, Ambiente y Estado. Cualquier columna adicional (ej. "RAM (GB)", "Procesador")
+            se guarda como característica técnica del equipo.
+          </p>
 
-      <p className="text-sm text-slate-600">
-        Placa SENA, Serial y MAC aceptan cualquier formato; una MAC escrita como "N/A" o "Sin MAC" se deja vacía.
-        Tipo de equipo, Sede, Subsede y Ambiente deben coincidir con nombres ya registrados en el sistema (no
-        importan mayúsculas ni espacios de más). Si el responsable no existe, el equipo queda sin asignar.
-      </p>
+          <p className="text-sm text-slate-600">
+            Los equipos que ya estén registrados (misma placa o serial) se omiten automáticamente, así que puedes
+            volver a subir un Excel completo sin problema. Tipo de equipo, Sede, Subsede y Ambiente deben coincidir con
+            nombres ya registrados; si el responsable no existe, el equipo queda sin asignar.
+          </p>
 
-      <button
-        type="button"
-        onClick={handleDescargarPlantilla}
-        disabled={descargandoPlantilla}
-        className="text-sm font-medium text-sena underline hover:text-sena-dark disabled:opacity-50"
-      >
-        {descargandoPlantilla ? 'Generando...' : 'Descargar plantilla de ejemplo'}
-      </button>
+          <button
+            type="button"
+            onClick={handleDescargarPlantilla}
+            disabled={descargandoPlantilla}
+            className="text-sm font-medium text-sena underline hover:text-sena-dark disabled:opacity-50"
+          >
+            {descargandoPlantilla ? 'Generando...' : 'Descargar plantilla de ejemplo'}
+          </button>
+        </>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="archivo-importar" className="block text-sm font-medium text-ink">
-            Archivo Excel (.xlsx o .xls)
-          </label>
-          <input
-            id="archivo-importar"
-            type="file"
-            accept=".xlsx,.xls"
-            onChange={(event) => setArchivo(event.target.files?.[0] ?? null)}
-            className="mt-1 w-full text-sm file:mr-3 file:rounded file:border-0 file:bg-sena-soft file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-sena-dark hover:file:bg-sena/20"
-          />
-        </div>
+        {!resultado && (
+          <div>
+            <label htmlFor="archivo-importar" className="block text-sm font-medium text-ink">
+              Archivo Excel (.xlsx o .xls)
+            </label>
+            <input
+              id="archivo-importar"
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={(event) => setArchivo(event.target.files?.[0] ?? null)}
+              className="mt-1 w-full text-sm file:mr-3 file:rounded file:border-0 file:bg-sena-soft file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-sena-dark hover:file:bg-sena/20"
+            />
+          </div>
+        )}
 
         {importar.isError && (
           <p className="rounded bg-danger/10 px-3 py-2 text-sm text-danger">
@@ -73,37 +84,43 @@ export function ImportarEquiposModal({ onClose }) {
           </p>
         )}
 
-        {resultado && (
-          <div className="rounded border border-slate-200 bg-surface p-3 text-sm">
-            <p className="font-medium text-sena-dark">
-              {resultado.importados} equipo(s) importado(s) correctamente.
-            </p>
-            {resultado.fallidos > 0 && (
-              <>
-                <p className="mt-1 font-medium text-danger">{resultado.fallidos} fila(s) con errores:</p>
-                <ul className="mt-2 max-h-48 space-y-1 overflow-y-auto">
-                  {resultado.errores.map((error, indice) => (
-                    <li key={indice} className="text-slate-600">
-                      Fila <span className="font-mono">{error.fila}</span> ({error.campo}): {error.errores.join(' ')}
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-          </div>
-        )}
+        {resultado && <ResumenImportacion resultado={resultado} etiquetas={ETIQUETAS_RESUMEN} />}
 
         <div className="flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="rounded px-4 py-2 text-sm text-slate-600 hover:bg-surface">
-            {resultado ? 'Cerrar' : 'Cancelar'}
-          </button>
-          <button
-            type="submit"
-            disabled={!archivo || importar.isPending}
-            className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark disabled:opacity-50"
-          >
-            {importar.isPending ? 'Importando...' : 'Importar'}
-          </button>
+          {resultado ? (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  importar.reset();
+                  setArchivo(null);
+                }}
+                className="rounded px-4 py-2 text-sm text-slate-600 hover:bg-surface"
+              >
+                Importar otro archivo
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark"
+              >
+                Cerrar
+              </button>
+            </>
+          ) : (
+            <>
+              <button type="button" onClick={onClose} className="rounded px-4 py-2 text-sm text-slate-600 hover:bg-surface">
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={!archivo || importar.isPending}
+                className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark disabled:opacity-50"
+              >
+                {importar.isPending ? 'Importando...' : 'Importar'}
+              </button>
+            </>
+          )}
         </div>
       </form>
     </div>

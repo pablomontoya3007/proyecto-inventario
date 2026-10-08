@@ -20,9 +20,6 @@ class EquipoController extends Controller
      * Cubre los criterios de búsqueda de la sección 7 de los requisitos:
      * placa, serial, mac, hostname, responsable, sede, subsede, ubicación,
      * tipo de equipo y estado — todos opcionales y combinables entre sí.
-     * sede_id/subsede_id no son columnas de "equipos" (viven más arriba en
-     * la jerarquía), así que se filtran con whereHas a través de la
-     * relación en vez de un where directo.
      *
      * novedades_abiertas_count: alimenta el indicador de novedades de la
      * tabla de Equipos (una sola subconsulta COUNT por fila).
@@ -62,10 +59,7 @@ class EquipoController extends Controller
     }
 
     /**
-     * La hoja de vida completa (sección 2 de los requisitos): a diferencia
-     * de index(), aquí sí se precargan TODAS las relaciones, incluida la
-     * licencia, el historial de observaciones con su usuario, y los
-     * mantenimientos (programados y ya completados).
+     * La hoja de vida completa (sección 2 de los requisitos).
      */
     public function show(Equipo $equipo): EquipoResource
     {
@@ -104,8 +98,7 @@ class EquipoController extends Controller
     }
 
     /**
-     * Genera el PDF de la hoja de vida — mismas relaciones que show(),
-     * pero renderizadas en una vista Blade en vez de JSON.
+     * Genera el PDF de la hoja de vida — mismas relaciones que show().
      */
     public function hojaDeVidaPdf(Equipo $equipo)
     {
@@ -127,11 +120,9 @@ class EquipoController extends Controller
     }
 
     /**
-     * Importación masiva desde Excel. Usa la misma autorización que
-     * crear un equipo individual (create) — en el fondo es exactamente
-     * eso, muchas veces. EquiposImport valida y transforma cada fila;
-     * las que fallan no detienen el resto (SkipsOnFailure) — se
-     * reportan aquí para corregir solo esas y volver a intentar.
+     * Importación masiva desde Excel. Devuelve el resultado agrupado
+     * (EquiposImport::resumen()):
+     * { importados, ya_registrados[], repetidos_en_archivo[], con_errores[] }
      */
     public function importar(Request $request): JsonResponse
     {
@@ -144,24 +135,12 @@ class EquipoController extends Controller
         $import = new EquiposImport();
         Excel::import($import, $request->file('archivo'));
 
-        $errores = collect($import->failures())->map(fn ($falla) => [
-            'fila' => $falla->row(),
-            'campo' => $falla->attribute(),
-            'errores' => $falla->errors(),
-        ]);
-
-        return response()->json([
-            'importados' => $import->importados,
-            'fallidos' => $errores->count(),
-            'errores' => $errores,
-        ]);
+        return response()->json($import->resumen());
     }
 
     /**
      * Plantilla vacía (encabezados + una fila de ejemplo) con las
-     * columnas exactas que espera importar() — para que la primera
-     * carga (o la corrección de errores de una carga anterior) parta de
-     * un archivo con el formato correcto.
+     * columnas exactas que espera importar().
      */
     public function plantillaImportacion()
     {

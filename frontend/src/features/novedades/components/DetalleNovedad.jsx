@@ -21,6 +21,8 @@ export function DetalleNovedad({ novedad, onResolver, isResolviendo, errorResolv
                 <dd className="font-mono text-ink">{novedad.equipo?.placa_sena ?? '—'}</dd>
                 <dt className="text-slate-500">Tipo de equipo</dt>
                 <dd className="text-slate-600">{novedad.equipo?.tipo_equipo ?? '—'}</dd>
+                <dt className="text-slate-500">Ubicación</dt>
+                <dd className="text-slate-600">{novedad.equipo?.ubicacion ?? 'Sin ubicación'}</dd>
                 <dt className="text-slate-500">Responsable</dt>
                 <dd className="text-slate-600">
                     {novedad.equipo?.responsable

@@ -11,7 +11,7 @@
     </style>
 </head>
 <body>
-    <h1>Responsables con más equipos asignados — SPY Inventario SENA</h1>
+    <h1>Responsables con más equipos asignados — Inventario SENA</h1>
     <p>Generado el {{ now()->format('d/m/Y H:i') }}</p>
 
     <table>

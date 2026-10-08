@@ -2,13 +2,17 @@
 
 namespace App\Http\Resources;
 
+use App\Support\PlantillasCorreo;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * Las relaciones anidadas (equipo.tipoEquipo, equipo.responsable) se
- * precargan siempre en NovedadController, así que aquí no generan
- * consultas extra.
+ * Las relaciones anidadas (equipo.tipoEquipo, equipo.responsable,
+ * equipo.ubicacionFormacion.subsede.sede) se precargan siempre en
+ * NovedadController, así que aquí no generan consultas extra.
+ *
+ * equipo.ubicacion usa el mismo formato que el correo de la novedad
+ * ("Sede / Subsede / Ambiente"), para que pantalla y correo coincidan.
  */
 class NovedadResource extends JsonResource
 {
@@ -23,6 +27,7 @@ class NovedadResource extends JsonResource
                 'id' => $this->equipo->id,
                 'placa_sena' => $this->equipo->placa_sena,
                 'tipo_equipo' => $this->equipo->tipoEquipo?->nombre,
+                'ubicacion' => PlantillasCorreo::ubicacion($this->equipo),
                 'responsable' => $this->equipo->responsable ? [
                     'id' => $this->equipo->responsable->id,
                     'nombre' => $this->equipo->responsable->nombre,

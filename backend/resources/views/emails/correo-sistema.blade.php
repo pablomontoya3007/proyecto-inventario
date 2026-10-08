@@ -22,7 +22,7 @@
         </tr>
         <tr>
             <td style="padding:16px 24px; border-top:1px solid #e5e7eb; font-size:12px; color:#6b7280;">
-                Enviado por {{ $nombreRemitente }} desde SPY · Inventario SENA.<br>
+                Enviado por {{ $nombreRemitente }} desde Inventario SENA.<br>
                 Si respondes a este correo, tu respuesta le llegará a {{ $correoRemitente }}.
             </td>
         </tr>

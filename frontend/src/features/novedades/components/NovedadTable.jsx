@@ -14,6 +14,7 @@ export function NovedadTable({ novedades, onVer }) {
                 <tr className="border-b border-slate-200 text-slate-500">
                     <th className="py-2 pr-4 font-medium">Fecha</th>
                     <th className="py-2 pr-4 font-medium">Placa SENA</th>
+                    <th className="py-2 pr-4 font-medium">Ubicación</th>
                     <th className="py-2 pr-4 font-medium">Descripción</th>
                     <th className="py-2 pr-4 font-medium">Reportada por</th>
                     <th className="py-2 pr-4 font-medium">Asignada a</th>
@@ -26,6 +27,9 @@ export function NovedadTable({ novedades, onVer }) {
                     <tr key={novedad.id} className="border-b border-slate-100">
                         <td className="whitespace-nowrap py-2 pr-4 font-mono text-slate-500">{novedad.registrada_en}</td>
                         <td className="py-2 pr-4 font-mono text-ink">{novedad.equipo?.placa_sena ?? '—'}</td>
+                        <td className="max-w-[14rem] truncate py-2 pr-4 text-slate-500" title={novedad.equipo?.ubicacion ?? ''}>
+                            {novedad.equipo?.ubicacion ?? '—'}
+                        </td>
                         <td className="max-w-xs truncate py-2 pr-4 text-slate-600" title={novedad.descripcion}>
                             {novedad.descripcion}
                         </td>

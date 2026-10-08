@@ -23,12 +23,9 @@ class LicenciaOfficeController extends Controller
      * (activa/vencida/suspendida) y fecha_desde/fecha_hasta (rango sobre
      * fecha_actualizacion). Todos opcionales y combinables.
      *
-     * Ubicación y placa comparten un solo whereHas('equipo', ...): ambos
-     * dependen del equipo dueño de la licencia, así que se resuelven en
-     * una sola subconsulta en vez de dos. Ese whereHas solo se agrega si
-     * alguno de los dos está activo — igual que antes, para no excluir
-     * del listado general las licencias cuyo equipo ya fue eliminado
-     * (soft delete) cuando no hay razón para mirar el equipo.
+     * Ubicación y placa comparten un solo whereHas('equipo', ...), que
+     * solo se agrega si alguno de los dos está activo — para no excluir
+     * del listado general las licencias cuyo equipo ya fue eliminado.
      */
     public function index(Request $request): AnonymousResourceCollection
     {
@@ -123,16 +120,12 @@ class LicenciaOfficeController extends Controller
     }
 
     /**
-     * Importación masiva desde Excel — misma autorización que crear una
-     * licencia individual. Las filas que fallan no detienen el resto
-     * (SkipsOnFailure) y se reportan para corregir solo esas.
+     * Importación masiva desde Excel. Devuelve el resultado agrupado
+     * (LicenciasImport::resumen()):
+     * { importados, ya_registrados[], repetidos_en_archivo[], con_errores[] }
      *
-     * SEGURIDAD: cada falla trae también los valores de la fila
-     * ($falla->values()), contraseña incluida. Por eso aquí solo se
-     * devuelven fila, campo y mensajes — nunca los valores.
-     *
-     * "fallidos" cuenta FILAS distintas, no errores: una fila con correo
-     * y contraseña inválidos genera dos fallas, pero es una sola fila.
+     * SEGURIDAD: el resumen solo trae fila, placa y mensajes — nunca
+     * correos ni contraseñas.
      */
     public function importar(Request $request): JsonResponse
     {
@@ -145,17 +138,7 @@ class LicenciaOfficeController extends Controller
         $import = new LicenciasImport();
         Excel::import($import, $request->file('archivo'));
 
-        $errores = collect($import->failures())->map(fn ($falla) => [
-            'fila' => $falla->row(),
-            'campo' => $falla->attribute(),
-            'errores' => $falla->errors(),
-        ])->values();
-
-        return response()->json([
-            'importados' => $import->importados,
-            'fallidos' => $errores->pluck('fila')->unique()->count(),
-            'errores' => $errores,
-        ]);
+        return response()->json($import->resumen());
     }
 
     public function plantillaImportacion()
