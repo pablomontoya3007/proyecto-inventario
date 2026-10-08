@@ -9,7 +9,9 @@ import {
 import { useSedes } from '../../sedes/hooks/useSedes';
 import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
 import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
+import { useDashboard } from '../../dashboard/hooks/useDashboard';
 import { FiltroUbicacionCascada } from '../../../shared/components/FiltroUbicacionCascada';
+import { ContadoresModulo } from '../../../shared/components/ContadoresModulo';
 import { AvisoBanner } from '../../../shared/components/AvisoBanner';
 import { avisoDeNotificacion } from '../../../shared/utils/avisoNotificacion';
 import { MantenimientoTable } from '../components/MantenimientoTable';
@@ -20,11 +22,18 @@ import { MarcarListoForm } from '../components/MarcarListoForm';
 import { Modal } from '../../../shared/components/Modal';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 
+// Estados de la pestaña Activos que se pueden filtrar con su contador.
+const ESTADOS_ACTIVOS = [
+  { value: 'en_espera', label: 'En espera', tono: 'info' },
+  { value: 'en_mantenimiento', label: 'En mantenimiento', tono: 'warning' },
+];
+
 export function MantenimientosPage() {
   const { user } = useAuth();
 
   const [pestana, setPestana] = useState('activos'); // 'activos' | 'historial'
   const [page, setPage] = useState(1);
+  const [estadoFiltro, setEstadoFiltro] = useState(''); // solo aplica en Activos
   const [sedeFiltro, setSedeFiltro] = useState('');
   const [subsedeFiltro, setSubsedeFiltro] = useState('');
   const [ubicacionFiltro, setUbicacionFiltro] = useState('');
@@ -39,6 +48,7 @@ export function MantenimientosPage() {
 
   function cambiarPestana(nueva) {
     setPestana(nueva);
+    setEstadoFiltro('');
     setPage(1);
   }
 
@@ -76,11 +86,13 @@ export function MantenimientosPage() {
           ? { sede_id: sedeFiltro }
           : {}),
     ...(soloMios && user?.id ? { asignado_a: user.id } : {}),
+    ...(pestana === 'activos' && estadoFiltro ? { estado: estadoFiltro } : {}),
   };
 
   const { data: sedesData } = useSedes(1);
   const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeFiltro || undefined });
   const { data: ubicacionesData } = useUbicaciones({ page: 1, subsedeId: subsedeFiltro || undefined });
+  const { data: resumen, isLoading: cargandoResumen } = useDashboard();
 
   const { data, isLoading, isError } = useMantenimientos({ page, completado: pestana === 'historial', filtros });
   const createMantenimiento = useCreateMantenimiento();
@@ -88,6 +100,32 @@ export function MantenimientosPage() {
   const deleteMantenimiento = useDeleteMantenimiento();
 
   const serverErrors = createMantenimiento.error?.response?.data?.errors;
+  const porEstado = resumen?.mantenimientos?.por_estado ?? {};
+
+  // Contadores por estado (totales del sistema). En espera / En
+  // mantenimiento filtran la pestaña Activos; Listos abre el Historial.
+  const contadores = [
+    ...ESTADOS_ACTIVOS.map((estado) => ({
+      clave: estado.value,
+      etiqueta: estado.label,
+      valor: porEstado[estado.value],
+      tono: estado.tono,
+      activo: pestana === 'activos' && estadoFiltro === estado.value,
+      onClick: () => {
+        setPestana('activos');
+        setEstadoFiltro((actual) => (pestana === 'activos' && actual === estado.value ? '' : estado.value));
+        setPage(1);
+      },
+    })),
+    {
+      clave: 'listo',
+      etiqueta: 'Listos',
+      valor: porEstado.listo,
+      tono: 'success',
+      activo: pestana === 'historial',
+      onClick: () => cambiarPestana('historial'),
+    },
+  ];
 
   function abrirIndividual() {
     createMantenimiento.reset();
@@ -122,9 +160,7 @@ export function MantenimientosPage() {
     setCompletandoMantenimiento(mantenimiento);
   }
 
-  // Combina la nota de cierre con la descripción que ya tenía (si tenía
-  // alguna desde que se programó) — no la reemplaza, "para que aparezcan
-  // ambas cosas" en el Historial.
+  // Combina la nota de cierre con la descripción que ya tenía.
   function handleConfirmarListo(nota) {
     if (!completandoMantenimiento) return;
 
@@ -173,6 +209,8 @@ export function MantenimientosPage() {
           </button>
         </div>
       </div>
+
+      <ContadoresModulo contadores={contadores} cargando={cargandoResumen} />
 
       <AvisoBanner aviso={aviso} onCerrar={() => setAviso(null)} />
 

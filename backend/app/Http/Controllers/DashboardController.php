@@ -15,40 +15,61 @@ use App\Models\Responsable;
 use App\Models\Sede;
 use App\Models\Subsede;
 use App\Models\UbicacionFormacion;
+use App\Models\User;
+use BackedEnum;
 use Illuminate\Http\JsonResponse;
 
 /**
- * Resumen de todo el sistema para la pantalla de inicio. Endpoint
- * propio (no reutiliza /reportes/*) porque esos devuelven listados
- * completos pensados para exportar a Excel/PDF — pedirlos solo para
- * sacar un número sería mucho más trabajo del que hace falta aquí.
+ * Resumen de todo el sistema. Lo usan el Inicio y los contadores de la
+ * parte superior de cada módulo (Equipos, Licencias, Mantenimientos,
+ * Novedades, Usuarios) — una sola petición, compartida en caché por el
+ * frontend.
  *
- * Sin Policy dedicada: es un resumen de solo lectura sin un modelo
- * Eloquent propio detrás — la protección es la misma que el resto del
- * sistema, estar autenticado (middleware auth:sanctum de la ruta).
+ * "por_estado" usa como claves los valores del enum (activo, vencida,
+ * en_espera...), los mismos que usan los filtros de cada página.
+ *
+ * Las claves antiguas (activos, en_mal_estado, vencidas...) se conservan
+ * para no romper nada que aún las use.
  */
 class DashboardController extends Controller
 {
     public function resumen(): JsonResponse
     {
+        $equiposPorEstado = $this->contarPorEstado(Equipo::class, 'estado', EstadoEquipo::cases());
+        $licenciasPorEstado = $this->contarPorEstado(LicenciaOffice::class, 'estado_licencia', EstadoLicencia::cases());
+        $mantenimientosPorEstado = $this->contarPorEstado(Mantenimiento::class, 'estado', EstadoMantenimiento::cases());
+
         return response()->json([
             'equipos' => [
                 'total' => Equipo::count(),
-                'activos' => Equipo::where('estado', EstadoEquipo::Activo)->count(),
-                'en_mantenimiento' => Equipo::where('estado', EstadoEquipo::Mantenimiento)->count(),
-                'en_mal_estado' => Equipo::whereIn('estado', [EstadoEquipo::DeBaja, EstadoEquipo::Extraviado])->count(),
+                'por_estado' => $equiposPorEstado,
+                // Equipos en uso (activos o en mantenimiento) sin licencia:
+                // los de baja o extraviados no necesitan una.
+                'sin_licencia' => Equipo::query()
+                    ->doesntHave('licenciaOffice')
+                    ->whereNotIn('estado', [EstadoEquipo::DeBaja, EstadoEquipo::Extraviado])
+                    ->count(),
+                'activos' => $equiposPorEstado[EstadoEquipo::Activo->value],
+                'en_mantenimiento' => $equiposPorEstado[EstadoEquipo::Mantenimiento->value],
+                'en_mal_estado' => $equiposPorEstado[EstadoEquipo::DeBaja->value] + $equiposPorEstado[EstadoEquipo::Extraviado->value],
             ],
             'licencias' => [
-                'vencidas' => LicenciaOffice::where('estado_licencia', EstadoLicencia::Vencida)->count(),
-                'suspendidas' => LicenciaOffice::where('estado_licencia', EstadoLicencia::Suspendida)->count(),
+                'total' => LicenciaOffice::count(),
+                'por_estado' => $licenciasPorEstado,
+                'vencidas' => $licenciasPorEstado[EstadoLicencia::Vencida->value],
+                'suspendidas' => $licenciasPorEstado[EstadoLicencia::Suspendida->value],
             ],
-            // Sin atender = abiertas (aún no resueltas). Sin asignar = abiertas
-            // que todavía no tienen a nadie encargado de revisarlas.
+            'mantenimientos' => [
+                'por_estado' => $mantenimientosPorEstado,
+            ],
+            'mantenimientos_pendientes' => $mantenimientosPorEstado[EstadoMantenimiento::EnEspera->value]
+                + $mantenimientosPorEstado[EstadoMantenimiento::EnMantenimiento->value],
             'novedades' => [
                 'sin_atender' => Novedad::where('estado', EstadoNovedad::Abierta)->count(),
                 'sin_asignar' => Novedad::where('estado', EstadoNovedad::Abierta)->whereNull('asignado_a')->count(),
+                'resueltas' => Novedad::where('estado', EstadoNovedad::Resuelta)->count(),
             ],
-            'mantenimientos_pendientes' => Mantenimiento::where('estado', '!=', EstadoMantenimiento::Listo)->count(),
+            'usuarios_total' => User::count(),
             'responsables_total' => Responsable::count(),
             'estructura' => [
                 'sedes' => Sede::count(),
@@ -77,5 +98,28 @@ class DashboardController extends Controller
                     'total' => $responsable->equipos_count,
                 ]),
         ]);
+    }
+
+    /**
+     * Un solo GROUP BY por tabla en vez de un COUNT por estado.
+     * toBase(): devuelve el estado "crudo" (texto) en vez del enum, para
+     * poder usarlo como clave; conserva los scopes globales (soft delete).
+     * Los estados sin registros aparecen con 0.
+     *
+     * @param  class-string  $modelo
+     * @param  BackedEnum[]  $casos
+     * @return array<string, int>
+     */
+    private function contarPorEstado(string $modelo, string $columna, array $casos): array
+    {
+        $conteos = $modelo::query()
+            ->toBase()
+            ->selectRaw("{$columna} as estado, COUNT(*) as total")
+            ->groupBy($columna)
+            ->pluck('total', 'estado');
+
+        return collect($casos)
+            ->mapWithKeys(fn (BackedEnum $caso) => [$caso->value => (int) ($conteos[$caso->value] ?? 0)])
+            ->all();
     }
 }

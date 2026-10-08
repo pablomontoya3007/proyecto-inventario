@@ -19,8 +19,8 @@ class MantenimientoController extends Controller
     use FiltraPorUbicacion;
 
     /**
-     * Filtros: completado, sede_id/subsede_id/ubicacion_formacion_id y
-     * asignado_a (usuario encargado — "solo los míos" en el frontend).
+     * Filtros: completado, estado (en_espera, en_mantenimiento, listo),
+     * sede_id/subsede_id/ubicacion_formacion_id y asignado_a.
      */
     public function index(Request $request): AnonymousResourceCollection
     {
@@ -37,6 +37,7 @@ class MantenimientoController extends Controller
                     ? $query->where('estado', EstadoMantenimiento::Listo)
                     : $query->where('estado', '!=', EstadoMantenimiento::Listo);
             })
+            ->when($request->filled('estado'), fn ($q) => $q->where('estado', $request->input('estado')))
             ->when(
                 $sedeId || $subsedeId || $ubicacionId,
                 fn ($q) => $q->whereHas('equipo', fn ($sub) => $sub->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId))
@@ -51,7 +52,6 @@ class MantenimientoController extends Controller
     /**
      * Si se asignó un usuario, se le notifica DESPUÉS de guardar: si el
      * correo falla, el mantenimiento ya quedó programado igual.
-     * "notificaciones" es una lista (vacía si no hay a quién notificar).
      */
     public function store(MantenimientoRequest $request, EnvioCorreoService $servicioCorreo): JsonResponse
     {

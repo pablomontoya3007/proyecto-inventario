@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '../features/auth/context/AuthContext';
 import { ProtectedRoute } from './ProtectedRoute';
 import { AdminLayout } from '../layouts/AdminLayout';
@@ -23,16 +23,26 @@ import { UsuariosPage } from '../features/usuarios/pages/UsuariosPage';
 import { CorreosPage } from '../features/correos/pages/CorreosPage';
 import { ErrorBoundary } from '../shared/components/ErrorBoundary';
 
-// Instancia única a nivel de módulo: no hay que recrearla en cada render.
-const queryClient = new QueryClient();
+/**
+ * Instancia única a nivel de módulo. El MutationCache invalida el
+ * resumen (['dashboard']) después de CUALQUIER guardado exitoso en el
+ * sistema: así los contadores del Inicio y de cada módulo siempre
+ * reflejan el último cambio, sin tener que tocar los hooks de cada
+ * módulo. Solo se vuelve a pedir si hay una pantalla mostrándolo.
+ */
+const queryClient = new QueryClient({
+  mutationCache: new MutationCache({
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  }),
+});
 
 export function AppRouter() {
   return (
     <ErrorBoundary>
       {/* basename viene del "base" de vite.config.js: '/' en desarrollo y
-          '/proyecto-inventario-front/' en el build desplegado en Apache.
-          Así las rutas como "/equipos" funcionan igual en ambos entornos
-          sin tocar ningún Navigate ni navigate() de la app. */}
+          '/proyecto-inventario-front/' en el build desplegado en Apache. */}
       <BrowserRouter basename={import.meta.env.BASE_URL}>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>

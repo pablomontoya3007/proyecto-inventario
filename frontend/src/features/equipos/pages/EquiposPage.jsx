@@ -1,36 +1,46 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useEquipos, useCreateEquipo, useUpdateEquipo, useDeleteEquipo } from '../hooks/useEquipos';
 import { useTiposEquipo } from '../../tipos-equipo/hooks/useTiposEquipo';
-import { useResponsables } from '../../responsables/hooks/useResponsables';
 import { useSedes } from '../../sedes/hooks/useSedes';
 import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
 import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
+import { useDashboard } from '../../dashboard/hooks/useDashboard';
+import { BuscadorResponsable } from '../../responsables/components/BuscadorResponsable';
 import { EquipoTable } from '../components/EquipoTable';
 import { EquipoForm } from '../components/EquipoForm';
 import { HojaDeVidaModal } from '../components/HojaDeVidaModal';
 import { ImportarEquiposModal } from '../components/ImportarEquiposModal';
+import { ContadoresModulo } from '../../../shared/components/ContadoresModulo';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 import { Modal } from '../../../shared/components/Modal';
 
-// Confirmado contra app/Enums/EstadoEquipo.php — mismos valores que ya
-// usan EquipoForm.jsx y TiposEquipoPage.jsx.
+// Confirmado contra app/Enums/EstadoEquipo.php. "tono" colorea su contador.
 const ESTADOS_EQUIPO = [
-  { value: 'activo', label: 'Activo' },
-  { value: 'mantenimiento', label: 'En mantenimiento' },
-  { value: 'de_baja', label: 'De baja' },
-  { value: 'extraviado', label: 'Extraviado' },
+  { value: 'activo', label: 'Activos', tono: 'success' },
+  { value: 'mantenimiento', label: 'En mantenimiento', tono: 'warning' },
+  { value: 'de_baja', label: 'De baja', tono: 'danger' },
+  { value: 'extraviado', label: 'Extraviados', tono: 'danger' },
 ];
 
 const CAMPO =
   'rounded border border-slate-300 px-2 py-1 text-sm focus:border-sena focus:outline-none focus:ring-1 focus:ring-sena';
 
+/**
+ * Los filtros iniciales de estado y "sin licencia" pueden venir en la
+ * URL (?estado=activo, ?sin_licencia=1): así llegan las tarjetas del
+ * Inicio, ya filtradas.
+ */
 export function EquiposPage() {
+  const [searchParams] = useSearchParams();
+
   const [page, setPage] = useState(1);
   const [placaFiltro, setPlacaFiltro] = useState('');
   const [serialFiltro, setSerialFiltro] = useState('');
   const [tipoFiltro, setTipoFiltro] = useState('');
-  const [responsableFiltro, setResponsableFiltro] = useState('');
-  const [estadoFiltro, setEstadoFiltro] = useState('');
+  const [responsableFiltro, setResponsableFiltro] = useState(null);
+  const [estadoFiltro, setEstadoFiltro] = useState(() => searchParams.get('estado') ?? '');
+  const [sinLicencia, setSinLicencia] = useState(() => searchParams.get('sin_licencia') === '1');
   const [sedeFiltro, setSedeFiltro] = useState('');
   const [subsedeFiltro, setSubsedeFiltro] = useState('');
   const [ubicacionFiltro, setUbicacionFiltro] = useState('');
@@ -41,14 +51,13 @@ export function EquiposPage() {
   const [deleteError, setDeleteError] = useState(null);
   const [importando, setImportando] = useState(false);
 
-  // ubicacion_formacion_id ya implica subsede/sede, así que si está
-  // elegida se manda solo ella — más preciso que combinar los tres.
   const filtros = {
     ...(placaFiltro ? { placa_sena: placaFiltro } : {}),
     ...(serialFiltro ? { serial: serialFiltro } : {}),
     ...(tipoFiltro ? { tipo_equipo_id: tipoFiltro } : {}),
-    ...(responsableFiltro ? { responsable_id: responsableFiltro } : {}),
+    ...(responsableFiltro ? { responsable_id: responsableFiltro.id } : {}),
     ...(estadoFiltro ? { estado: estadoFiltro } : {}),
+    ...(sinLicencia ? { sin_licencia: 1 } : {}),
     ...(ubicacionFiltro
       ? { ubicacion_formacion_id: ubicacionFiltro }
       : subsedeFiltro
@@ -59,8 +68,8 @@ export function EquiposPage() {
   };
 
   const { data, isLoading, isError } = useEquipos(filtros, page);
+  const { data: resumen, isLoading: cargandoResumen } = useDashboard();
   const { data: tiposData } = useTiposEquipo();
-  const { data: responsablesData } = useResponsables({ page: 1 });
   const { data: sedesData } = useSedes(1);
   const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeFiltro || undefined });
   const { data: ubicacionesData } = useUbicaciones({ page: 1, subsedeId: subsedeFiltro || undefined });
@@ -70,6 +79,43 @@ export function EquiposPage() {
   const deleteEquipo = useDeleteEquipo();
 
   const serverErrors = createEquipo.error?.response?.data?.errors ?? updateEquipo.error?.response?.data?.errors;
+
+  // Contadores: totales del sistema. Clic = aplicar/quitar ese filtro.
+  const contadores = [
+    {
+      clave: 'total',
+      etiqueta: 'Total de equipos',
+      valor: resumen?.equipos?.total,
+      activo: !estadoFiltro && !sinLicencia,
+      onClick: () => {
+        setEstadoFiltro('');
+        setSinLicencia(false);
+        setPage(1);
+      },
+    },
+    ...ESTADOS_EQUIPO.map((estado) => ({
+      clave: estado.value,
+      etiqueta: estado.label,
+      valor: resumen?.equipos?.por_estado?.[estado.value],
+      tono: estado.tono,
+      activo: estadoFiltro === estado.value,
+      onClick: () => {
+        setEstadoFiltro((actual) => (actual === estado.value ? '' : estado.value));
+        setPage(1);
+      },
+    })),
+    {
+      clave: 'sin_licencia',
+      etiqueta: 'Sin licencia',
+      valor: resumen?.equipos?.sin_licencia,
+      tono: 'warning',
+      activo: sinLicencia,
+      onClick: () => {
+        setSinLicencia((actual) => !actual);
+        setPage(1);
+      },
+    },
+  ];
 
   function handleSedeFiltroChange(event) {
     setSedeFiltro(event.target.value);
@@ -122,7 +168,9 @@ export function EquiposPage() {
         </div>
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-3 rounded border border-slate-200 bg-white p-4">
+      <ContadoresModulo contadores={contadores} cargando={cargandoResumen} />
+
+      <div className="mb-4 flex flex-wrap items-center gap-3 rounded border border-slate-200 bg-white p-4">
         <input
           type="text"
           placeholder="Placa SENA..."
@@ -158,21 +206,17 @@ export function EquiposPage() {
             </option>
           ))}
         </select>
-        <select
+        <BuscadorResponsable
+          id="filtro_responsable"
           value={responsableFiltro}
-          onChange={(event) => {
-            setResponsableFiltro(event.target.value);
+          onChange={(responsable) => {
+            setResponsableFiltro(responsable);
             setPage(1);
           }}
-          className={CAMPO}
-        >
-          <option value="">Todos los responsables</option>
-          {responsablesData?.data.map((responsable) => (
-            <option key={responsable.id} value={responsable.id}>
-              {responsable.nombre}
-            </option>
-          ))}
-        </select>
+          placeholder="Responsable..."
+          className="w-56"
+          inputClassName={CAMPO}
+        />
         <select
           value={estadoFiltro}
           onChange={(event) => {
@@ -225,6 +269,18 @@ export function EquiposPage() {
             </option>
           ))}
         </select>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600">
+          <input
+            type="checkbox"
+            checked={sinLicencia}
+            onChange={(event) => {
+              setSinLicencia(event.target.checked);
+              setPage(1);
+            }}
+            className="h-4 w-4 accent-sena"
+          />
+          Solo sin licencia
+        </label>
       </div>
 
       {isLoading && <p className="text-sm text-slate-500">Cargando equipos...</p>}
@@ -299,7 +355,7 @@ export function EquiposPage() {
           deleteError ??
           `Esta acción no se puede deshacer${
             deletingEquipo ? `: "${deletingEquipo.placa_sena}"` : ''
-          }. También se eliminará su licencia de Office y todo su historial de observaciones.`
+          }.`
         }
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeletingEquipo(null)}

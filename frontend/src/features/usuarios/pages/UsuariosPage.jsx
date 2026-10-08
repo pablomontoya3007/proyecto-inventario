@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { useUsuarios, useCreateUsuario, useUpdateUsuario, useDeleteUsuario } from '../hooks/useUsuarios';
+import { useDashboard } from '../../dashboard/hooks/useDashboard';
 import { UsuarioTable } from '../components/UsuarioTable';
 import { UsuarioForm } from '../components/UsuarioForm';
+import { ContadoresModulo } from '../../../shared/components/ContadoresModulo';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 import { Modal } from '../../../shared/components/Modal';
 
@@ -31,14 +33,21 @@ export function UsuariosPage() {
   const hayFiltrosActivos = Object.keys(filtros).length > 0;
 
   const { data, isLoading, isError } = useUsuarios({ page, filtros });
+  const { data: resumen, isLoading: cargandoResumen } = useDashboard();
   const createUsuario = useCreateUsuario();
   const updateUsuario = useUpdateUsuario();
   const deleteUsuario = useDeleteUsuario();
 
   const serverErrors = createUsuario.error?.response?.data?.errors ?? updateUsuario.error?.response?.data?.errors;
 
-  // reset(): que los errores de un intento anterior no aparezcan al
-  // abrir el formulario de nuevo (o el de otro usuario).
+  // Total del sistema + (si hay filtros) cuántos coinciden con ellos.
+  const contadores = [
+    { clave: 'total', etiqueta: 'Usuarios registrados', valor: resumen?.usuarios_total },
+    ...(hayFiltrosActivos && data?.meta
+      ? [{ clave: 'filtrados', etiqueta: 'Coinciden con los filtros', valor: data.meta.total, tono: 'info' }]
+      : []),
+  ];
+
   function abrirFormulario(usuario) {
     createUsuario.reset();
     updateUsuario.reset();
@@ -68,7 +77,6 @@ export function UsuariosPage() {
     deleteUsuario.mutate(deletingUsuario.id, {
       onSuccess: () => setDeletingUsuario(null),
       onError: (error) => {
-        // 403 trae el motivo exacto desde UserPolicy (Response::deny).
         setDeleteError(
           error.response?.status === 403
             ? (error.response.data?.message ?? 'No se puede eliminar este usuario.')
@@ -89,6 +97,8 @@ export function UsuariosPage() {
           Agregar usuario
         </button>
       </div>
+
+      <ContadoresModulo contadores={contadores} cargando={cargandoResumen} />
 
       <div className="mb-4 flex flex-wrap items-end gap-3 rounded border border-slate-200 bg-white p-4">
         <div>

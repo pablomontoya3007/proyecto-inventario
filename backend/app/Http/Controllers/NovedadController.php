@@ -27,10 +27,9 @@ class NovedadController extends Controller
     ];
 
     /**
-     * Filtros (opcionales y combinables): placa_sena y sede_id/
-     * subsede_id/ubicacion_formacion_id (sobre el equipo, en un solo
-     * whereHas), estado, usuario (nombre de quien la reportó),
-     * asignado_a (usuario encargado de revisarla) y fecha_desde/fecha_hasta.
+     * Filtros (opcionales y combinables): placa_sena y ubicación (sobre
+     * el equipo, en un solo whereHas), estado, usuario (quien la
+     * reportó), asignado_a, sin_asignar=1 y fecha_desde/fecha_hasta.
      */
     public function index(Request $request): AnonymousResourceCollection
     {
@@ -56,6 +55,7 @@ class NovedadController extends Controller
                 fn ($q) => $q->whereHas('usuario', fn ($s) => $s->where('name', 'like', '%' . $request->input('usuario') . '%'))
             )
             ->when($request->filled('asignado_a'), fn ($q) => $q->where('asignado_a', $request->integer('asignado_a')))
+            ->when($request->boolean('sin_asignar'), fn ($q) => $q->whereNull('asignado_a'))
             ->when($request->filled('fecha_desde'), fn ($q) => $q->whereDate('created_at', '>=', $request->input('fecha_desde')))
             ->when($request->filled('fecha_hasta'), fn ($q) => $q->whereDate('created_at', '<=', $request->input('fecha_hasta')))
             ->latest()
@@ -66,12 +66,8 @@ class NovedadController extends Controller
 
     /**
      * Registra la novedad y envía hasta DOS correos (textos distintos):
-     * - al responsable del equipo ("novedad en un equipo a tu cargo");
-     * - al usuario asignado para revisarla ("se te asignó una novedad").
+     * al responsable del equipo y al usuario asignado para revisarla.
      * Si ambos tienen el mismo correo, se envía solo el de asignación.
-     *
-     * La novedad se guarda SIEMPRE; "notificaciones" explica qué se
-     * envió y qué no (y por qué).
      */
     public function store(NovedadRequest $request, EnvioCorreoService $servicioCorreo): JsonResponse
     {
@@ -120,8 +116,7 @@ class NovedadController extends Controller
     }
 
     /**
-     * Marca la novedad como resuelta, con nota opcional. Quién y cuándo
-     * los pone el servidor, nunca el cliente.
+     * Marca la novedad como resuelta, con nota opcional.
      */
     public function resolver(Request $request, Novedad $novedad): NovedadResource
     {

@@ -5,7 +5,9 @@ import { useNovedades, useCreateNovedad, useResolverNovedad } from '../hooks/use
 import { useSedes } from '../../sedes/hooks/useSedes';
 import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
 import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
+import { useDashboard } from '../../dashboard/hooks/useDashboard';
 import { FiltroUbicacionCascada } from '../../../shared/components/FiltroUbicacionCascada';
+import { ContadoresModulo } from '../../../shared/components/ContadoresModulo';
 import { AvisoBanner } from '../../../shared/components/AvisoBanner';
 import { avisoDeNotificacion } from '../../../shared/utils/avisoNotificacion';
 import { NovedadTable } from '../components/NovedadTable';
@@ -22,9 +24,9 @@ const ESTADOS_NOVEDAD = [
 ];
 
 /**
- * Los filtros iniciales de placa y estado pueden venir en la URL
- * (?placa=...&estado=abierta): así llega el indicador de la tabla de
- * Equipos, ya filtrado por ese equipo.
+ * Los filtros iniciales pueden venir en la URL (?placa=..., ?estado=abierta,
+ * ?sin_asignar=1): así llegan el indicador de Equipos y las tarjetas del
+ * Inicio, ya filtrados.
  */
 export function NovedadesPage() {
     const { user } = useAuth();
@@ -33,6 +35,7 @@ export function NovedadesPage() {
     const [page, setPage] = useState(1);
     const [placaFiltro, setPlacaFiltro] = useState(() => searchParams.get('placa') ?? '');
     const [estadoFiltro, setEstadoFiltro] = useState(() => searchParams.get('estado') ?? '');
+    const [sinAsignar, setSinAsignar] = useState(() => searchParams.get('sin_asignar') === '1');
     const [usuarioFiltro, setUsuarioFiltro] = useState('');
     const [fechaDesdeFiltro, setFechaDesdeFiltro] = useState('');
     const [fechaHastaFiltro, setFechaHastaFiltro] = useState('');
@@ -49,6 +52,7 @@ export function NovedadesPage() {
     const filtros = {
         ...(placaFiltro ? { placa_sena: placaFiltro } : {}),
         ...(estadoFiltro ? { estado: estadoFiltro } : {}),
+        ...(sinAsignar ? { sin_asignar: 1 } : {}),
         ...(usuarioFiltro ? { usuario: usuarioFiltro } : {}),
         ...(fechaDesdeFiltro ? { fecha_desde: fechaDesdeFiltro } : {}),
         ...(fechaHastaFiltro ? { fecha_hasta: fechaHastaFiltro } : {}),
@@ -62,18 +66,64 @@ export function NovedadesPage() {
                     : {}),
     };
     const hayFiltrosPropios = Boolean(
-        placaFiltro || estadoFiltro || usuarioFiltro || fechaDesdeFiltro || fechaHastaFiltro || soloMias
+        placaFiltro || estadoFiltro || sinAsignar || usuarioFiltro || fechaDesdeFiltro || fechaHastaFiltro || soloMias
     );
 
     const { data: sedesData } = useSedes(1);
     const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeFiltro || undefined });
     const { data: ubicacionesData } = useUbicaciones({ page: 1, subsedeId: subsedeFiltro || undefined });
+    const { data: resumen, isLoading: cargandoResumen } = useDashboard();
 
     const { data, isLoading, isError } = useNovedades({ page, filtros });
     const crear = useCreateNovedad();
     const resolver = useResolverNovedad();
 
     const serverErrors = crear.error?.response?.data?.errors;
+    const novedades = resumen?.novedades ?? {};
+
+    // Contadores (totales del sistema). Clic = aplicar/quitar ese filtro.
+    const filtroSinAtender = estadoFiltro === 'abierta' && !sinAsignar;
+    const filtroSinAsignar = estadoFiltro === 'abierta' && sinAsignar;
+    const filtroResueltas = estadoFiltro === 'resuelta';
+
+    const contadores = [
+        {
+            clave: 'sin_atender',
+            etiqueta: 'Sin atender',
+            valor: novedades.sin_atender,
+            tono: (novedades.sin_atender ?? 0) > 0 ? 'warning' : 'success',
+            activo: filtroSinAtender,
+            onClick: () => {
+                setEstadoFiltro(filtroSinAtender ? '' : 'abierta');
+                setSinAsignar(false);
+                setPage(1);
+            },
+        },
+        {
+            clave: 'sin_asignar',
+            etiqueta: 'Sin asignar a nadie',
+            valor: novedades.sin_asignar,
+            tono: (novedades.sin_asignar ?? 0) > 0 ? 'danger' : 'success',
+            activo: filtroSinAsignar,
+            onClick: () => {
+                setEstadoFiltro(filtroSinAsignar ? '' : 'abierta');
+                setSinAsignar(!filtroSinAsignar);
+                setPage(1);
+            },
+        },
+        {
+            clave: 'resueltas',
+            etiqueta: 'Resueltas',
+            valor: novedades.resueltas,
+            tono: 'success',
+            activo: filtroResueltas,
+            onClick: () => {
+                setEstadoFiltro(filtroResueltas ? '' : 'resuelta');
+                setSinAsignar(false);
+                setPage(1);
+            },
+        },
+    ];
 
     function conFiltro(setter) {
         return (event) => {
@@ -85,6 +135,7 @@ export function NovedadesPage() {
     function handleLimpiarFiltrosPropios() {
         setPlacaFiltro('');
         setEstadoFiltro('');
+        setSinAsignar(false);
         setUsuarioFiltro('');
         setFechaDesdeFiltro('');
         setFechaHastaFiltro('');
@@ -125,9 +176,7 @@ export function NovedadesPage() {
                     setAviso({ tipo: 'exito', texto: 'Novedad marcada como resuelta.' });
                 },
                 onError: (error) =>
-                    setErrorResolver(
-                        error.response?.data?.message ?? 'No se pudo marcar como resuelta. Intenta de nuevo.'
-                    ),
+                    setErrorResolver(error.response?.data?.message ?? 'No se pudo marcar como resuelta. Intenta de nuevo.'),
             }
         );
     }
@@ -143,6 +192,8 @@ export function NovedadesPage() {
                     Registrar novedad
                 </button>
             </div>
+
+            <ContadoresModulo contadores={contadores} cargando={cargandoResumen} />
 
             <AvisoBanner aviso={aviso} onCerrar={() => setAviso(null)} />
 
@@ -258,6 +309,19 @@ export function NovedadesPage() {
                         className="h-4 w-4 accent-sena"
                     />
                     Asignadas a mí
+                </label>
+
+                <label className="flex cursor-pointer items-center gap-2 pb-2 text-sm text-slate-600">
+                    <input
+                        type="checkbox"
+                        checked={sinAsignar}
+                        onChange={(event) => {
+                            setSinAsignar(event.target.checked);
+                            setPage(1);
+                        }}
+                        className="h-4 w-4 accent-sena"
+                    />
+                    Sin asignar
                 </label>
 
                 {hayFiltrosPropios && (

@@ -26,11 +26,15 @@ import { useLicenciasSinActualizar } from '../features/licencias/hooks/useLicenc
 // Se calcula al cargar la app: el año del pie se actualiza solo.
 const ANIO_ACTUAL = new Date().getFullYear();
 
+const DESARROLLADORES = [
+  'Juan Pablo Montoya Marín',
+  'Santiago Ruiz Salazar',
+  'Yeiner Smith Quintero Garcia',
+];
+
 /**
- * Menú agrupado por secciones para que los módulos sean fáciles de
- * encontrar. Cada entrada lleva su ícono de lucide-react (solo los
- * íconos importados aquí entran al build, no la librería completa).
- * titulo: null = sección sin encabezado (Inicio).
+ * Menú agrupado por secciones. Cada entrada lleva su ícono de
+ * lucide-react (solo los importados aquí entran al build).
  */
 const SECCIONES_NAV = [
   {
@@ -83,17 +87,13 @@ const SECCIONES_NAV = [
 export function AdminLayout() {
   const { user, logout } = useAuth();
 
-  // Comparte caché con el panel de Licencias (misma página 1), así que
-  // no es una petición extra cuando se abre esa pantalla.
   const { data: sinActualizar } = useLicenciasSinActualizar();
   const totalSinActualizar = sinActualizar?.meta?.total ?? 0;
 
   return (
     <div className="flex min-h-screen bg-surface">
-      {/* Panel lateral en Negro institucional (#1A1A1A) — norma del acta
-          de colores para el "panel lateral de navegación". sticky + h-screen
-          + overflow-y-auto en el nav: el menú se desplaza solo, y el pie de
-          propiedad queda siempre visible abajo. */}
+      {/* Panel lateral en Negro institucional (#1A1A1A). El nav se desplaza
+          solo y el pie (propiedad y desarrolladores) queda siempre abajo. */}
       <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col bg-ink">
         <div className="flex items-center gap-2 border-b border-white/10 px-4 py-4">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-sena text-white">
@@ -142,16 +142,25 @@ export function AdminLayout() {
           ))}
         </nav>
 
-        <footer className="border-t border-white/10 px-4 py-3 text-[11px] leading-snug text-white/40">
-          <p className="font-semibold text-white/60">© {ANIO_ACTUAL} SENA – CIAA</p>
-          <p>Centro de la Innovación, la Agroindustria y la Aviación</p>
-          <p className="mt-1">Todos los derechos reservados.</p>
+        <footer className="space-y-2 border-t border-white/10 px-4 py-3 text-[11px] leading-snug text-white/40">
+          <div>
+            <p className="font-semibold text-white/60">Desarrollado por</p>
+            <ul>
+              {DESARROLLADORES.map((nombre) => (
+                <li key={nombre}>{nombre}</li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <p className="font-semibold text-white/60">© {ANIO_ACTUAL} SENA – CIAA</p>
+            <p>Centro de la Innovación, la Agroindustria y la Aviación</p>
+            <p>Todos los derechos reservados.</p>
+          </div>
         </footer>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-end gap-4 border-b border-slate-200 bg-white px-6 py-4 shadow-sm">
-          {/* Campo confirmado contra UserResource.php: 'nombre', no 'name' */}
           <span className="flex items-center gap-2 text-sm text-slate-600">
             <CircleUser size={18} aria-hidden="true" />
             {user?.nombre}

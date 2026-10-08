@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EstadoEquipo;
 use App\Enums\EstadoNovedad;
 use App\Exports\EquiposImportPlantillaExport;
 use App\Http\Requests\EquipoRequest;
@@ -21,8 +22,10 @@ class EquipoController extends Controller
      * placa, serial, mac, hostname, responsable, sede, subsede, ubicación,
      * tipo de equipo y estado — todos opcionales y combinables entre sí.
      *
-     * novedades_abiertas_count: alimenta el indicador de novedades de la
-     * tabla de Equipos (una sola subconsulta COUNT por fila).
+     * sin_licencia=1: equipos en uso (no de baja ni extraviados) sin
+     * licencia de Office — mismo criterio que el contador del Inicio.
+     *
+     * novedades_abiertas_count: alimenta el indicador de novedades.
      */
     public function index(Request $request): AnonymousResourceCollection
     {
@@ -43,6 +46,11 @@ class EquipoController extends Controller
             ->when($request->filled('ubicacion_formacion_id'), fn ($q) => $q->where('ubicacion_formacion_id', $request->input('ubicacion_formacion_id')))
             ->when($request->filled('subsede_id'), fn ($q) => $q->whereHas('ubicacionFormacion', fn ($sub) => $sub->where('subsede_id', $request->input('subsede_id'))))
             ->when($request->filled('sede_id'), fn ($q) => $q->whereHas('ubicacionFormacion.subsede', fn ($sub) => $sub->where('sede_id', $request->input('sede_id'))))
+            ->when(
+                $request->boolean('sin_licencia'),
+                fn ($q) => $q->doesntHave('licenciaOffice')
+                    ->whereNotIn('estado', [EstadoEquipo::DeBaja, EstadoEquipo::Extraviado])
+            )
             ->latest()
             ->paginate(15);
 

@@ -1,9 +1,12 @@
 import { useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLicencias, useCreateLicencia, useUpdateLicencia, useDeleteLicencia } from '../hooks/useLicencias';
 import { useSedes } from '../../sedes/hooks/useSedes';
 import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
 import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
+import { useDashboard } from '../../dashboard/hooks/useDashboard';
 import { FiltroUbicacionCascada } from '../../../shared/components/FiltroUbicacionCascada';
+import { ContadoresModulo } from '../../../shared/components/ContadoresModulo';
 import { LicenciaTable } from '../components/LicenciaTable';
 import { LicenciaForm } from '../components/LicenciaForm';
 import { LicenciasSinActualizarPanel } from '../components/LicenciasSinActualizarPanel';
@@ -11,25 +14,31 @@ import { ImportarLicenciasModal } from '../components/ImportarLicenciasModal';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 import { Modal } from '../../../shared/components/Modal';
 
-// Confirmado contra app/Enums/EstadoLicencia.php — mismos valores que ya
-// usa LicenciaForm.jsx.
+// Confirmado contra app/Enums/EstadoLicencia.php. "tono" colorea su contador.
 const ESTADOS_LICENCIA = [
-  { value: 'activa', label: 'Activa' },
-  { value: 'vencida', label: 'Vencida' },
-  { value: 'suspendida', label: 'Suspendida' },
+  { value: 'activa', label: 'Activas', tono: 'success' },
+  { value: 'vencida', label: 'Vencidas', tono: 'danger' },
+  { value: 'suspendida', label: 'Suspendidas', tono: 'info' },
 ];
 
 const CAMPO =
   'rounded border border-slate-300 px-2 py-1 text-sm focus:border-sena focus:outline-none focus:ring-1 focus:ring-sena';
 
+/**
+ * El filtro inicial de estado puede venir en la URL (?estado=vencida):
+ * así llegan las tarjetas del Inicio.
+ */
 export function LicenciasPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
   const [page, setPage] = useState(1);
   const [sedeFiltro, setSedeFiltro] = useState('');
   const [subsedeFiltro, setSubsedeFiltro] = useState('');
   const [ubicacionFiltro, setUbicacionFiltro] = useState('');
   const [correoFiltro, setCorreoFiltro] = useState('');
   const [placaFiltro, setPlacaFiltro] = useState('');
-  const [estadoFiltro, setEstadoFiltro] = useState('');
+  const [estadoFiltro, setEstadoFiltro] = useState(() => searchParams.get('estado') ?? '');
   const [fechaDesdeFiltro, setFechaDesdeFiltro] = useState('');
   const [fechaHastaFiltro, setFechaHastaFiltro] = useState('');
 
@@ -93,6 +102,7 @@ export function LicenciasPage() {
   const { data: sedesData } = useSedes(1);
   const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeFiltro || undefined });
   const { data: ubicacionesData } = useUbicaciones({ page: 1, subsedeId: subsedeFiltro || undefined });
+  const { data: resumen, isLoading: cargandoResumen } = useDashboard();
 
   const { data, isLoading, isError } = useLicencias(page, filtros);
   const createLicencia = useCreateLicencia();
@@ -100,6 +110,39 @@ export function LicenciasPage() {
   const deleteLicencia = useDeleteLicencia();
 
   const serverErrors = createLicencia.error?.response?.data?.errors ?? updateLicencia.error?.response?.data?.errors;
+
+  // Contadores: totales del sistema. Clic = aplicar/quitar ese filtro;
+  // "Equipos sin licencia" lleva a Equipos ya filtrado.
+  const contadores = [
+    {
+      clave: 'total',
+      etiqueta: 'Total de licencias',
+      valor: resumen?.licencias?.total,
+      activo: !estadoFiltro,
+      onClick: () => {
+        setEstadoFiltro('');
+        setPage(1);
+      },
+    },
+    ...ESTADOS_LICENCIA.map((estado) => ({
+      clave: estado.value,
+      etiqueta: estado.label,
+      valor: resumen?.licencias?.por_estado?.[estado.value],
+      tono: estado.tono,
+      activo: estadoFiltro === estado.value,
+      onClick: () => {
+        setEstadoFiltro((actual) => (actual === estado.value ? '' : estado.value));
+        setPage(1);
+      },
+    })),
+    {
+      clave: 'sin_licencia',
+      etiqueta: 'Equipos sin licencia →',
+      valor: resumen?.equipos?.sin_licencia,
+      tono: 'warning',
+      onClick: () => navigate('/equipos?sin_licencia=1'),
+    },
+  ];
 
   function handleSubmit(payload) {
     if (editingLicencia?.id) {
@@ -138,6 +181,8 @@ export function LicenciasPage() {
           </button>
         </div>
       </div>
+
+      <ContadoresModulo contadores={contadores} cargando={cargandoResumen} />
 
       <LicenciasSinActualizarPanel onVerLicencia={handleVerLicencia} />
 
