@@ -4,6 +4,7 @@ import {
   Building,
   Building2,
   ChartColumn,
+  ChevronRight,
   CircleUser,
   DatabaseBackup,
   KeyRound,
@@ -142,20 +143,29 @@ export function AdminLayout() {
           ))}
         </nav>
 
-        <footer className="space-y-2 border-t border-white/10 px-4 py-3 text-[11px] leading-snug text-white/40">
-          <div>
-            <p className="font-semibold text-white/60">Desarrollado por</p>
-            <ul>
+        <footer className="border-t border-white/10 px-4 py-3 text-[11px] leading-snug text-white/40">
+          {/* <details> nativo: desplegable sin estado de React, accesible por
+              teclado. Cerrado por defecto para no ocupar espacio. */}
+          <details className="group mb-2">
+            <summary className="flex cursor-pointer list-none items-center gap-1 font-semibold text-white/60 hover:text-white/80 [&::-webkit-details-marker]:hidden">
+              <ChevronRight
+                size={12}
+                className="shrink-0 transition-transform group-open:rotate-90"
+                aria-hidden="true"
+              />
+              Desarrollado por
+            </summary>
+            <ul className="mt-1 space-y-0.5 pl-4">
               {DESARROLLADORES.map((nombre) => (
                 <li key={nombre}>{nombre}</li>
               ))}
             </ul>
-          </div>
-          <div>
-            <p className="font-semibold text-white/60">© {ANIO_ACTUAL} SENA – CIAA</p>
-            <p>Centro de la Innovación, la Agroindustria y la Aviación</p>
-            <p>Todos los derechos reservados.</p>
-          </div>
+          </details>
+
+          <p className="font-semibold text-white/60">© {ANIO_ACTUAL} SENA – CIAA</p>
+          <p title="Centro de la Innovación, la Agroindustria y la Aviación. Todos los derechos reservados.">
+            Centro de la Innovación, la Agroindustria y la Aviación
+          </p>
         </footer>
       </aside>
 
