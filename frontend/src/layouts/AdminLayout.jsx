@@ -143,28 +143,28 @@ export function AdminLayout() {
           ))}
         </nav>
 
-        <footer className="border-t border-white/10 px-4 py-3 text-[11px] leading-snug text-white/40">
-          {/* <details> nativo: desplegable sin estado de React, accesible por
-              teclado. Cerrado por defecto para no ocupar espacio. */}
-          <details className="group mb-2">
-            <summary className="flex cursor-pointer list-none items-center gap-1 font-semibold text-white/60 hover:text-white/80 [&::-webkit-details-marker]:hidden">
+        {/* Pie compacto: desarrolladores en un desplegable (<details> nativo,
+            cerrado por defecto) y el copyright en una sola línea. El nombre
+            completo del centro se muestra al pasar el mouse. */}
+        <footer className="space-y-1 border-t border-white/10 px-3 py-2 text-[10px] leading-tight text-white/40">
+          <details className="group">
+            <summary className="flex cursor-pointer list-none items-center gap-1 hover:text-white/70 [&::-webkit-details-marker]:hidden">
               <ChevronRight
-                size={12}
+                size={10}
                 className="shrink-0 transition-transform group-open:rotate-90"
                 aria-hidden="true"
               />
               Desarrollado por
             </summary>
-            <ul className="mt-1 space-y-0.5 pl-4">
+            <ul className="mt-0.5 pl-3.5">
               {DESARROLLADORES.map((nombre) => (
                 <li key={nombre}>{nombre}</li>
               ))}
             </ul>
           </details>
 
-          <p className="font-semibold text-white/60">© {ANIO_ACTUAL} SENA – CIAA</p>
-          <p title="Centro de la Innovación, la Agroindustria y la Aviación. Todos los derechos reservados.">
-            Centro de la Innovación, la Agroindustria y la Aviación
+          <p title="SENA – Centro de la Innovación, la Agroindustria y la Aviación (CIAA). Todos los derechos reservados.">
+            © {ANIO_ACTUAL} SENA – CIAA
           </p>
         </footer>
       </aside>
