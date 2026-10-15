@@ -46,3 +46,86 @@ h1, h2, h3 {
   font-family: var(--font-display);
   font-weight: 700;
 }
+
+/*
+ * Barras de scroll estéticas — una sola definición para TODO el sistema:
+ * la página, el menú lateral, los modales (hoja de vida, importaciones),
+ * los desplegables de autocompletado y las listas con altura máxima.
+ * Ningún componente necesita clases propias, salvo el menú lateral
+ * oscuro (.scrollbar-oscuro), que invierte los colores.
+ *
+ * Por qué dos sintaxis:
+ * - Chrome, Edge, Safari y Opera usan los pseudo-elementos
+ *   ::-webkit-scrollbar (permiten bordes redondeados y margen interno).
+ * - Firefox solo entiende scrollbar-width / scrollbar-color.
+ * OJO: desde Chrome 121, si un elemento tiene scrollbar-color o
+ * scrollbar-width, Chrome IGNORA los ::-webkit-scrollbar. Por eso las
+ * propiedades estándar van dentro de @supports y solo las aplica el
+ * navegador que NO soporta ::-webkit-scrollbar (Firefox).
+ *
+ * Colores: pulgar gris neutro en reposo (no compite con el contenido)
+ * y verde SENA al pasar el mouse o arrastrar — el mismo verde de los
+ * botones y del ítem activo del menú.
+ */
+:root {
+  --scroll-pulgar: #cbd5e1;          /* slate-300 */
+  --scroll-pulgar-oscuro: rgb(255 255 255 / 0.18);
+}
+
+/*
+ * Reserva siempre el espacio de la barra de la página. Sin esto, cuando
+ * aparecen los resultados del buscador del Inicio (o se abre la hoja de
+ * vida y la página crece) la barra aparece de golpe y todo el contenido
+ * se corre unos píxeles a la izquierda.
+ */
+html {
+  scrollbar-gutter: stable;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* El borde transparente + background-clip deja el pulgar más delgado
+   que la barra: se ve "flotando", sin pegarse al borde del contenedor. */
+::-webkit-scrollbar-thumb {
+  background-color: var(--scroll-pulgar);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-sena);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background-color: var(--color-sena-dark);
+}
+
+/* Menú lateral (fondo Negro institucional): pulgar claro y translúcido. */
+.scrollbar-oscuro::-webkit-scrollbar-thumb {
+  background-color: var(--scroll-pulgar-oscuro);
+}
+
+.scrollbar-oscuro::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-sena);
+}
+
+/* Firefox (no admite forma ni hover: solo grosor y colores). */
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scroll-pulgar) transparent;
+  }
+
+  .scrollbar-oscuro {
+    scrollbar-color: var(--scroll-pulgar-oscuro) transparent;
+  }
+}

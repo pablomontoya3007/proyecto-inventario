@@ -103,7 +103,7 @@ export function AdminLayout() {
           <span className="font-display text-sm font-bold text-white">Inventario SENA</span>
         </div>
 
-        <nav className="flex-1 overflow-y-auto p-2">
+        <nav className="scrollbar-oscuro flex-1 overflow-y-auto p-2">
           {SECCIONES_NAV.map((seccion, indice) => (
             <div key={seccion.titulo ?? `seccion-${indice}`} className={indice > 0 ? 'mt-4' : ''}>
               {seccion.titulo && (
