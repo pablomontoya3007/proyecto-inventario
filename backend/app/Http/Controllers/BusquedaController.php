@@ -12,10 +12,12 @@ use App\Models\Equipo;
 use App\Models\LicenciaOffice;
 use App\Models\Responsable;
 use App\Models\User;
+use App\Support\CoincidenciasEquipo;
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 
 /**
@@ -42,6 +44,12 @@ use Illuminate\Validation\Rule;
  * Un grupo omitido llega como null; uno sin coincidencias, con total 0.
  * Cada grupo trae como máximo LIMITE_POR_GRUPO resultados y el total
  * real, para que el frontend ofrezca "ver todos en el módulo".
+ *
+ * Búsqueda profunda en equipos: además de placa, serial, MAC, hostname
+ * y responsable, el texto se busca en las características técnicas
+ * (nombre y valor), observaciones, novedades, mantenimientos y
+ * traslados. Cada equipo devuelto trae "coincidencias": en qué campo
+ * apareció el término (ver CoincidenciasEquipo).
  */
 class BusquedaController extends Controller
 {
@@ -79,7 +87,7 @@ class BusquedaController extends Controller
         $filtroEquipo = $this->filtroEquipo($request);
 
         return response()->json([
-            'equipos' => $this->buscarEquipos($request, $like, $filtroEquipo),
+            'equipos' => $this->buscarEquipos($request, $termino, $like, $filtroEquipo),
             'responsables' => $this->buscarResponsables($request, $like, $filtroEquipo, $hayFiltrosDeEquipo),
             'licencias' => $request->boolean('sin_licencia')
                 ? null
@@ -88,7 +96,7 @@ class BusquedaController extends Controller
         ]);
     }
 
-    private function buscarEquipos(Request $request, ?string $like, Closure $filtroEquipo): ?array
+    private function buscarEquipos(Request $request, string $termino, ?string $like, Closure $filtroEquipo): ?array
     {
         if ($request->user()->cannot('viewAny', Equipo::class)) {
             return null;
@@ -99,21 +107,62 @@ class BusquedaController extends Controller
             // Agrupado en where(fn...): sin el paréntesis, los orWhere se
             // escaparían de los filtros y devolverían equipos de cualquier
             // sede o estado.
-            ->when($like, fn (Builder $q) => $q->where(fn (Builder $sub) => $sub
-                ->where('placa_sena', 'like', $like)
-                ->orWhere('serial', 'like', $like)
-                ->orWhere('mac', 'like', $like)
-                ->orWhere('mac_cableada', 'like', $like)
-                ->orWhere('hostname', 'like', $like)
-                ->orWhereHas('responsable', fn (Builder $r) => $r
-                    ->where('nombre', 'like', $like)
-                    ->orWhere('documento', 'like', $like))));
+            ->when($like, fn (Builder $q) => $q->where(function (Builder $sub) use ($termino, $like) {
+                $sub->where('placa_sena', 'like', $like)
+                    ->orWhere('serial', 'like', $like)
+                    ->orWhere('mac', 'like', $like)
+                    ->orWhere('mac_cableada', 'like', $like)
+                    ->orWhere('hostname', 'like', $like)
+                    ->orWhereHas('responsable', fn (Builder $r) => $r
+                        ->where('nombre', 'like', $like)
+                        ->orWhere('documento', 'like', $like))
+                    ->orWhere(fn (Builder $c) => $this->dondeCaracteristicasContienen($c, $termino))
+                    ->orWhereHas('observaciones', fn (Builder $o) => $o->where('descripcion', 'like', $like))
+                    ->orWhereHas('novedades', fn (Builder $n) => $n
+                        ->where('descripcion', 'like', $like)
+                        ->orWhere('nota_resolucion', 'like', $like))
+                    ->orWhereHas('mantenimientos', fn (Builder $m) => $m->where('descripcion', 'like', $like))
+                    ->orWhereHas('traslados', fn (Builder $t) => $t->where('motivo', 'like', $like));
+            }));
 
         return $this->grupo(
             $consulta,
             fn (Builder $q) => $q->with(['tipoEquipo', 'responsable', 'ubicacionFormacion.subsede.sede'])->latest(),
-            EquipoResource::class
+            EquipoResource::class,
+            // Solo con texto hay "dónde coincidió"; con solo filtros, no.
+            $like === null
+                ? null
+                : fn (Collection $equipos) => (new CoincidenciasEquipo($termino, $like))->para($equipos)
         );
+    }
+
+    /**
+     * Busca dentro de la columna JSON caracteristicas_tecnicas (claves y
+     * valores) como texto. Dos detalles que una búsqueda LIKE simple no
+     * cubriría:
+     *
+     * 1. Mayúsculas: en MySQL una columna JSON se compara en binario
+     *    (distingue "Ruby" de "ruby"). LOWER(CAST(... AS CHAR)) lo iguala
+     *    en MySQL y en MariaDB (XAMPP), donde JSON es un LONGTEXT.
+     * 2. Tildes y ñ: Laravel guarda el JSON con json_encode sin flags, así
+     *    que "tamaño" queda en la base como "tama\u00f1o". Se busca
+     *    también esa forma escapada, para no tener que reescribir los
+     *    datos que ya existen.
+     */
+    private function dondeCaracteristicasContienen(Builder $query, string $termino): void
+    {
+        $minusculas = mb_strtolower($termino);
+        $variantes = array_unique([
+            $minusculas,
+            trim(json_encode($minusculas), '"'),
+        ]);
+
+        foreach ($variantes as $variante) {
+            $query->orWhereRaw(
+                'LOWER(CAST(caracteristicas_tecnicas AS CHAR)) LIKE ?',
+                ['%' . $this->escaparLike($variante) . '%']
+            );
+        }
     }
 
     private function buscarResponsables(Request $request, ?string $like, Closure $filtroEquipo, bool $hayFiltros): ?array
@@ -173,19 +222,34 @@ class BusquedaController extends Controller
      * Cuenta el total real ANTES de ordenar/cargar relaciones (el COUNT
      * no las necesita) y luego trae solo los primeros resultados.
      *
+     * $extras (opcional) recibe los modelos ya cargados y devuelve datos
+     * adicionales por id — así se agregan las "coincidencias" de equipos
+     * sin tocar EquipoResource, que usan muchas otras pantallas.
+     *
      * @param  class-string<\Illuminate\Http\Resources\Json\JsonResource>  $resource
+     * @param  (Closure(Collection): array<int, mixed>)|null  $extras
      */
-    private function grupo(Builder $consulta, Closure $preparar, string $resource): array
+    private function grupo(Builder $consulta, Closure $preparar, string $resource, ?Closure $extras = null): array
     {
         $total = (clone $consulta)->count();
 
-        $resultados = $total === 0
+        $modelos = $total === 0
             ? collect()
             : $preparar($consulta)->limit(self::LIMITE_POR_GRUPO)->get();
 
+        $resultados = $resource::collection($modelos)->resolve();
+
+        if ($extras !== null) {
+            $porId = $extras($modelos);
+            $resultados = array_map(
+                fn (array $item) => [...$item, 'coincidencias' => $porId[$item['id']] ?? []],
+                $resultados
+            );
+        }
+
         return [
             'total' => $total,
-            'resultados' => $resource::collection($resultados)->resolve(),
+            'resultados' => $resultados,
         ];
     }
 

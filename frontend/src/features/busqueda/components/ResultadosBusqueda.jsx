@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom';
 import { ChevronRight, KeyRound, Monitor, UserCog, Users } from 'lucide-react';
 import { EstadoBadge } from '../../../shared/components/EstadoBadge';
+import { TextoResaltado } from './TextoResaltado';
+
+const MAX_COINCIDENCIAS_VISIBLES = 3;
 
 /**
  * Lista de resultados del buscador global, agrupada por módulo.
@@ -11,8 +14,11 @@ import { EstadoBadge } from '../../../shared/components/EstadoBadge';
  *   que solo se listan; el enlace "Ver en el módulo" lleva a su página.
  * - Un grupo en null no aplica con los filtros elegidos: se explica en
  *   vez de mostrar un "sin resultados" engañoso.
+ * - Cada equipo trae "coincidencias" (cuando se buscó texto): en qué
+ *   campo apareció el término — una característica técnica, una
+ *   observación, una novedad... — con el término resaltado.
  */
-export function ResultadosBusqueda({ data, enlaceEquipos, onVerEquipo }) {
+export function ResultadosBusqueda({ data, termino, enlaceEquipos, onVerEquipo }) {
   const grupos = [data.equipos, data.responsables, data.licencias, data.usuarios];
   const totalGeneral = grupos.reduce((suma, grupo) => suma + (grupo?.total ?? 0), 0);
 
@@ -51,6 +57,7 @@ export function ResultadosBusqueda({ data, enlaceEquipos, onVerEquipo }) {
                 {' — '}
                 {equipo.responsable?.nombre ?? 'Sin responsable'}
               </p>
+              <ListaCoincidencias coincidencias={equipo.coincidencias} termino={termino} />
             </div>
             <EstadoBadge estado={equipo.estado} label={equipo.estado_label} />
           </ItemClicable>
@@ -159,6 +166,33 @@ function GrupoResultados({ titulo, icono: Icono, grupo, irA, renderItem, motivoN
         </>
       )}
     </section>
+  );
+}
+
+/**
+ * "Dónde coincidió": solo las primeras, para no alargar la tarjeta; el
+ * detalle completo está en la hoja de vida.
+ */
+function ListaCoincidencias({ coincidencias, termino }) {
+  if (!coincidencias?.length) return null;
+
+  const visibles = coincidencias.slice(0, MAX_COINCIDENCIAS_VISIBLES);
+  const restantes = coincidencias.length - visibles.length;
+
+  return (
+    <ul className="mt-1 space-y-0.5 border-l-2 border-warning/50 pl-2">
+      {visibles.map((coincidencia, indice) => (
+        <li key={indice} className="text-xs text-slate-600">
+          <span className="font-medium text-slate-500">{coincidencia.campo}:</span>{' '}
+          <TextoResaltado texto={coincidencia.valor} termino={termino} />
+        </li>
+      ))}
+      {restantes > 0 && (
+        <li className="text-xs text-slate-400">
+          y {restantes} {restantes === 1 ? 'coincidencia más' : 'coincidencias más'}
+        </li>
+      )}
+    </ul>
   );
 }
 

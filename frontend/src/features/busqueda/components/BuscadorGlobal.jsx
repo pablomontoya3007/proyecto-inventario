@@ -34,8 +34,11 @@ const FILTROS_VACIOS = {
 
 /**
  * Buscador global del Inicio: un cuadro de texto que busca a la vez en
- * equipos (placa, serial, MAC, hostname, responsable), responsables,
- * licencias de Office y usuarios, más filtros de equipo.
+ * equipos, responsables, licencias de Office y usuarios, más filtros de
+ * equipo. En equipos la búsqueda es "profunda": además de placa, serial,
+ * MAC, hostname y responsable, entra en las características técnicas,
+ * observaciones, novedades, mantenimientos y traslados, y cada
+ * resultado dice dónde coincidió.
  *
  * La búsqueda se lanza sola mientras se escribe (con retraso, para no
  * consultar en cada tecla) cuando hay al menos 2 caracteres o algún
@@ -120,7 +123,7 @@ export function BuscadorGlobal() {
             onKeyDown={(event) => {
               if (event.key === 'Escape') setTexto('');
             }}
-            placeholder="Buscar por placa, serial, MAC, hostname, responsable, correo de licencia o usuario..."
+            placeholder="Buscar placa, serial, MAC, característica (ej. ruby), observación, novedad, responsable, licencia o usuario..."
             maxLength={100}
             autoComplete="off"
             className="w-full rounded border border-slate-300 py-2.5 pl-10 pr-10 text-sm focus:border-sena focus:outline-none focus:ring-1 focus:ring-sena [&::-webkit-search-cancel-button]:hidden"
@@ -240,7 +243,12 @@ export function BuscadorGlobal() {
         {buscando && !data && !isError && <p className="text-sm text-slate-500">Buscando...</p>}
         {buscando && data && (
           <div className={isFetching ? 'opacity-60 transition-opacity' : 'transition-opacity'}>
-            <ResultadosBusqueda data={data} enlaceEquipos={enlaceEquipos} onVerEquipo={setEquipoAbierto} />
+            <ResultadosBusqueda
+              data={data}
+              termino={textoSuficiente ? termino : ''}
+              enlaceEquipos={enlaceEquipos}
+              onVerEquipo={setEquipoAbierto}
+            />
           </div>
         )}
       </div>
