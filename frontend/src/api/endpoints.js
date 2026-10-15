@@ -12,6 +12,10 @@ export const ENDPOINTS = {
   // Gestión de usuarios (solo con sesión iniciada; no hay registro público)
   usuarios: '/usuarios', // parámetro de ruta: usuario
 
+  // Buscador global del Inicio: GET ?q=&sede_id=&subsede_id=&
+  // ubicacion_formacion_id=&tipo_equipo_id=&estado=&sin_licencia=1
+  busqueda: '/busqueda',
+
   // Correos redactados desde el sistema (GET historial, POST enviar)
   correos: '/correos',
 

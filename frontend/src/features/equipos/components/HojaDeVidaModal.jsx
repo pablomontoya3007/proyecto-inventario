@@ -2,12 +2,17 @@ import { useState } from 'react';
 import { useEquipo } from '../hooks/useEquipos';
 import { descargarHojaDeVidaPdf } from '../services/equiposApi';
 import { Modal } from '../../../shared/components/Modal';
+import { EstadoNovedadBadge } from '../../novedades/components/NovedadTable';
 
 /**
  * "Ver" y "descargar" en un solo lugar: el modal muestra todo en
  * pantalla, y el botón de arriba genera el PDF con el mismo contenido
  * (misma fuente de datos: GET /equipos/{id}, ahora con mantenimientos
  * incluido junto a lo que ya traía show() desde la Fase 2).
+ *
+ * El historial de novedades llega ordenado desde el backend (la más
+ * reciente primero), con quién la reportó, a quién se asignó y, si ya
+ * se resolvió, quién, cuándo y con qué nota.
  */
 export function HojaDeVidaModal({ equipoId, placaSena, onClose }) {
   const { data: equipo, isLoading, isError } = useEquipo(equipoId);
@@ -95,6 +100,8 @@ export function HojaDeVidaModal({ equipoId, placaSena, onClose }) {
             </section>
           )}
 
+          <HistorialNovedades novedades={equipo.novedades} />
+
           <section>
             <h3 className="mb-2 text-sm font-semibold text-ink">Historial de mantenimientos</h3>
             {equipo.mantenimientos?.length > 0 ? (
@@ -158,5 +165,59 @@ export function HojaDeVidaModal({ equipoId, placaSena, onClose }) {
         </div>
       )}
     </Modal>
+  );
+}
+
+function HistorialNovedades({ novedades = [] }) {
+  const abiertas = novedades.filter((novedad) => novedad.estado === 'abierta').length;
+
+  return (
+    <section>
+      <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink">
+        Historial de novedades
+        {abiertas > 0 && (
+          <span className="rounded-full bg-warning/20 px-2 py-0.5 text-xs font-medium text-ink">
+            {abiertas} {abiertas === 1 ? 'abierta' : 'abiertas'}
+          </span>
+        )}
+      </h3>
+
+      {novedades.length > 0 ? (
+        <ul className="space-y-2">
+          {novedades.map((novedad) => (
+            <li
+              key={novedad.id}
+              className={`rounded border p-2 text-sm ${
+                novedad.estado === 'abierta' ? 'border-warning/40 bg-warning/5' : 'border-slate-200'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2 text-slate-600">
+                <span>{novedad.registrada_en}</span>
+                <EstadoNovedadBadge estado={novedad.estado} label={novedad.estado_label} />
+              </div>
+              <p className="mt-1 whitespace-pre-line text-ink">{novedad.descripcion}</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Reportada por {novedad.usuario?.nombre ?? '—'} · Asignada a{' '}
+                {novedad.asignado?.nombre ?? 'nadie todavía'}
+              </p>
+
+              {novedad.estado === 'resuelta' && (
+                <div className="mt-2 rounded bg-sena-soft px-2 py-1.5 text-xs text-sena-dark">
+                  <p>
+                    Resuelta el {novedad.resuelta_en ?? '—'}
+                    {novedad.resuelta_por?.nombre && ` por ${novedad.resuelta_por.nombre}`}
+                  </p>
+                  {novedad.nota_resolucion && (
+                    <p className="mt-0.5 whitespace-pre-line text-ink">{novedad.nota_resolucion}</p>
+                  )}
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-slate-400">Sin novedades registradas.</p>
+      )}
+    </section>
   );
 }

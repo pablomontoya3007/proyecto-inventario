@@ -13,7 +13,8 @@ class EquipoResource extends JsonResource
      * la diferencia la marca qué relaciones cargó el Controller con
      * ->with(...) antes de pasar el modelo aquí, no dos clases distintas.
      *
-     * novedades_abiertas_count usa whenHas: solo aparece cuando la
+     * novedades (historial completo) solo viaja en show(): es parte de la
+     * hoja de vida. novedades_abiertas_count usa whenHas: solo aparece cuando la
      * consulta lo calculó (listado de Equipos).
      */
     public function toArray(Request $request): array
@@ -35,6 +36,7 @@ class EquipoResource extends JsonResource
             'observaciones' => ObservacionResource::collection($this->whenLoaded('observaciones')),
             'mantenimientos' => MantenimientoResource::collection($this->whenLoaded('mantenimientos')),
             'traslados' => TrasladoResource::collection($this->whenLoaded('traslados')),
+            'novedades' => NovedadResource::collection($this->whenLoaded('novedades')),
             'novedades_abiertas_count' => $this->whenHas('novedades_abiertas_count'),
             'creado_en' => $this->created_at,
             'actualizado_en' => $this->updated_at,

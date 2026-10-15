@@ -53,6 +53,37 @@
         </table>
     @endif
 
+    <h2>Historial de novedades</h2>
+    @if ($equipo->novedades->isEmpty())
+        <p>Sin novedades registradas.</p>
+    @else
+        <table>
+            <thead>
+                <tr><th>Fecha</th><th>Reportada por</th><th>Descripción</th><th>Asignada a</th><th>Estado</th><th>Resolución</th></tr>
+            </thead>
+            <tbody>
+                @foreach ($equipo->novedades as $novedad)
+                    <tr>
+                        <td>{{ $novedad->created_at?->format('d/m/Y H:i') }}</td>
+                        <td>{{ $novedad->usuario?->name ?? '—' }}</td>
+                        <td>{{ $novedad->descripcion }}</td>
+                        <td>{{ $novedad->asignado?->name ?? 'Sin asignar' }}</td>
+                        <td>{{ $novedad->estado?->label() }}</td>
+                        <td>
+                            @if ($novedad->resuelta_en)
+                                {{ $novedad->resuelta_en->format('d/m/Y H:i') }}
+                                @if ($novedad->resueltaPor) — {{ $novedad->resueltaPor->name }} @endif
+                                @if ($novedad->nota_resolucion)<br>{{ $novedad->nota_resolucion }}@endif
+                            @else
+                                —
+                            @endif
+                        </td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
+
     <h2>Historial de mantenimientos</h2>
     @if ($equipo->mantenimientos->isEmpty())
         <p>Sin mantenimientos registrados.</p>

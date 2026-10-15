@@ -15,6 +15,9 @@ class ResponsableResource extends JsonResource
             'documento' => $this->documento,
             'cargo' => $this->cargo,
             'correo' => $this->correo,
+            // Solo aparece cuando la consulta lo pidió con withCount
+            // (buscador global del Inicio).
+            'equipos_count' => $this->whenCounted('equipos'),
         ];
     }
 }

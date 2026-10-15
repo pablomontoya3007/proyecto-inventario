@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useDashboard } from '../hooks/useDashboard';
+import { BuscadorGlobal } from '../../busqueda/components/BuscadorGlobal';
 
 // Tarjeta de estadística. Todas llevan al módulo correspondiente (ya
 // filtrado cuando aplica), igual que las de Novedades.
@@ -44,8 +45,12 @@ export function DashboardPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold text-ink">Inicio</h1>
-        <p className="mt-1 text-sm text-slate-500">Haz clic en cualquier contador para ir al módulo.</p>
+        <p className="mt-1 text-sm text-slate-500">
+          Busca cualquier equipo, responsable, licencia o usuario, o haz clic en un contador para ir al módulo.
+        </p>
       </div>
+
+      <BuscadorGlobal />
 
       <section>
         <h2 className="mb-3 text-lg font-medium text-ink">Novedades</h2>

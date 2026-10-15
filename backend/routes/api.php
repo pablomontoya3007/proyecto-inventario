@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuditoriaController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BusquedaController;
 use App\Http\Controllers\CorreoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EquipoController;
@@ -29,6 +30,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'usuarioActual']);
     Route::get('/dashboard', [DashboardController::class, 'resumen']);
+
+    // Buscador global del Inicio (equipos, responsables, licencias y
+    // usuarios en una sola petición). Limitado a 60 por minuto: se
+    // consulta mientras se escribe.
+    Route::get('/busqueda', BusquedaController::class)->middleware('throttle:60,1');
     Route::get('/auditorias', [AuditoriaController::class, 'index']);
     Route::get('/notificaciones/licencias', [NotificacionController::class, 'licenciasSinActualizar']);
 

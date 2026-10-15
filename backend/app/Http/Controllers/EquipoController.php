@@ -73,16 +73,7 @@ class EquipoController extends Controller
     {
         $this->authorize('view', $equipo);
 
-        $equipo->load([
-            'tipoEquipo',
-            'responsable',
-            'ubicacionFormacion.subsede.sede',
-            'licenciaOffice',
-            'observaciones.usuario',
-            'mantenimientos',
-            'traslados.ubicacionOrigen',
-            'traslados.ubicacionDestino',
-        ]);
+        $this->cargarHojaDeVida($equipo);
 
         return new EquipoResource($equipo);
     }
@@ -112,16 +103,7 @@ class EquipoController extends Controller
     {
         $this->authorize('view', $equipo);
 
-        $equipo->load([
-            'tipoEquipo',
-            'responsable',
-            'ubicacionFormacion.subsede.sede',
-            'licenciaOffice',
-            'observaciones.usuario',
-            'mantenimientos',
-            'traslados.ubicacionOrigen',
-            'traslados.ubicacionDestino',
-        ]);
+        $this->cargarHojaDeVida($equipo);
 
         return Pdf::loadView('equipos.hoja-de-vida', ['equipo' => $equipo])
             ->download('hoja-de-vida-'.$equipo->placa_sena.'.pdf');
@@ -155,5 +137,29 @@ class EquipoController extends Controller
         $this->authorize('create', Equipo::class);
 
         return Excel::download(new EquiposImportPlantillaExport(), 'plantilla-importar-equipos.xlsx');
+    }
+
+    /**
+     * Relaciones de la hoja de vida, compartidas por show() (pantalla) y
+     * hojaDeVidaPdf() (PDF). Antes la lista estaba copiada en los dos
+     * métodos; tenerla en un solo lugar garantiza que pantalla y PDF
+     * muestren siempre lo mismo.
+     *
+     * Novedades: de la más reciente a la más antigua, con quién la
+     * reportó, a quién se asignó y quién la resolvió.
+     */
+    private function cargarHojaDeVida(Equipo $equipo): void
+    {
+        $equipo->load([
+            'tipoEquipo',
+            'responsable',
+            'ubicacionFormacion.subsede.sede',
+            'licenciaOffice',
+            'observaciones.usuario',
+            'mantenimientos',
+            'traslados.ubicacionOrigen',
+            'traslados.ubicacionDestino',
+            'novedades' => fn ($q) => $q->latest()->latest('id')->with(['usuario', 'asignado', 'resueltaPor']),
+        ]);
     }
 }
