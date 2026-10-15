@@ -60,12 +60,16 @@ return [
     |--------------------------------------------------------------------------
     |
     | Here you may specify the default timezone for your application, which
-    | will be used by the PHP date and date-time functions. The timezone
-    | is set to "UTC" by default as it is suitable for most use cases.
+    | will be used by the PHP date and date-time functions.
+    |
+    | Inventario SENA: hora de Colombia (UTC-5, sin horario de verano).
+    | Antes estaba en "UTC" y todo se guardaba 5 horas adelantado; la
+    | migración 2026_10_15_000001_convertir_fechas_existentes_a_hora_colombia
+    | corrigió los registros viejos. No volver a "UTC" sin revertirla.
     |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => env('APP_TIMEZONE', 'America/Bogota'),
 
     /*
     |--------------------------------------------------------------------------
