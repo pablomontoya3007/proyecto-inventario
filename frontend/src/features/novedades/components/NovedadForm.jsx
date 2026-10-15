@@ -42,13 +42,13 @@ export function NovedadForm({ onSubmit, onCancel, isSubmitting, serverErrors }) 
                 {equipo &&
                     (responsable?.correo ? (
                         <p className="mt-2 rounded bg-sena-soft px-3 py-2 text-xs text-sena-dark">
-                            Se le avisará al responsable del equipo: {responsable.nombre} ({responsable.correo}).
+                            Se le avisará al cuentadante del equipo: {responsable.nombre} ({responsable.correo}).
                         </p>
                     ) : (
                         <p className="mt-2 rounded bg-warning/20 px-3 py-2 text-xs text-ink">
                             {responsable
-                                ? `El responsable ${responsable.nombre} no tiene correo registrado: no se le enviará correo. Puedes agregárselo en Responsables.`
-                                : 'Este equipo no tiene responsable asignado: no se le enviará correo a ningún responsable.'}
+                                ? `El cuentadante ${responsable.nombre} no tiene correo registrado: no se le enviará correo. Puedes agregárselo en Cuentadantes.`
+                                : 'Este equipo no tiene cuentadante asignado: no se le enviará correo a ningún cuentadante.'}
                         </p>
                     ))}
             </div>

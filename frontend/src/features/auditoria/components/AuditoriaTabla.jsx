@@ -7,7 +7,7 @@ const ENTIDADES_LEGIBLES = {
   Subsede: 'Subsede',
   UbicacionFormacion: 'Ubicación',
   TipoEquipo: 'Tipo de equipo',
-  Responsable: 'Responsable',
+  Responsable: 'Cuentadante',
   LicenciaOffice: 'Licencia de Office',
   Mantenimiento: 'Mantenimiento',
   Traslado: 'Traslado',
@@ -23,6 +23,12 @@ const ETIQUETAS_ACCION = {
   creado: 'Creado',
   actualizado: 'Actualizado',
   eliminado: 'Eliminado',
+};
+
+// Nombres de campo que vienen del backend y se muestran distinto en
+// pantalla. Solo cambia el texto visible: el dato sigue siendo el mismo.
+const CAMPOS_LEGIBLES = {
+  responsable_id: 'cuentadante_id',
 };
 
 function formatearValor(valor) {
@@ -44,7 +50,7 @@ function DetalleCambios({ accion, cambios }) {
     <ul className="space-y-1 px-1 py-2">
       {entradas.map(([campo, valor]) => (
         <li key={campo} className="text-xs text-slate-600">
-          <span className="font-medium text-ink">{campo}:</span>{' '}
+          <span className="font-medium text-ink">{CAMPOS_LEGIBLES[campo] ?? campo}:</span>{' '}
           {accion === 'actualizado' ? (
             <>
               <span className="text-danger line-through">{formatearValor(valor.antes)}</span>

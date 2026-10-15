@@ -9,7 +9,7 @@ const ENTIDADES = [
   { value: 'Subsede', label: 'Subsedes' },
   { value: 'UbicacionFormacion', label: 'Ubicaciones' },
   { value: 'TipoEquipo', label: 'Tipos de equipo' },
-  { value: 'Responsable', label: 'Responsables' },
+  { value: 'Responsable', label: 'Cuentadantes' },
   { value: 'LicenciaOffice', label: 'Licencias de Office' },
   { value: 'Mantenimiento', label: 'Mantenimientos' },
   { value: 'Traslado', label: 'Traslados' },

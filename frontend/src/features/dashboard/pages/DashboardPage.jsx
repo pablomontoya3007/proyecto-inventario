@@ -46,7 +46,7 @@ export function DashboardPage() {
       <div>
         <h1 className="text-3xl font-bold text-ink">Inicio</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Busca cualquier equipo, responsable, licencia o usuario, o haz clic en un contador para ir al módulo.
+          Busca cualquier equipo, cuentadante, licencia o usuario, o haz clic en un contador para ir al módulo.
         </p>
       </div>
 
@@ -134,7 +134,7 @@ export function DashboardPage() {
             tono="warning"
             irA="/mantenimientos"
           />
-          <TarjetaEstadistica titulo="Responsables" valor={data.responsables_total} irA="/responsables" />
+          <TarjetaEstadistica titulo="Cuentadantes" valor={data.responsables_total} irA="/responsables" />
           <TarjetaEstadistica titulo="Usuarios del sistema" valor={data.usuarios_total} irA="/usuarios" />
         </div>
       </section>
@@ -170,7 +170,7 @@ export function DashboardPage() {
         </section>
 
         <section className="rounded border border-slate-200 bg-white p-4">
-          <h2 className="mb-3 text-sm font-semibold text-ink">Responsables con más equipos</h2>
+          <h2 className="mb-3 text-sm font-semibold text-ink">Cuentadantes con más equipos</h2>
           {data.responsables_top.length === 0 ? (
             <p className="text-sm text-slate-400">Sin datos todavía.</p>
           ) : (

@@ -278,7 +278,7 @@ export function ReportesPage() {
 
       <section>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-medium text-ink">Responsables con más equipos</h2>
+          <h2 className="text-lg font-medium text-ink">Cuentadantes con más equipos</h2>
           <BotonesExportar
             onExcel={() => responsablesExcel.mutate(filtroUbicacion)}
             onPdf={() => responsablesPdf.mutate(filtroUbicacion)}

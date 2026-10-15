@@ -123,7 +123,7 @@ export function BuscadorGlobal() {
             onKeyDown={(event) => {
               if (event.key === 'Escape') setTexto('');
             }}
-            placeholder="Buscar placa, serial, MAC, característica (ej. ruby), observación, novedad, responsable, licencia o usuario..."
+            placeholder="Buscar placa, serial, MAC, característica (ej. ruby), observación, novedad, cuentadante, licencia o usuario..."
             maxLength={100}
             autoComplete="off"
             className="w-full rounded border border-slate-300 py-2.5 pl-10 pr-10 text-sm focus:border-sena focus:outline-none focus:ring-1 focus:ring-sena [&::-webkit-search-cancel-button]:hidden"

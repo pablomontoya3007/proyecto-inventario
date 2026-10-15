@@ -50,9 +50,9 @@ export async function fetchReporteResponsables(filtroUbicacion = {}) {
 }
 
 export function descargarReporteResponsablesExcel(filtroUbicacion = {}) {
-  return descargarBlob(httpClient, ENDPOINTS.reportes.responsablesExcel, 'responsables.xlsx', filtroUbicacion);
+  return descargarBlob(httpClient, ENDPOINTS.reportes.responsablesExcel, 'cuentadantes.xlsx', filtroUbicacion);
 }
 
 export function descargarReporteResponsablesPdf(filtroUbicacion = {}) {
-  return descargarBlob(httpClient, ENDPOINTS.reportes.responsablesPdf, 'responsables.pdf', filtroUbicacion);
+  return descargarBlob(httpClient, ENDPOINTS.reportes.responsablesPdf, 'cuentadantes.pdf', filtroUbicacion);
 }

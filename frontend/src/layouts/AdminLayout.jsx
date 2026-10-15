@@ -55,7 +55,7 @@ const SECCIONES_NAV = [
     items: [
       { label: 'Equipos', path: '/equipos', icono: Monitor },
       { label: 'Tipos de Equipo', path: '/tipos-equipo', icono: Tags },
-      { label: 'Responsables', path: '/responsables', icono: Users },
+      { label: 'Cuentadantes', path: '/responsables', icono: Users },
       { label: 'Licencias', path: '/licencias-office', icono: KeyRound },
     ],
   },

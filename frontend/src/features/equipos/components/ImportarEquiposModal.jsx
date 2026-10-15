@@ -41,14 +41,14 @@ export function ImportarEquiposModal({ onClose }) {
         <>
           <p className="text-sm text-slate-600">
             El archivo debe tener las columnas: Placa SENA, Serial, MAC, MAC Cableada, Hostname, Tipo de equipo,
-            Responsable, Sede, Subsede, Ambiente y Estado. Cualquier columna adicional (ej. "RAM (GB)", "Procesador")
-            se guarda como característica técnica del equipo.
+            Responsable (ahí va el cuentadante), Sede, Subsede, Ambiente y Estado. Cualquier columna adicional (ej.
+            "RAM (GB)", "Procesador") se guarda como característica técnica del equipo.
           </p>
 
           <p className="text-sm text-slate-600">
             Los equipos que ya estén registrados (misma placa o serial) se omiten automáticamente, así que puedes
             volver a subir un Excel completo sin problema. Tipo de equipo, Sede, Subsede y Ambiente deben coincidir con
-            nombres ya registrados; si el responsable no existe, el equipo queda sin asignar.
+            nombres ya registrados; si el cuentadante no existe, el equipo queda sin asignar.
           </p>
 
           <button
