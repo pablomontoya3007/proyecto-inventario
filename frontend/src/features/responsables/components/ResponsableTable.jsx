@@ -3,7 +3,7 @@
 // "Sin correo" se resalta: ese responsable no recibirá novedades.
 export function ResponsableTable({ responsables, onEdit, onDelete }) {
   if (responsables.length === 0) {
-    return <p className="text-sm text-slate-500">No hay responsables registrados todavía.</p>;
+    return <p className="text-sm text-slate-500">No hay cuentadantes registrados todavía.</p>;
   }
 
   return (

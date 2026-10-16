@@ -133,7 +133,7 @@ export function BuscadorResponsable({
       {value && (
         <button
           type="button"
-          aria-label="Quitar responsable seleccionado"
+          aria-label="Quitar cuentadante seleccionado"
           onClick={limpiar}
           className="absolute right-2 top-1/2 -translate-y-1/2 rounded px-1 text-lg leading-none text-slate-400 hover:text-danger"
         >

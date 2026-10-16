@@ -5,6 +5,12 @@ import { TextoResaltado } from './TextoResaltado';
 
 const MAX_COINCIDENCIAS_VISIBLES = 3;
 
+// El backend nombra así algunos campos de las coincidencias; en pantalla
+// se muestran con el nombre que usa la institución.
+const CAMPOS_COINCIDENCIA_LEGIBLES = {
+  Responsable: 'Cuentadante',
+};
+
 /**
  * Lista de resultados del buscador global, agrupada por módulo.
  *
@@ -55,7 +61,7 @@ export function ResultadosBusqueda({ data, termino, enlaceEquipos, onVerEquipo }
                       .join(' / ')
                   : 'Sin ubicación'}
                 {' — '}
-                {equipo.responsable?.nombre ?? 'Sin responsable'}
+                {equipo.responsable?.nombre ?? 'Sin cuentadante'}
               </p>
               <ListaCoincidencias coincidencias={equipo.coincidencias} termino={termino} />
             </div>
@@ -65,7 +71,7 @@ export function ResultadosBusqueda({ data, termino, enlaceEquipos, onVerEquipo }
       />
 
       <GrupoResultados
-        titulo="Responsables"
+        titulo="Cuentadantes"
         icono={Users}
         grupo={data.responsables}
         irA="/responsables"
@@ -183,7 +189,9 @@ function ListaCoincidencias({ coincidencias, termino }) {
     <ul className="mt-1 space-y-0.5 border-l-2 border-warning/50 pl-2">
       {visibles.map((coincidencia, indice) => (
         <li key={indice} className="text-xs text-slate-600">
-          <span className="font-medium text-slate-500">{coincidencia.campo}:</span>{' '}
+          <span className="font-medium text-slate-500">
+            {CAMPOS_COINCIDENCIA_LEGIBLES[coincidencia.campo] ?? coincidencia.campo}:
+          </span>{' '}
           <TextoResaltado texto={coincidencia.valor} termino={termino} />
         </li>
       ))}

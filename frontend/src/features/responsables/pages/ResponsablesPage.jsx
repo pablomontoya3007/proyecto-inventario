@@ -99,19 +99,19 @@ export function ResponsablesPage() {
     setDeleteError(null);
     deleteResponsable.mutate(deletingResponsable?.id, {
       onSuccess: () => setDeletingResponsable(null),
-      onError: () => setDeleteError('No se pudo eliminar el responsable. Intenta de nuevo.'),
+      onError: () => setDeleteError('No se pudo eliminar el cuentadante. Intenta de nuevo.'),
     });
   }
 
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-ink">Responsables</h1>
+        <h1 className="text-3xl font-bold text-ink">Cuentadantes</h1>
         <button
           onClick={() => setEditingResponsable({})}
           className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark"
         >
-          Nuevo responsable
+          Nuevo cuentadante
         </button>
       </div>
 
@@ -151,8 +151,8 @@ export function ResponsablesPage() {
         onLimpiar={handleLimpiarFiltros}
       />
 
-      {isLoading && <p className="text-sm text-slate-500">Cargando responsables...</p>}
-      {isError && <p className="text-sm text-danger">No se pudieron cargar los responsables.</p>}
+      {isLoading && <p className="text-sm text-slate-500">Cargando cuentadantes...</p>}
+      {isError && <p className="text-sm text-danger">No se pudieron cargar los cuentadantes.</p>}
 
       {data && (
         <>
@@ -187,7 +187,7 @@ export function ResponsablesPage() {
 
       {editingResponsable !== null && (
         <Modal
-          title={editingResponsable.id ? 'Editar responsable' : 'Nuevo responsable'}
+          title={editingResponsable.id ? 'Editar cuentadante' : 'Nuevo cuentadante'}
           onClose={() => setEditingResponsable(null)}
         >
           <ResponsableForm
@@ -202,12 +202,12 @@ export function ResponsablesPage() {
 
       <ConfirmDialog
         open={!!deletingResponsable}
-        title="¿Eliminar este responsable?"
+        title="¿Eliminar este cuentadante?"
         description={
           deleteError ??
           `Esta acción no se puede deshacer${
             deletingResponsable ? `: "${deletingResponsable.nombre}"` : ''
-          }. Sus equipos asignados quedarán sin responsable.`
+          }. Sus equipos asignados quedarán sin cuentadante.`
         }
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeletingResponsable(null)}

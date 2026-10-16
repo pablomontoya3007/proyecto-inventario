@@ -23,12 +23,12 @@ export function DetalleNovedad({ novedad, onResolver, isResolviendo, errorResolv
                 <dd className="text-slate-600">{novedad.equipo?.tipo_equipo ?? '—'}</dd>
                 <dt className="text-slate-500">Ubicación</dt>
                 <dd className="text-slate-600">{novedad.equipo?.ubicacion ?? 'Sin ubicación'}</dd>
-                <dt className="text-slate-500">Responsable</dt>
+                <dt className="text-slate-500">Cuentadante</dt>
                 <dd className="text-slate-600">
                     {novedad.equipo?.responsable
                         ? `${novedad.equipo.responsable.nombre}${novedad.equipo.responsable.correo ? ` (${novedad.equipo.responsable.correo})` : ' (sin correo)'
                         }`
-                        : 'Sin responsable'}
+                        : 'Sin cuentadante'}
                 </dd>
                 <dt className="text-slate-500">Reportada por</dt>
                 <dd className="text-slate-600">{novedad.usuario?.nombre ?? 'Usuario eliminado'}</dd>

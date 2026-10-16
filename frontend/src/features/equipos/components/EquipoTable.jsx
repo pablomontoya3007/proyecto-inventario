@@ -24,7 +24,7 @@ export function EquipoTable({ equipos, onVerHojaDeVida, onEdit, onDelete }) {
           <th className="py-2 pr-4 font-medium">Placa SENA</th>
           <th className="py-2 pr-4 font-medium">Tipo</th>
           <th className="py-2 pr-4 font-medium">Ubicación</th>
-          <th className="py-2 pr-4 font-medium">Responsable</th>
+          <th className="py-2 pr-4 font-medium">Cuentadante</th>
           <th className="py-2 pr-4 font-medium">Estado</th>
           <th className="py-2 pr-4 font-medium text-right">Acciones</th>
         </tr>

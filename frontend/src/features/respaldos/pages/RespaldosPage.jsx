@@ -84,7 +84,7 @@ export function RespaldosPage() {
         <h2 className="mb-2 text-lg font-medium text-danger">Restaurar backup</h2>
         <p className="mb-1 text-sm text-slate-700">
           <strong>Esto reemplaza TODA la base de datos actual</strong> por el contenido del archivo que subas
-          — equipos, licencias, responsables, todo. No se puede deshacer desde esta pantalla.
+          — equipos, licencias, cuentadantes, todo. No se puede deshacer desde esta pantalla.
         </p>
         <p className="mb-4 text-sm text-slate-600">
           El sistema guarda una copia automática de la base actual antes de restaurar (en el servidor), pero

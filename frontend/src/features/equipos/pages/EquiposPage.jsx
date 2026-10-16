@@ -213,7 +213,7 @@ export function EquiposPage() {
             setResponsableFiltro(responsable);
             setPage(1);
           }}
-          placeholder="Responsable..."
+          placeholder="Cuentadante..."
           className="w-56"
           inputClassName={CAMPO}
         />
