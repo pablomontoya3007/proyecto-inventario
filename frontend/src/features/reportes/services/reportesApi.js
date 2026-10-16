@@ -42,6 +42,23 @@ export function descargarReporteLicenciasPdf(filtroUbicacion = {}) {
   return descargarBlob(httpClient, ENDPOINTS.reportes.licenciasPdf, 'licencias.pdf', filtroUbicacion);
 }
 
+// --- Equipos sin licencia ---
+// filtro: el de ubicación + opcionalmente { tipo_equipo_id }.
+// Respuesta: { total, por_tipo: [{ nombre, total }], listado: [...] }
+
+export async function fetchReporteEquiposSinLicencia(filtro = {}) {
+  const { data } = await httpClient.get(ENDPOINTS.reportes.equiposSinLicencia, { params: filtro });
+  return data;
+}
+
+export function descargarReporteEquiposSinLicenciaExcel(filtro = {}) {
+  return descargarBlob(httpClient, ENDPOINTS.reportes.equiposSinLicenciaExcel, 'equipos-sin-licencia.xlsx', filtro);
+}
+
+export function descargarReporteEquiposSinLicenciaPdf(filtro = {}) {
+  return descargarBlob(httpClient, ENDPOINTS.reportes.equiposSinLicenciaPdf, 'equipos-sin-licencia.pdf', filtro);
+}
+
 // --- Responsables ---
 
 export async function fetchReporteResponsables(filtroUbicacion = {}) {
@@ -50,9 +67,9 @@ export async function fetchReporteResponsables(filtroUbicacion = {}) {
 }
 
 export function descargarReporteResponsablesExcel(filtroUbicacion = {}) {
-  return descargarBlob(httpClient, ENDPOINTS.reportes.responsablesExcel, 'responsables.xlsx', filtroUbicacion);
+  return descargarBlob(httpClient, ENDPOINTS.reportes.responsablesExcel, 'cuentadantes.xlsx', filtroUbicacion);
 }
 
 export function descargarReporteResponsablesPdf(filtroUbicacion = {}) {
-  return descargarBlob(httpClient, ENDPOINTS.reportes.responsablesPdf, 'responsables.pdf', filtroUbicacion);
+  return descargarBlob(httpClient, ENDPOINTS.reportes.responsablesPdf, 'cuentadantes.pdf', filtroUbicacion);
 }

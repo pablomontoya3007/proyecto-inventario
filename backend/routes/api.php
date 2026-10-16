@@ -106,6 +106,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('licencias/excel', [ReporteController::class, 'licenciasExcel']);
         Route::get('licencias/pdf', [ReporteController::class, 'licenciasPdf']);
 
+        // Equipos en uso que no tienen licencia de Office registrada.
+        Route::get('licencias/sin-licencia', [ReporteController::class, 'equiposSinLicencia']);
+        Route::get('licencias/sin-licencia/excel', [ReporteController::class, 'equiposSinLicenciaExcel']);
+        Route::get('licencias/sin-licencia/pdf', [ReporteController::class, 'equiposSinLicenciaPdf']);
+
         Route::get('responsables', [ReporteController::class, 'responsables']);
         Route::get('responsables/excel', [ReporteController::class, 'responsablesExcel']);
         Route::get('responsables/pdf', [ReporteController::class, 'responsablesPdf']);

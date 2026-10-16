@@ -134,4 +134,18 @@ class Equipo extends Model
             ->when($tipoEquipoId, fn (Builder $q) => $q->where('tipo_equipo_id', $tipoEquipoId))
             ->when($estado, fn (Builder $q) => $q->where('estado', $estado));
     }
+
+    /**
+     * Equipos EN USO (no de baja ni extraviados) que no tienen licencia
+     * de Office registrada. Es el criterio oficial de "sin licencia" del
+     * sistema: el mismo que usa el contador del Inicio, el filtro
+     * ?sin_licencia=1 de Equipos y el buscador global. Vive aquí para
+     * que el reporte nunca muestre un número distinto al de esa tarjeta.
+     */
+    public function scopeSinLicencia(Builder $query): Builder
+    {
+        return $query
+            ->doesntHave('licenciaOffice')
+            ->whereNotIn('estado', [EstadoEquipo::DeBaja, EstadoEquipo::Extraviado]);
+    }
 }

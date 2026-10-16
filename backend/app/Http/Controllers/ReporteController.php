@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\EstadoLicencia;
 use App\Exports\EquiposPorCategoriaExport;
+use App\Exports\EquiposSinLicenciaExport;
 use App\Exports\LicenciasExport;
 use App\Exports\ResponsablesExport;
 use App\Http\Controllers\Concerns\FiltraPorUbicacion;
@@ -72,6 +73,31 @@ class ReporteController extends Controller
         return Pdf::loadView('reportes.licencias', $datos)->download('licencias.pdf');
     }
 
+    /**
+     * Reporte de equipos sin licencia de Office. Respeta el filtro de
+     * ubicación de la página y, opcionalmente, el tipo de equipo (útil
+     * para sacar solo computadores y dejar fuera routers o impresoras,
+     * que no usan Office).
+     */
+    public function equiposSinLicencia(Request $request): JsonResponse
+    {
+        return response()->json($this->datosEquiposSinLicenciaDesde($request));
+    }
+
+    public function equiposSinLicenciaExcel(Request $request)
+    {
+        $datos = $this->datosEquiposSinLicenciaDesde($request);
+
+        return Excel::download(new EquiposSinLicenciaExport($datos), 'equipos-sin-licencia.xlsx');
+    }
+
+    public function equiposSinLicenciaPdf(Request $request)
+    {
+        $datos = $this->datosEquiposSinLicenciaDesde($request);
+
+        return Pdf::loadView('reportes.equipos-sin-licencia', $datos)->download('equipos-sin-licencia.pdf');
+    }
+
     public function responsables(Request $request): JsonResponse
     {
         return response()->json(['top' => $this->datosResponsables(...$this->filtrosUbicacion($request))]);
@@ -105,6 +131,19 @@ class ReporteController extends Controller
             $request->filled('tipo_equipo_id') ? (int) $request->input('tipo_equipo_id') : null,
             $request->filled('estado') ? $request->input('estado') : null,
         ];
+    }
+
+    /**
+     * Lee de la query string los filtros que acepta el reporte de
+     * equipos sin licencia (ubicación + tipo) — un solo punto de entrada
+     * para que JSON, Excel y PDF no puedan quedar desincronizados.
+     */
+    private function datosEquiposSinLicenciaDesde(Request $request): array
+    {
+        [$sedeId, $subsedeId, $ubicacionId] = $this->filtrosUbicacion($request);
+        $tipoEquipoId = $request->filled('tipo_equipo_id') ? (int) $request->input('tipo_equipo_id') : null;
+
+        return $this->datosEquiposSinLicencia($sedeId, $subsedeId, $ubicacionId, $tipoEquipoId);
     }
 
     /**
@@ -231,6 +270,49 @@ class ReporteController extends Controller
             'por_estado' => $porEstado,
             'requieren_atencion' => $requierenAtencion,
             'listado_completo' => $listadoCompleto,
+        ];
+    }
+
+    /**
+     * Un solo SELECT para el listado; el desglose por tipo se calcula
+     * sobre esa misma colección en memoria (en vez de un segundo
+     * GROUP BY), así ambos números salen siempre del mismo conjunto.
+     */
+    private function datosEquiposSinLicencia(
+        ?int $sedeId,
+        ?int $subsedeId,
+        ?int $ubicacionId,
+        ?int $tipoEquipoId
+    ): array {
+        $equipos = Equipo::query()
+            ->sinLicencia()
+            ->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId)
+            ->filtrarPorAtributos($tipoEquipoId, null)
+            ->with(['tipoEquipo', 'responsable', 'ubicacionFormacion.subsede.sede'])
+            ->orderBy('placa_sena')
+            ->get();
+
+        $listado = $equipos->map(fn ($equipo) => [
+            'placa_sena' => $equipo->placa_sena,
+            'hostname' => $equipo->hostname ?: '—',
+            'tipo' => $equipo->tipoEquipo?->nombre ?? 'Sin tipo',
+            'responsable' => $equipo->responsable?->nombre ?? 'Sin cuentadante',
+            'sede' => $equipo->ubicacionFormacion?->subsede?->sede?->nombre ?? 'Sin sede',
+            'subsede' => $equipo->ubicacionFormacion?->subsede?->nombre ?? 'Sin subsede',
+            'ubicacion' => $equipo->ubicacionFormacion?->nombre ?? 'Sin ubicación',
+            'estado' => $equipo->estado?->label() ?? 'Sin estado',
+        ])->values();
+
+        $porTipo = $listado
+            ->groupBy('tipo')
+            ->map(fn ($filas, $tipo) => ['nombre' => $tipo, 'total' => $filas->count()])
+            ->sortByDesc('total')
+            ->values();
+
+        return [
+            'total' => $listado->count(),
+            'por_tipo' => $porTipo,
+            'listado' => $listado,
         ];
     }
 

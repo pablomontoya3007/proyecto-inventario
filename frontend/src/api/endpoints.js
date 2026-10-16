@@ -50,6 +50,10 @@ export const ENDPOINTS = {
     licencias: '/reportes/licencias',
     licenciasExcel: '/reportes/licencias/excel',
     licenciasPdf: '/reportes/licencias/pdf',
+    // Equipos en uso sin licencia de Office: ?sede_id=&subsede_id=&ubicacion_formacion_id=&tipo_equipo_id=
+    equiposSinLicencia: '/reportes/licencias/sin-licencia',
+    equiposSinLicenciaExcel: '/reportes/licencias/sin-licencia/excel',
+    equiposSinLicenciaPdf: '/reportes/licencias/sin-licencia/pdf',
     responsables: '/reportes/responsables',
     responsablesExcel: '/reportes/responsables/excel',
     responsablesPdf: '/reportes/responsables/pdf',

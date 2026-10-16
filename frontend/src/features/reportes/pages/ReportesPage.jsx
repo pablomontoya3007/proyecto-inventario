@@ -6,6 +6,9 @@ import {
   useReporteLicencias,
   useDescargarReporteLicenciasExcel,
   useDescargarReporteLicenciasPdf,
+  useReporteEquiposSinLicencia,
+  useDescargarReporteEquiposSinLicenciaExcel,
+  useDescargarReporteEquiposSinLicenciaPdf,
   useReporteResponsables,
   useDescargarReporteResponsablesExcel,
   useDescargarReporteResponsablesPdf,
@@ -18,6 +21,7 @@ import { DesgloseCategoria } from '../components/DesgloseCategoria';
 import { EquiposListadoTabla } from '../components/EquiposListadoTabla';
 import { LicenciasAtencionTabla } from '../components/LicenciasAtencionTabla';
 import { LicenciasListadoTabla } from '../components/LicenciasListadoTabla';
+import { EquiposSinLicenciaTabla } from '../components/EquiposSinLicenciaTabla';
 
 // Confirmado contra app/Enums/EstadoEquipo.php.
 const ESTADOS_EQUIPO = [
@@ -25,6 +29,13 @@ const ESTADOS_EQUIPO = [
   { value: 'mantenimiento', label: 'En mantenimiento' },
   { value: 'de_baja', label: 'De baja' },
   { value: 'extraviado', label: 'Extraviado' },
+];
+
+// Vistas de la sección Licencias: el reporte de licencias registradas
+// (el de siempre) o el de equipos en uso que no tienen licencia.
+const VISTAS_LICENCIAS = [
+  { value: 'registradas', label: 'Licencias registradas' },
+  { value: 'sin_licencia', label: 'Equipos sin licencia' },
 ];
 
 // Los tres botones de exportar se repiten igual en cada sección — se
@@ -57,6 +68,8 @@ export function ReportesPage() {
   const [ubicacionFiltro, setUbicacionFiltro] = useState('');
   const [tipoFiltro, setTipoFiltro] = useState('');
   const [estadoFiltro, setEstadoFiltro] = useState('');
+  const [vistaLicencias, setVistaLicencias] = useState('registradas');
+  const [tipoSinLicenciaFiltro, setTipoSinLicenciaFiltro] = useState('');
 
   const { data: sedesData } = useSedes(1);
   const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeFiltro || undefined });
@@ -82,6 +95,14 @@ export function ReportesPage() {
     ...(estadoFiltro ? { estado: estadoFiltro } : {}),
   };
 
+  // Equipos sin licencia: el de ubicación + un tipo propio (independiente
+  // del de la sección Equipos), para poder sacar p. ej. solo portátiles.
+  const filtroSinLicencia = {
+    ...filtroUbicacion,
+    ...(tipoSinLicenciaFiltro ? { tipo_equipo_id: tipoSinLicenciaFiltro } : {}),
+  };
+  const verSinLicencia = vistaLicencias === 'sin_licencia';
+
   function handleSedeFiltroChange(event) {
     setSedeFiltro(event.target.value);
     setSubsedeFiltro('');
@@ -97,9 +118,13 @@ export function ReportesPage() {
   const equiposExcel = useDescargarReporteEquiposExcel();
   const equiposPdf = useDescargarReporteEquiposPdf();
 
-  const licencias = useReporteLicencias(filtroUbicacion);
+  const licencias = useReporteLicencias(filtroUbicacion, { enabled: !verSinLicencia });
   const licenciasExcel = useDescargarReporteLicenciasExcel();
   const licenciasPdf = useDescargarReporteLicenciasPdf();
+
+  const sinLicencia = useReporteEquiposSinLicencia(filtroSinLicencia, { enabled: verSinLicencia });
+  const sinLicenciaExcel = useDescargarReporteEquiposSinLicenciaExcel();
+  const sinLicenciaPdf = useDescargarReporteEquiposSinLicenciaPdf();
 
   const responsables = useReporteResponsables(filtroUbicacion);
   const responsablesExcel = useDescargarReporteResponsablesExcel();
@@ -247,17 +272,84 @@ export function ReportesPage() {
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-medium text-ink">Licencias de Office</h2>
-          <BotonesExportar
-            onExcel={() => licenciasExcel.mutate(filtroUbicacion)}
-            onPdf={() => licenciasPdf.mutate(filtroUbicacion)}
-            cargandoExcel={licenciasExcel.isPending}
-            cargandoPdf={licenciasPdf.isPending}
-          />
+          {verSinLicencia ? (
+            <BotonesExportar
+              onExcel={() => sinLicenciaExcel.mutate(filtroSinLicencia)}
+              onPdf={() => sinLicenciaPdf.mutate(filtroSinLicencia)}
+              cargandoExcel={sinLicenciaExcel.isPending}
+              cargandoPdf={sinLicenciaPdf.isPending}
+            />
+          ) : (
+            <BotonesExportar
+              onExcel={() => licenciasExcel.mutate(filtroUbicacion)}
+              onPdf={() => licenciasPdf.mutate(filtroUbicacion)}
+              cargandoExcel={licenciasExcel.isPending}
+              cargandoPdf={licenciasPdf.isPending}
+            />
+          )}
         </div>
 
-        {licencias.isLoading && <p className="text-sm text-slate-500">Cargando...</p>}
-        {licencias.isError && <p className="text-sm text-danger">No se pudo cargar el reporte.</p>}
-        {licencias.data && (
+        <div className="mb-3 flex flex-wrap items-center gap-3">
+          <div role="group" aria-label="Tipo de reporte de licencias" className="inline-flex rounded border border-slate-300">
+            {VISTAS_LICENCIAS.map((vista) => (
+              <button
+                key={vista.value}
+                type="button"
+                aria-pressed={vistaLicencias === vista.value}
+                onClick={() => setVistaLicencias(vista.value)}
+                className={`px-3 py-1 text-sm first:rounded-l last:rounded-r ${
+                  vistaLicencias === vista.value ? 'bg-sena text-white' : 'text-slate-600 hover:bg-surface'
+                }`}
+              >
+                {vista.label}
+              </button>
+            ))}
+          </div>
+
+          {verSinLicencia && (
+            <select
+              aria-label="Tipo de equipo"
+              value={tipoSinLicenciaFiltro}
+              onChange={(event) => setTipoSinLicenciaFiltro(event.target.value)}
+              className="rounded border border-slate-300 px-2 py-1 text-sm focus:border-sena focus:outline-none focus:ring-1 focus:ring-sena"
+            >
+              <option value="">Todos los tipos</option>
+              {tiposData?.map((tipo) => (
+                <option key={tipo.id} value={tipo.id}>
+                  {tipo.nombre}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+
+        {verSinLicencia && (
+          <>
+            {sinLicencia.isLoading && <p className="text-sm text-slate-500">Cargando...</p>}
+            {sinLicencia.isError && <p className="text-sm text-danger">No se pudo cargar el reporte.</p>}
+            {sinLicencia.data && (
+              <div className="space-y-4">
+                <p className="text-sm text-slate-500">
+                  <span className="font-semibold text-ink">{sinLicencia.data.total}</span> equipos en uso sin licencia
+                  de Office (no se incluyen equipos de baja ni extraviados).
+                </p>
+
+                <DesgloseCategoria titulo="Por tipo de equipo" filas={sinLicencia.data.por_tipo} />
+
+                <div className="rounded border border-slate-200 bg-white p-4">
+                  <h3 className="mb-3 text-sm font-semibold text-ink">Listado de equipos sin licencia</h3>
+                  <div className="max-h-96 overflow-y-auto">
+                    <EquiposSinLicenciaTabla filas={sinLicencia.data.listado} />
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {!verSinLicencia && licencias.isLoading && <p className="text-sm text-slate-500">Cargando...</p>}
+        {!verSinLicencia && licencias.isError && <p className="text-sm text-danger">No se pudo cargar el reporte.</p>}
+        {!verSinLicencia && licencias.data && (
           <div className="space-y-4">
             <DesgloseCategoria titulo="Por estado" filas={licencias.data.por_estado} etiquetaClave="estado" />
 
@@ -278,7 +370,7 @@ export function ReportesPage() {
 
       <section>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-medium text-ink">Responsables con más equipos</h2>
+          <h2 className="text-lg font-medium text-ink">Cuentadantes con más equipos</h2>
           <BotonesExportar
             onExcel={() => responsablesExcel.mutate(filtroUbicacion)}
             onPdf={() => responsablesPdf.mutate(filtroUbicacion)}

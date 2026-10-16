@@ -6,6 +6,9 @@ import {
   fetchReporteLicencias,
   descargarReporteLicenciasExcel,
   descargarReporteLicenciasPdf,
+  fetchReporteEquiposSinLicencia,
+  descargarReporteEquiposSinLicenciaExcel,
+  descargarReporteEquiposSinLicenciaPdf,
   fetchReporteResponsables,
   descargarReporteResponsablesExcel,
   descargarReporteResponsablesPdf,
@@ -34,10 +37,11 @@ export function useDescargarReporteEquiposPdf() {
 
 // --- Licencias ---
 
-export function useReporteLicencias(filtroUbicacion = {}) {
+export function useReporteLicencias(filtroUbicacion = {}, { enabled = true } = {}) {
   return useQuery({
     queryKey: ['reportes', 'licencias', filtroUbicacion],
     queryFn: () => fetchReporteLicencias(filtroUbicacion),
+    enabled,
   });
 }
 
@@ -47,6 +51,26 @@ export function useDescargarReporteLicenciasExcel() {
 
 export function useDescargarReporteLicenciasPdf() {
   return useMutation({ mutationFn: descargarReporteLicenciasPdf });
+}
+
+// --- Equipos sin licencia ---
+// enabled: la consulta solo corre cuando la sección de Licencias está en
+// modo "Equipos sin licencia" — así no se pide un reporte que nadie ve.
+
+export function useReporteEquiposSinLicencia(filtro = {}, { enabled = true } = {}) {
+  return useQuery({
+    queryKey: ['reportes', 'equipos-sin-licencia', filtro],
+    queryFn: () => fetchReporteEquiposSinLicencia(filtro),
+    enabled,
+  });
+}
+
+export function useDescargarReporteEquiposSinLicenciaExcel() {
+  return useMutation({ mutationFn: descargarReporteEquiposSinLicenciaExcel });
+}
+
+export function useDescargarReporteEquiposSinLicenciaPdf() {
+  return useMutation({ mutationFn: descargarReporteEquiposSinLicenciaPdf });
 }
 
 // --- Responsables ---

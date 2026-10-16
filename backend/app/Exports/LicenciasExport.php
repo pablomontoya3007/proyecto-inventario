@@ -3,24 +3,50 @@
 namespace App\Exports;
 
 use Maatwebsite\Excel\Concerns\FromArray;
-use Maatwebsite\Excel\Concerns\WithHeadings;
 
 /**
- * Plantilla con las columnas exactas que espera LicenciasImport, más
- * una fila de ejemplo (quien la use debe borrarla o reemplazarla). La
- * contraseña de ejemplo es ficticia a propósito.
+ * Reporte de licencias en Excel: mismas tres secciones que el PDF
+ * (por estado, requieren atención y listado completo), apiladas en una
+ * sola hoja.
  */
-class LicenciasImportPlantillaExport implements FromArray, WithHeadings
+class LicenciasExport implements FromArray
 {
-    public function headings(): array
+    public function __construct(private array $datos)
     {
-        return ['Placa SENA', 'Correo', 'Contraseña', 'Estado'];
     }
 
     public function array(): array
     {
-        return [
-            ['SENA-000001', 'licencia.ejemplo@sena.edu.co', 'CambiarEsta123', 'activa'],
-        ];
+        $filas = [];
+
+        $filas[] = ['LICENCIAS POR ESTADO'];
+        $filas[] = ['Estado', 'Total'];
+        foreach ($this->datos['por_estado'] as $fila) {
+            $filas[] = [$fila['estado'], $fila['total']];
+        }
+        $filas[] = [];
+
+        $filas[] = ['LICENCIAS QUE REQUIEREN ATENCIÓN (vencidas o suspendidas)'];
+        $filas[] = ['Equipo', 'Correo', 'Estado', 'Última actualización'];
+        foreach ($this->datos['requieren_atencion'] as $fila) {
+            $filas[] = [$fila['equipo'], $fila['correo'], $fila['estado'], $fila['fecha_actualizacion']];
+        }
+        $filas[] = [];
+
+        $filas[] = ['LISTADO COMPLETO DE LICENCIAS'];
+        $filas[] = ['Equipo', 'Sede', 'Subsede', 'Ubicación', 'Correo', 'Estado', 'Última actualización'];
+        foreach ($this->datos['listado_completo'] as $fila) {
+            $filas[] = [
+                $fila['equipo'],
+                $fila['sede'],
+                $fila['subsede'],
+                $fila['ubicacion'],
+                $fila['correo'],
+                $fila['estado'],
+                $fila['fecha_actualizacion'],
+            ];
+        }
+
+        return $filas;
     }
 }
