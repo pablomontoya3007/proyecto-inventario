@@ -4,9 +4,9 @@ import { descargarPlantillaImportacion } from '../services/equiposApi';
 import { ResumenImportacion } from '../../../shared/components/ResumenImportacion';
 
 const ETIQUETAS_RESUMEN = {
-  importados: 'Equipos importados',
-  yaRegistrados: 'Ya estaban registrados',
-  listaYaRegistrados: 'Ver equipos que ya estaban registrados (se omitieron)',
+  importados: 'Equipos nuevos',
+  actualizados: 'Equipos actualizados',
+  listaSinCambios: 'Ver equipos que ya estaban registrados con los mismos datos',
 };
 
 /**
@@ -46,9 +46,10 @@ export function ImportarEquiposModal({ onClose }) {
           </p>
 
           <p className="text-sm text-slate-600">
-            Los equipos que ya estén registrados (misma placa o serial) se omiten automáticamente, así que puedes
-            volver a subir un Excel completo sin problema. Tipo de equipo, Sede, Subsede y Ambiente deben coincidir con
-            nombres ya registrados; si el cuentadante no existe, el equipo queda sin asignar.
+            Si la placa ya está registrada, el equipo se actualiza con los datos del Excel: solo cambian los campos
+            que sean distintos, y una celda vacía deja el valor actual como está (no lo borra). Para un equipo nuevo
+            son obligatorios Serial, Tipo de equipo, Sede, Subsede y Ambiente. Tipo de equipo, Sede, Subsede y Ambiente
+            deben coincidir con nombres ya registrados; si el cuentadante no existe, se ignora.
           </p>
 
           <button

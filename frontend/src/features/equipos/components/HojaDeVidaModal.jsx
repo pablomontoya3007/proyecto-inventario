@@ -54,7 +54,7 @@ export function HojaDeVidaModal({ equipoId, placaSena, onClose }) {
             <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
               <dt className="text-slate-500">Serial</dt>
               <dd className="text-ink">{equipo.serial}</dd>
-              <dt className="text-slate-500">MAC</dt>
+              <dt className="text-slate-500">MAC inalámbrica (WiFi)</dt>
               <dd className="text-ink">{equipo.mac ?? '—'}</dd>
               <dt className="text-slate-500">MAC cableada</dt>
               <dd className="text-ink">{equipo.mac_cableada ?? '—'}</dd>

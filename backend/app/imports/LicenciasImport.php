@@ -19,19 +19,27 @@ use Maatwebsite\Excel\Concerns\WithValidation;
 
 /**
  * Columnas esperadas: Placa SENA | Correo | Contraseña | Estado
- * (Estado opcional: vacío = "activa").
  *
- * RESULTADO EN CUATRO GRUPOS (ver resumen()), igual que EquiposImport:
- * importados, ya_registrados (el equipo YA tenía licencia — no es error,
- * se omite), repetidos_en_archivo (misma placa en una fila anterior) y
- * con_errores (una entrada por fila).
+ * La placa decide qué pasa con cada fila, igual que en EquiposImport:
+ * - El equipo NO tiene licencia → se CREA (correo y contraseña
+ *   obligatorios; estado vacío = "activa").
+ * - El equipo YA tiene licencia → se ACTUALIZA lo que cambió. Celda
+ *   vacía = "no tocar" (igual que el formulario de edición, donde dejar
+ *   la contraseña vacía conserva la actual).
+ *
+ * RESULTADO EN CINCO GRUPOS (ver resumen()): importados, actualizados,
+ * sin_cambios, repetidos_en_archivo y con_errores.
+ *
+ * La contraseña se compara DESCIFRADA: el cast "encrypted" genera un
+ * cifrado distinto cada vez aunque el texto sea el mismo, así que
+ * comparar el valor guardado daría "cambió" siempre.
  *
  * Sin WithBatchInserts a propósito: LicenciaOffice depende de sus
  * eventos (fecha_actualizacion y AuditoriaObserver). Se guarda fila por
  * fila, así que cada fila ya está en la BD cuando se valida la siguiente.
  *
  * SEGURIDAD: el resumen nunca incluye correos ni contraseñas — solo
- * fila, placa y mensajes.
+ * fila, placa, mensajes y el NOMBRE de los campos que cambiaron.
  */
 class LicenciasImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFailure, SkipsEmptyRows, WithChunkReading
 {
@@ -43,8 +51,11 @@ class LicenciasImport implements ToModel, WithHeadingRow, WithValidation, SkipsO
 
     private array $cacheEquipos = [];
 
+    /** @var array<int, array{fila: int, placa_sena: string, cambios: string[]}> */
+    private array $actualizados = [];
+
     /** @var array<int, array{fila: int, placa_sena: ?string, motivo: string}> */
-    private array $yaRegistrados = [];
+    private array $sinCambios = [];
 
     /** @var array<int, array{fila: int, placa_sena: ?string, motivo: string}> */
     private array $repetidosEnArchivo = [];
@@ -62,15 +73,31 @@ class LicenciasImport implements ToModel, WithHeadingRow, WithValidation, SkipsO
         $this->placaPorFila[$index] = $row['placa_sena'];
         $this->clasificar($row['placa_sena'], (int) $index);
 
+        $row['__fila'] = $index;
+
         return $row;
     }
 
     public function model(array $row)
     {
+        $fila = (int) ($row['__fila'] ?? 0);
         $row = $this->normalizar($row);
+
+        if (isset($this->repetidosEnArchivo[$fila])) {
+            return null;
+        }
+
         $equipoId = $this->resolverEquipo($row['placa_sena']);
 
         if (!$equipoId) {
+            return null;
+        }
+
+        $licencia = LicenciaOffice::where('equipo_id', $equipoId)->first();
+
+        if ($licencia) {
+            $this->actualizar($licencia, $row, $fila);
+
             return null;
         }
 
@@ -84,6 +111,10 @@ class LicenciasImport implements ToModel, WithHeadingRow, WithValidation, SkipsO
         ]);
     }
 
+    /**
+     * Correo y contraseña son opcionales AQUÍ (para actualizar, vacío =
+     * conservar). Para una licencia NUEVA se exigen en withValidator().
+     */
     public function rules(): array
     {
         return [
@@ -91,8 +122,8 @@ class LicenciasImport implements ToModel, WithHeadingRow, WithValidation, SkipsO
                 'required', 'string',
                 Rule::exists('equipos', 'placa_sena')->whereNull('deleted_at'),
             ],
-            'correo' => ['required', 'string', 'max:150'],
-            'contrasena' => ['required', 'string'],
+            'correo' => ['nullable', 'string', 'max:150'],
+            'contrasena' => ['nullable', 'string'],
             'estado' => ['nullable', Rule::enum(EstadoLicencia::class)],
         ];
     }
@@ -106,26 +137,35 @@ class LicenciasImport implements ToModel, WithHeadingRow, WithValidation, SkipsO
         return [
             'placa_sena.required' => 'Falta la placa SENA.',
             'placa_sena.exists' => 'No existe un equipo (activo) con la placa ":input".',
-            'correo.required' => 'Falta el correo.',
             'correo.max' => 'El correo no puede superar 150 caracteres.',
-            'contrasena.required' => 'Falta la contraseña.',
             'estado.enum' => 'El estado ":input" no es válido (usa: activa, vencida o suspendida).',
         ];
     }
 
     /**
-     * Garantiza "un equipo, una licencia" (restricción única de la BD).
-     * Las filas que fallan aquí por estar ya registradas o repetidas se
-     * reportan en su propio grupo, no como errores.
+     * Si el equipo todavía no tiene licencia, la fila va a CREAR una:
+     * correo y contraseña son obligatorios.
      */
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
             foreach ($validator->getData() as $fila => $datos) {
+                if (isset($this->repetidosEnArchivo[$fila])) {
+                    continue;
+                }
+
                 $equipoId = $this->resolverEquipo($datos['placa_sena'] ?? null);
 
-                if ($equipoId && LicenciaOffice::where('equipo_id', $equipoId)->exists()) {
-                    $validator->errors()->add($fila.'.placa_sena', 'Este equipo ya tiene una licencia.');
+                if (!$equipoId || LicenciaOffice::where('equipo_id', $equipoId)->exists()) {
+                    continue;
+                }
+
+                if (empty($datos['correo'])) {
+                    $validator->errors()->add($fila.'.correo', 'Falta el correo (obligatorio para una licencia nueva).');
+                }
+
+                if (($datos['contrasena'] ?? null) === null) {
+                    $validator->errors()->add($fila.'.contrasena', 'Falta la contraseña (obligatoria para una licencia nueva).');
                 }
             }
         });
@@ -138,24 +178,65 @@ class LicenciasImport implements ToModel, WithHeadingRow, WithValidation, SkipsO
 
     public function resumen(): array
     {
-        $filasOmitidas = array_merge(array_keys($this->yaRegistrados), array_keys($this->repetidosEnArchivo));
-
-        ksort($this->yaRegistrados);
+        ksort($this->actualizados);
+        ksort($this->sinCambios);
         ksort($this->repetidosEnArchivo);
 
         return [
             'importados' => $this->importados,
-            'ya_registrados' => array_values($this->yaRegistrados),
+            'actualizados' => array_values($this->actualizados),
+            'sin_cambios' => array_values($this->sinCambios),
             'repetidos_en_archivo' => array_values($this->repetidosEnArchivo),
-            'con_errores' => $this->filasConErrores($filasOmitidas, $this->placaPorFila),
+            'con_errores' => $this->filasConErrores(array_keys($this->repetidosEnArchivo), $this->placaPorFila),
         ];
     }
 
     /**
-     * Se clasifica UNA vez por fila, y primero se revisa el archivo:
-     * como las filas se guardan una a una, una placa repetida en el
-     * archivo ya estaría en la BD cuando llega su copia — sin este orden
-     * se reportaría como "ya registrada" en vez de "repetida".
+     * El detalle de cambios nombra el campo pero nunca muestra correos ni
+     * contraseñas (solo el estado, que no es sensible).
+     */
+    private function actualizar(LicenciaOffice $licencia, array $row, int $fila): void
+    {
+        $cambios = [];
+
+        if ($row['correo'] !== null && $row['correo'] !== $licencia->correo) {
+            $licencia->correo = $row['correo'];
+            $cambios[] = 'Correo';
+        }
+
+        if ($row['contrasena'] !== null && $row['contrasena'] !== $licencia->password_cifrado) {
+            $licencia->password_cifrado = $row['contrasena'];
+            $cambios[] = 'Contraseña';
+        }
+
+        if ($row['estado'] !== null && $row['estado'] !== $licencia->estado_licencia?->value) {
+            $antes = $licencia->estado_licencia?->label() ?? '(vacío)';
+            $licencia->estado_licencia = $row['estado'];
+            $cambios[] = "Estado: \"{$antes}\" → \"".EstadoLicencia::from($row['estado'])->label().'"';
+        }
+
+        if (empty($cambios)) {
+            $this->sinCambios[$fila] = [
+                'fila' => $fila,
+                'placa_sena' => $row['placa_sena'],
+                'motivo' => 'La licencia ya estaba registrada con los mismos datos.',
+            ];
+
+            return;
+        }
+
+        $licencia->save();
+
+        $this->actualizados[$fila] = [
+            'fila' => $fila,
+            'placa_sena' => $row['placa_sena'],
+            'cambios' => $cambios,
+        ];
+    }
+
+    /**
+     * Se clasifica UNA vez por fila: una placa repetida dentro del mismo
+     * archivo se omite (se procesa solo la primera aparición).
      */
     private function clasificar(?string $placa, int $fila): void
     {
@@ -177,15 +258,6 @@ class LicenciasImport implements ToModel, WithHeadingRow, WithValidation, SkipsO
         }
 
         $this->filaDePlaca[$clave] = $fila;
-        $equipoId = $this->resolverEquipo($placa);
-
-        if ($equipoId && LicenciaOffice::where('equipo_id', $equipoId)->exists()) {
-            $this->yaRegistrados[$fila] = [
-                'fila' => $fila,
-                'placa_sena' => $placa,
-                'motivo' => 'El equipo ya tiene una licencia registrada.',
-            ];
-        }
     }
 
     private function resolverEquipo(?string $placa): ?int

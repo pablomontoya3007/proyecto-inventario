@@ -4,9 +4,9 @@ import { descargarPlantillaImportacion } from '../services/licenciasApi';
 import { ResumenImportacion } from '../../../shared/components/ResumenImportacion';
 
 const ETIQUETAS_RESUMEN = {
-  importados: 'Licencias importadas',
-  yaRegistrados: 'Equipos que ya tenían licencia',
-  listaYaRegistrados: 'Ver equipos que ya tenían licencia (se omitieron)',
+  importados: 'Licencias nuevas',
+  actualizados: 'Licencias actualizadas',
+  listaSinCambios: 'Ver licencias que ya estaban registradas con los mismos datos',
 };
 
 /**
@@ -42,8 +42,9 @@ export function ImportarLicenciasModal({ onClose }) {
         <>
           <p className="text-sm text-slate-600">
             El archivo debe tener las columnas: Placa SENA, Correo, Contraseña y Estado. La placa debe corresponder a
-            un equipo ya registrado. Los equipos que ya tengan licencia se omiten automáticamente. Estado es opcional
-            (activa, vencida o suspendida); si se deja vacío, la licencia queda activa.
+            un equipo ya registrado. Si el equipo ya tiene licencia, se actualizan el correo, la contraseña o el estado que
+            hayan cambiado; una celda vacía conserva el valor actual. Estado es opcional (activa, vencida o
+            suspendida); en una licencia nueva, si se deja vacío, queda activa.
           </p>
 
           <p className="rounded border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-ink">

@@ -27,21 +27,35 @@ use Maatwebsite\Excel\Concerns\WithValidation;
  *   Placa SENA | Serial | MAC | MAC Cableada | Hostname |
  *   Tipo de equipo | Responsable | Sede | Subsede | Ambiente | Estado
  *
- * RESULTADO EN CUATRO GRUPOS (ver resumen()):
- * - importados: filas guardadas;
- * - ya_registrados: placa o serial que YA existen en el sistema — no es
- *   un error, se omiten (es normal volver a subir un Excel completo);
+ * La PLACA SENA decide qué pasa con cada fila:
+ * - Placa nueva → se CREA el equipo (serial, tipo y ubicación obligatorios).
+ * - Placa que ya existe → se ACTUALIZAN los campos que cambiaron. Una
+ *   celda VACÍA significa "no tocar este campo", nunca "borrarlo": así
+ *   un Excel con solo algunas columnas llenas no le borra datos a nadie.
+ *   Si nada cambió, la fila se reporta como "sin cambios".
+ *
+ * RESULTADO EN CINCO GRUPOS (ver resumen()):
+ * - importados: equipos nuevos creados;
+ * - actualizados: equipos existentes con al menos un campo cambiado,
+ *   con el detalle "campo: antes → después";
+ * - sin_cambios: equipos existentes idénticos a lo que ya había;
  * - repetidos_en_archivo: misma placa o serial que una fila ANTERIOR del
- *   mismo archivo — se importa la primera, las demás se omiten;
+ *   mismo archivo — se procesa la primera, las demás se omiten;
  * - con_errores: una entrada por fila, con todo lo que hay que corregir.
  *
- * Cómo se logra: prepareForValidation() clasifica cada fila ANTES de
- * validarla. Las reglas unique se mantienen (garantizan que una fila
- * ya registrada nunca se inserte); solo cambia cómo se REPORTA.
+ * Por qué la unicidad (serial, MAC) se valida en withValidator() y no
+ * con Rule::unique en rules(): una fila que actualiza un equipo debe
+ * poder repetir SU PROPIO serial y MAC — la regla tiene que ignorar a
+ * ese equipo, y ese id cambia de fila a fila.
  *
- * Criterio de validación: solo se rechaza lo que la BD no permitiría.
- * Lo demás se normaliza con NormalizadorEquipo. Cualquier columna que
- * NO esté en COLUMNAS_FIJAS se guarda en caracteristicas_tecnicas.
+ * Los equipos nuevos se insertan por lotes (WithBatchInserts, rápido);
+ * las actualizaciones se guardan una a una con save() a propósito: así
+ * pasan por AuditoriaObserver y cada cambio masivo queda en el
+ * historial con su valor anterior y el nuevo.
+ *
+ * Cualquier columna que NO esté en COLUMNAS_FIJAS se guarda en
+ * caracteristicas_tecnicas (al actualizar se COMBINA con las que ya
+ * tenía el equipo: las columnas del Excel pisan, las demás se conservan).
  */
 class EquiposImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFailure, SkipsEmptyRows, WithBatchInserts, WithChunkReading
 {
@@ -54,10 +68,25 @@ class EquiposImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
         'tipo_de_equipo', 'responsable', 'sede', 'subsede', 'ambiente', 'estado',
     ];
 
+    /** Nombre legible de cada campo en el detalle de "actualizados". */
+    private const ETIQUETAS = [
+        'serial' => 'Serial',
+        'mac' => 'MAC',
+        'mac_cableada' => 'MAC cableada',
+        'hostname' => 'Hostname',
+        'tipo_equipo_id' => 'Tipo de equipo',
+        'responsable_id' => 'Cuentadante',
+        'ubicacion_formacion_id' => 'Ubicación',
+        'estado' => 'Estado',
+    ];
+
     public int $importados = 0;
 
+    /** @var array<int, array{fila: int, placa_sena: string, cambios: string[]}> */
+    private array $actualizados = [];
+
     /** @var array<int, array{fila: int, placa_sena: ?string, motivo: string}> */
-    private array $yaRegistrados = [];
+    private array $sinCambios = [];
 
     /** @var array<int, array{fila: int, placa_sena: ?string, motivo: string}> */
     private array $repetidosEnArchivo = [];
@@ -75,6 +104,9 @@ class EquiposImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
     /** Respaldo de model(): valores ya creados en esta importación. */
     private array $placasCreadas = [];
     private array $serialesCreados = [];
+
+    /** @var array<string, Equipo|false> placa en minúsculas => equipo existente (o false) */
+    private array $cacheExistentes = [];
 
     private array $cacheTipos = [];
     private array $cacheResponsables = [];
@@ -96,11 +128,138 @@ class EquiposImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
         $fila = $row['__fila'] ?? null;
         $row = $this->normalizar($row);
 
-        // Repetida dentro del archivo: se importa solo la primera.
+        // Repetida dentro del archivo: se procesa solo la primera.
         if ($fila !== null && isset($this->repetidosEnArchivo[$fila])) {
             return null;
         }
 
+        $existente = $this->equipoExistente($row['placa_sena']);
+
+        if ($existente) {
+            $this->actualizar($existente, $row, (int) $fila);
+
+            return null; // ya se guardó con save(); no va al insert por lotes
+        }
+
+        return $this->nuevoEquipo($row);
+    }
+
+    /**
+     * Todo lo que no sea la placa es opcional AQUÍ: para un equipo que
+     * ya existe, una celda vacía significa "no cambiar". Los campos
+     * obligatorios de un equipo NUEVO se exigen en withValidator().
+     */
+    public function rules(): array
+    {
+        return [
+            'placa_sena' => ['required', 'string', 'max:30'],
+            'serial' => ['nullable', 'string', 'max:100'],
+            'mac' => ['nullable', 'string', 'max:50', 'distinct'],
+            'mac_cableada' => ['nullable', 'string', 'max:50', 'distinct'],
+            'hostname' => ['nullable', 'string', 'max:100'],
+            'tipo_de_equipo' => ['nullable', 'string', Rule::exists('tipos_equipo', 'nombre')],
+            'responsable' => ['nullable', 'string'],
+            'sede' => ['nullable', 'string', Rule::exists('sedes', 'nombre')],
+            'subsede' => ['nullable', 'string', Rule::exists('subsedes', 'nombre')],
+            'ambiente' => ['nullable', 'string'],
+            'estado' => ['nullable', Rule::in(array_map(fn ($caso) => $caso->value, EstadoEquipo::cases()))],
+        ];
+    }
+
+    /**
+     * :input = el valor que trae la celda, para saber exactamente qué
+     * revisar en el Excel.
+     */
+    public function customValidationMessages(): array
+    {
+        return [
+            'placa_sena.required' => 'Falta la placa SENA.',
+            'placa_sena.max' => 'La placa SENA no puede superar 30 caracteres.',
+            'serial.max' => 'El serial no puede superar 100 caracteres.',
+            'mac.max' => 'La MAC no puede superar 50 caracteres.',
+            'mac.distinct' => 'La MAC ":input" se repite en otra fila del archivo.',
+            'mac_cableada.max' => 'La MAC cableada no puede superar 50 caracteres.',
+            'mac_cableada.distinct' => 'La MAC cableada ":input" se repite en otra fila del archivo.',
+            'hostname.max' => 'El hostname no puede superar 100 caracteres.',
+            'tipo_de_equipo.exists' => 'No existe el tipo de equipo ":input".',
+            'sede.exists' => 'No existe la sede ":input".',
+            'subsede.exists' => 'No existe la subsede ":input".',
+            'estado.in' => 'El estado ":input" no es válido (usa: activo, mantenimiento, de baja o extraviado).',
+        ];
+    }
+
+    /**
+     * Reglas que dependen de si el equipo ya existe:
+     * - equipo eliminado: no se crea ni se actualiza;
+     * - equipo nuevo: serial, tipo, sede, subsede y ambiente obligatorios;
+     * - serial y MAC no pueden pertenecer a OTRO equipo (el propio se
+     *   ignora, para que una fila de actualización pueda repetirlos);
+     * - sede/subsede/ambiente: si viene alguno, deben venir los tres y
+     *   existir juntos (un equipo existente puede dejarlos los tres vacíos
+     *   para conservar su ubicación).
+     */
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            foreach ($validator->getData() as $fila => $datos) {
+                $placa = $datos['placa_sena'] ?? null;
+
+                if ($placa === null || isset($this->repetidosEnArchivo[$fila])) {
+                    continue;
+                }
+
+                if (Equipo::onlyTrashed()->where('placa_sena', $placa)->exists()) {
+                    $validator->errors()->add(
+                        $fila.'.placa_sena',
+                        'La placa pertenece a un equipo eliminado: no se crea ni se actualiza.'
+                    );
+
+                    continue;
+                }
+
+                $existente = $this->equipoExistente($placa);
+
+                if (!$existente) {
+                    $this->exigirCamposDeEquipoNuevo($validator, $fila, $datos);
+                }
+
+                $this->validarUnicos($validator, $fila, $datos, $existente?->id);
+                $this->validarUbicacion($validator, $fila, $datos);
+            }
+        });
+    }
+
+    public function batchSize(): int
+    {
+        return 200;
+    }
+
+    public function chunkSize(): int
+    {
+        return 200;
+    }
+
+    /**
+     * Respuesta para el frontend. Las filas repetidas en el archivo NO
+     * aparecen en con_errores.
+     */
+    public function resumen(): array
+    {
+        ksort($this->actualizados);
+        ksort($this->sinCambios);
+        ksort($this->repetidosEnArchivo);
+
+        return [
+            'importados' => $this->importados,
+            'actualizados' => array_values($this->actualizados),
+            'sin_cambios' => array_values($this->sinCambios),
+            'repetidos_en_archivo' => array_values($this->repetidosEnArchivo),
+            'con_errores' => $this->filasConErrores(array_keys($this->repetidosEnArchivo), $this->placaPorFila),
+        ];
+    }
+
+    private function nuevoEquipo(array $row): ?Equipo
+    {
         // Respaldo por si la fila no trae su número: nunca insertar dos
         // veces la misma placa/serial en el mismo lote (rompería el
         // insert masivo completo por la restricción única).
@@ -137,113 +296,220 @@ class EquiposImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
     }
 
     /**
-     * Sin 'distinct' en placa y serial a propósito: esa regla rechazaba
-     * TODAS las copias (incluida la primera). Ahora las repeticiones las
-     * detecta clasificar() y se importa la primera aparición.
+     * Compara campo por campo y guarda solo lo que cambió. Las celdas
+     * vacías se ignoran (conservan el valor actual). La comparación es
+     * como texto: Excel puede entregar 16 (número) donde la BD tiene "16".
      */
-    public function rules(): array
+    private function actualizar(Equipo $equipo, array $row, int $fila): void
     {
-        return [
-            'placa_sena' => ['required', 'string', 'max:30', Rule::unique('equipos', 'placa_sena')],
-            'serial' => ['required', 'string', 'max:100', Rule::unique('equipos', 'serial')],
-            'mac' => ['nullable', 'string', 'max:50', 'distinct', Rule::unique('equipos', 'mac')],
-            'mac_cableada' => ['nullable', 'string', 'max:50', 'distinct', Rule::unique('equipos', 'mac_cableada')],
-            'hostname' => ['nullable', 'string', 'max:100'],
-            'tipo_de_equipo' => ['required', 'string', Rule::exists('tipos_equipo', 'nombre')],
-            'responsable' => ['nullable', 'string'],
-            'sede' => ['required', 'string', Rule::exists('sedes', 'nombre')],
-            'subsede' => ['required', 'string', Rule::exists('subsedes', 'nombre')],
-            'ambiente' => ['required', 'string'],
-            'estado' => ['nullable', Rule::in(array_map(fn ($caso) => $caso->value, EstadoEquipo::cases()))],
-        ];
-    }
+        $equipo->loadMissing(['tipoEquipo', 'responsable', 'ubicacionFormacion.subsede.sede']);
 
-    /**
-     * :input = el valor que trae la celda, para saber exactamente qué
-     * revisar en el Excel.
-     */
-    public function customValidationMessages(): array
-    {
-        return [
-            'placa_sena.required' => 'Falta la placa SENA.',
-            'placa_sena.max' => 'La placa SENA no puede superar 30 caracteres.',
-            'placa_sena.unique' => 'La placa SENA ya está registrada.',
-            'serial.required' => 'Falta el serial.',
-            'serial.max' => 'El serial no puede superar 100 caracteres.',
-            'serial.unique' => 'El serial ya está registrado.',
-            'mac.max' => 'La MAC no puede superar 50 caracteres.',
-            'mac.distinct' => 'La MAC ":input" se repite en otra fila del archivo.',
-            'mac.unique' => 'La MAC ":input" ya pertenece a otro equipo del sistema.',
-            'mac_cableada.max' => 'La MAC cableada no puede superar 50 caracteres.',
-            'mac_cableada.distinct' => 'La MAC cableada ":input" se repite en otra fila del archivo.',
-            'mac_cableada.unique' => 'La MAC cableada ":input" ya pertenece a otro equipo del sistema.',
-            'hostname.max' => 'El hostname no puede superar 100 caracteres.',
-            'tipo_de_equipo.required' => 'Falta el tipo de equipo.',
-            'tipo_de_equipo.exists' => 'No existe el tipo de equipo ":input".',
-            'sede.required' => 'Falta la sede.',
-            'sede.exists' => 'No existe la sede ":input".',
-            'subsede.required' => 'Falta la subsede.',
-            'subsede.exists' => 'No existe la subsede ":input".',
-            'ambiente.required' => 'Falta el ambiente.',
-            'estado.in' => 'El estado ":input" no es válido (usa: activo, mantenimiento, de baja o extraviado).',
-        ];
-    }
+        $nuevos = array_filter([
+            'serial' => $row['serial'],
+            'mac' => $row['mac'],
+            'mac_cableada' => $row['mac_cableada'],
+            'hostname' => $row['hostname'],
+            'tipo_equipo_id' => $this->resolverTipoEquipo($row['tipo_de_equipo']),
+            // Un cuentadante escrito que no existe se ignora: conserva el
+            // actual en vez de dejar el equipo sin asignar.
+            'responsable_id' => $this->resolverResponsable($row['responsable']),
+            'ubicacion_formacion_id' => $this->resolverUbicacion($row['sede'], $row['subsede'], $row['ambiente']),
+            'estado' => $row['estado'],
+        ], fn ($valor) => $valor !== null);
 
-    /**
-     * La COMBINACIÓN sede/subsede/ambiente debe existir junta. El mensaje
-     * nombra los tres valores para ubicar el problema rápido.
-     */
-    public function withValidator($validator)
-    {
-        $validator->after(function ($validator) {
-            foreach ($validator->getData() as $fila => $datos) {
-                if (empty($datos['sede']) || empty($datos['subsede']) || empty($datos['ambiente'])) {
-                    continue;
-                }
+        $cambios = [];
 
-                if (!$this->resolverUbicacion($datos['sede'], $datos['subsede'], $datos['ambiente'])) {
-                    $validator->errors()->add(
-                        $fila.'.ambiente',
-                        "El ambiente \"{$datos['ambiente']}\" no existe dentro de {$datos['sede']} / {$datos['subsede']}."
-                    );
+        foreach ($nuevos as $campo => $valor) {
+            $actual = $equipo->{$campo} instanceof \BackedEnum ? $equipo->{$campo}->value : $equipo->{$campo};
+
+            if ((string) $actual !== (string) $valor) {
+                $cambios[] = $this->describirCambio($equipo, $campo, $valor);
+                $equipo->{$campo} = $valor;
+            }
+        }
+
+        $caracteristicas = $this->extraerCaracteristicas($row);
+
+        if ($caracteristicas) {
+            $actuales = $equipo->caracteristicas_tecnicas ?? [];
+            $cambioCaracteristicas = false;
+
+            foreach ($caracteristicas as $clave => $valor) {
+                $antes = $actuales[$clave] ?? null;
+
+                if ((string) $antes !== (string) $valor) {
+                    $cambios[] = $this->textoCambio($this->etiquetaCaracteristica($clave), $antes, $valor);
+                    $actuales[$clave] = $valor;
+                    $cambioCaracteristicas = true;
                 }
             }
-        });
-    }
 
-    public function batchSize(): int
-    {
-        return 200;
-    }
+            if ($cambioCaracteristicas) {
+                $equipo->caracteristicas_tecnicas = $actuales;
+            }
+        }
 
-    public function chunkSize(): int
-    {
-        return 200;
-    }
+        if (empty($cambios)) {
+            $this->sinCambios[$fila] = [
+                'fila' => $fila,
+                'placa_sena' => $equipo->placa_sena,
+                'motivo' => 'Ya estaba registrado con los mismos datos.',
+            ];
 
-    /**
-     * Respuesta para el frontend. Las filas ya registradas o repetidas
-     * NO aparecen en con_errores (aunque sus reglas unique hayan fallado).
-     */
-    public function resumen(): array
-    {
-        $filasOmitidas = array_merge(array_keys($this->yaRegistrados), array_keys($this->repetidosEnArchivo));
+            return;
+        }
 
-        return [
-            'importados' => $this->importados,
-            'ya_registrados' => array_values($this->ordenarPorFila($this->yaRegistrados)),
-            'repetidos_en_archivo' => array_values($this->ordenarPorFila($this->repetidosEnArchivo)),
-            'con_errores' => $this->filasConErrores($filasOmitidas, $this->placaPorFila),
+        // Las relaciones se cargaron solo para describir el "antes": se
+        // quitan para que no queden desactualizadas en la caché.
+        $equipo->unsetRelations();
+        $equipo->save();
+
+        $this->actualizados[$fila] = [
+            'fila' => $fila,
+            'placa_sena' => $equipo->placa_sena,
+            'cambios' => $cambios,
         ];
     }
 
     /**
-     * Clasifica la fila UNA sola vez (si Laravel Excel volviera a
-     * preparar la fila después de insertarla, no debe contarse como
-     * "ya registrada"):
-     * 1. ¿Repite la placa o el serial de una fila anterior del archivo?
-     * 2. ¿La placa o el serial ya existen en el sistema (incluidos los
-     *    equipos eliminados, que siguen ocupando su placa en la BD)?
+     * Para los campos que son llaves foráneas se muestran los NOMBRES
+     * (tipo, cuentadante, ubicación), no los ids.
+     */
+    private function describirCambio(Equipo $equipo, string $campo, mixed $nuevo): string
+    {
+        $etiqueta = self::ETIQUETAS[$campo];
+
+        return match ($campo) {
+            'tipo_equipo_id' => $this->textoCambio(
+                $etiqueta,
+                $equipo->tipoEquipo?->nombre,
+                TipoEquipo::whereKey($nuevo)->value('nombre')
+            ),
+            'responsable_id' => $this->textoCambio(
+                $etiqueta,
+                $equipo->responsable?->nombre,
+                Responsable::whereKey($nuevo)->value('nombre')
+            ),
+            'ubicacion_formacion_id' => $this->textoCambio(
+                $etiqueta,
+                $this->rutaUbicacion($equipo->ubicacionFormacion),
+                $this->rutaUbicacion(UbicacionFormacion::with('subsede.sede')->find($nuevo))
+            ),
+            'estado' => $this->textoCambio(
+                $etiqueta,
+                $equipo->estado?->label(),
+                EstadoEquipo::tryFrom($nuevo)?->label() ?? $nuevo
+            ),
+            default => $this->textoCambio($etiqueta, $equipo->{$campo}, $nuevo),
+        };
+    }
+
+    private function textoCambio(string $etiqueta, mixed $antes, mixed $despues): string
+    {
+        $antes = ($antes === null || $antes === '') ? '(vacío)' : '"'.$antes.'"';
+
+        return "{$etiqueta}: {$antes} → \"{$despues}\"";
+    }
+
+    private function rutaUbicacion(?UbicacionFormacion $ubicacion): ?string
+    {
+        if (!$ubicacion) {
+            return null;
+        }
+
+        return implode(' / ', array_filter([
+            $ubicacion->subsede?->sede?->nombre,
+            $ubicacion->subsede?->nombre,
+            $ubicacion->nombre,
+        ]));
+    }
+
+    private function etiquetaCaracteristica(string $clave): string
+    {
+        return ucfirst(str_replace('_', ' ', $clave));
+    }
+
+    private function exigirCamposDeEquipoNuevo($validator, int|string $fila, array $datos): void
+    {
+        $obligatorios = [
+            'serial' => 'Falta el serial (obligatorio para un equipo nuevo).',
+            'tipo_de_equipo' => 'Falta el tipo de equipo (obligatorio para un equipo nuevo).',
+            'sede' => 'Falta la sede (obligatoria para un equipo nuevo).',
+            'subsede' => 'Falta la subsede (obligatoria para un equipo nuevo).',
+            'ambiente' => 'Falta el ambiente (obligatorio para un equipo nuevo).',
+        ];
+
+        foreach ($obligatorios as $campo => $mensaje) {
+            if (empty($datos[$campo])) {
+                $validator->errors()->add($fila.'.'.$campo, $mensaje);
+            }
+        }
+    }
+
+    /**
+     * Serial y MAC únicos en TODA la tabla (incluidos los eliminados, que
+     * siguen ocupando su valor en la BD), excepto el propio equipo.
+     */
+    private function validarUnicos($validator, int|string $fila, array $datos, ?int $idPropio): void
+    {
+        $columnas = [
+            'serial' => 'El serial ":valor" ya pertenece al equipo con placa :placa.',
+            'mac' => 'La MAC ":valor" ya pertenece al equipo con placa :placa.',
+            'mac_cableada' => 'La MAC cableada ":valor" ya pertenece al equipo con placa :placa.',
+        ];
+
+        foreach ($columnas as $columna => $mensaje) {
+            $valor = $datos[$columna] ?? null;
+
+            if ($valor === null) {
+                continue;
+            }
+
+            $otraPlaca = Equipo::withTrashed()
+                ->where($columna, $valor)
+                ->when($idPropio, fn ($q) => $q->whereKeyNot($idPropio))
+                ->value('placa_sena');
+
+            if ($otraPlaca !== null) {
+                $validator->errors()->add(
+                    $fila.'.'.$columna,
+                    strtr($mensaje, [':valor' => $valor, ':placa' => $otraPlaca])
+                );
+            }
+        }
+    }
+
+    private function validarUbicacion($validator, int|string $fila, array $datos): void
+    {
+        $partes = [$datos['sede'] ?? null, $datos['subsede'] ?? null, $datos['ambiente'] ?? null];
+        $llenas = count(array_filter($partes, fn ($valor) => !empty($valor)));
+
+        if ($llenas === 0) {
+            return; // equipo existente: conserva su ubicación (si es nuevo, ya se reportó)
+        }
+
+        if ($llenas < 3) {
+            $validator->errors()->add(
+                $fila.'.ambiente',
+                'Para indicar la ubicación hay que llenar Sede, Subsede y Ambiente (los tres).'
+            );
+
+            return;
+        }
+
+        if (!$this->resolverUbicacion(...$partes)) {
+            $validator->errors()->add(
+                $fila.'.ambiente',
+                "El ambiente \"{$datos['ambiente']}\" no existe dentro de {$datos['sede']} / {$datos['subsede']}."
+            );
+        }
+    }
+
+    /**
+     * Clasifica la fila UNA sola vez: ¿repite la placa o el serial de una
+     * fila anterior del archivo? Si sí, se omite (se procesa la primera).
+     * Que el equipo ya exista en el sistema ya NO es motivo para omitir:
+     * esas filas se actualizan.
      */
     private function clasificar(array $row, int $fila): void
     {
@@ -255,10 +521,6 @@ class EquiposImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
 
         $placa = $row['placa_sena'];
         $serial = $row['serial'];
-
-        if ($placa === null && $serial === null) {
-            return;
-        }
 
         $clavePlaca = $placa !== null ? mb_strtolower($placa) : null;
         $claveSerial = $serial !== null ? mb_strtolower($serial) : null;
@@ -283,40 +545,25 @@ class EquiposImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
         if ($claveSerial !== null) {
             $this->filaDeSerial[$claveSerial] = $fila;
         }
-
-        $existente = Equipo::withTrashed()
-            ->where(function ($q) use ($placa, $serial) {
-                $q->when($placa !== null, fn ($s) => $s->orWhere('placa_sena', $placa))
-                    ->when($serial !== null, fn ($s) => $s->orWhere('serial', $serial));
-            })
-            ->first(['id', 'placa_sena', 'serial', 'deleted_at']);
-
-        if (!$existente) {
-            return;
-        }
-
-        $coincidePlaca = $clavePlaca !== null && mb_strtolower((string) $existente->placa_sena) === $clavePlaca;
-
-        $motivo = $coincidePlaca
-            ? 'La placa ya está registrada en el sistema'
-            : "El serial ya está registrado en el sistema (placa {$existente->placa_sena})";
-
-        if ($existente->trashed()) {
-            $motivo .= ', en un equipo eliminado';
-        }
-
-        $this->yaRegistrados[$fila] = [
-            'fila' => $fila,
-            'placa_sena' => $placa,
-            'motivo' => $motivo . '.',
-        ];
     }
 
-    private function ordenarPorFila(array $entradas): array
+    /**
+     * Equipo activo (no eliminado) con esa placa. Se guarda en caché para
+     * no consultarlo dos veces (validación y guardado).
+     */
+    private function equipoExistente(?string $placa): ?Equipo
     {
-        ksort($entradas);
+        if ($placa === null) {
+            return null;
+        }
 
-        return $entradas;
+        $clave = mb_strtolower($placa);
+
+        if (!array_key_exists($clave, $this->cacheExistentes)) {
+            $this->cacheExistentes[$clave] = Equipo::where('placa_sena', $placa)->first() ?? false;
+        }
+
+        return $this->cacheExistentes[$clave] ?: null;
     }
 
     private function normalizar(array $row): array
@@ -352,8 +599,8 @@ class EquiposImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
     }
 
     /**
-     * Si el responsable no existe, devuelve NULL y el equipo queda sin
-     * asignar (se puede asignar después desde el formulario de edición).
+     * Si el cuentadante no existe, devuelve NULL: un equipo nuevo queda
+     * sin asignar y uno existente conserva el que tenía.
      */
     private function resolverResponsable(?string $nombre): ?int
     {
@@ -393,8 +640,8 @@ class EquiposImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
 
     /**
      * Todo lo que no esté en COLUMNAS_FIJAS va a caracteristicas_tecnicas.
-     * Se descartan columnas sin encabezado y las claves internas "__..."
-     * (como __fila).
+     * Se descartan columnas sin encabezado, celdas vacías y las claves
+     * internas "__..." (como __fila).
      */
     private function extraerCaracteristicas(array $row): array
     {

@@ -20,12 +20,12 @@
     <table class="datos-generales">
         <tr><td>Placa SENA</td><td>{{ $equipo->placa_sena }}</td></tr>
         <tr><td>Serial</td><td>{{ $equipo->serial }}</td></tr>
-        <tr><td>MAC</td><td>{{ $equipo->mac ?? '—' }}</td></tr>
+        <tr><td>MAC inalámbrica (WiFi)</td><td>{{ $equipo->mac ?? '—' }}</td></tr>
         <tr><td>MAC cableada</td><td>{{ $equipo->mac_cableada ?? '—' }}</td></tr>
         <tr><td>Hostname</td><td>{{ $equipo->hostname ?? '—' }}</td></tr>
         <tr><td>Tipo de equipo</td><td>{{ $equipo->tipoEquipo?->nombre ?? '—' }}</td></tr>
         <tr><td>Estado</td><td>{{ $equipo->estado?->label() ?? '—' }}</td></tr>
-        <tr><td>Responsable</td><td>{{ $equipo->responsable?->nombre ?? 'Sin asignar' }}</td></tr>
+        <tr><td>CuentaDante</td><td>{{ $equipo->responsable?->nombre ?? 'Sin asignar' }}</td></tr>
         <tr>
             <td>Ubicación actual</td>
             <td>
