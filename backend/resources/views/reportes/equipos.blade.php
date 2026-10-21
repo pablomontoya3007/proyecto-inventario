@@ -9,6 +9,10 @@
         table { width: 100%; border-collapse: collapse; margin-top: 8px; }
         th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
         th { background-color: #f1f5f9; }
+        /* Con muchas columnas, letra algo menor para que quepa en la hoja. */
+        .listado th, .listado td { font-size: 10px; padding: 4px 5px; word-break: break-all; }
+        /* La placa (primera columna) nunca se parte en dos líneas. */
+        .listado td:first-child { white-space: nowrap; word-break: normal; }
     </style>
 </head>
 <body>
@@ -46,26 +50,20 @@
     </table>
 
     <h2>Listado de equipos</h2>
-    <table>
+    <table class="listado">
         <thead>
             <tr>
-                <th>Placa SENA</th>
-                <th>Tipo</th>
-                <th>Sede</th>
-                <th>Subsede</th>
-                <th>Ambiente</th>
-                <th>Estado</th>
+                @foreach ($columnas as $columna)
+                    <th>{{ $columna['etiqueta'] }}</th>
+                @endforeach
             </tr>
         </thead>
         <tbody>
             @foreach ($listado as $fila)
                 <tr>
-                    <td>{{ $fila['placa_sena'] }}</td>
-                    <td>{{ $fila['tipo'] }}</td>
-                    <td>{{ $fila['sede'] }}</td>
-                    <td>{{ $fila['subsede'] }}</td>
-                    <td>{{ $fila['ambiente'] }}</td>
-                    <td>{{ $fila['estado'] }}</td>
+                    @foreach ($fila as $valor)
+                        <td>{{ $valor }}</td>
+                    @endforeach
                 </tr>
             @endforeach
         </tbody>

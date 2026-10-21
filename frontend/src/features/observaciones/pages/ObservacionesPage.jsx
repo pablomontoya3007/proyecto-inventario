@@ -7,6 +7,8 @@ import { FiltroUbicacionCascada } from '../../../shared/components/FiltroUbicaci
 import { ObservacionList } from '../components/ObservacionList';
 import { ObservacionForm } from '../components/ObservacionForm';
 import { Modal } from '../../../shared/components/Modal';
+import { ENDPOINTS } from '../../../api/endpoints';
+import { BotonExportarExcel } from '../../../shared/components/BotonExportarExcel';
 
 const CAMPO =
   'w-full max-w-sm rounded border border-slate-300 px-3 py-2 text-sm focus:border-sena focus:outline-none focus:ring-1 focus:ring-sena';
@@ -74,12 +76,15 @@ export function ObservacionesPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-bold text-ink">Observaciones</h1>
-        <button
-          onClick={() => setCreandoObservacion(true)}
-          className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark"
-        >
-          Nueva observación
-        </button>
+        <div className="flex items-start gap-2">
+          <BotonExportarExcel url={`${ENDPOINTS.observaciones}/exportar`} nombreBase="observaciones" filtros={filtros} />
+          <button
+            onClick={() => setCreandoObservacion(true)}
+            className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark"
+          >
+            Nueva observación
+          </button>
+        </div>
       </div>
 
       <FiltroUbicacionCascada

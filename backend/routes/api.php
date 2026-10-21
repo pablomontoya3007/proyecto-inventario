@@ -39,6 +39,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/notificaciones/licencias', [NotificacionController::class, 'licenciasSinActualizar']);
 
     // Gestión de usuarios: solo con sesión iniciada (no hay registro público).
+    // Las rutas "exportar" de cada módulo van ANTES de su apiResource:
+    // si fueran después, GET recurso/{id} capturaría "exportar" como id.
+    // Reciben los mismos filtros que el listado y devuelven un .xlsx.
+    Route::get('usuarios/exportar', [UsuarioController::class, 'exportar']);
     Route::apiResource('usuarios', UsuarioController::class)
         ->only(['index', 'store', 'update', 'destroy']);
 
@@ -49,6 +53,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Novedades — rutas explícitas en vez de apiResource: Laravel
     // singularizaría "novedades" como "novedade" para el parámetro.
+    Route::get('novedades/exportar', [NovedadController::class, 'exportar']);
     Route::get('novedades', [NovedadController::class, 'index']);
     Route::post('novedades', [NovedadController::class, 'store']);
     Route::patch('novedades/{novedad}/resolver', [NovedadController::class, 'resolver']);
@@ -78,11 +83,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('licencias-office/importar', [LicenciaOfficeController::class, 'importar']);
     Route::get('licencias-office/plantilla-importacion', [LicenciaOfficeController::class, 'plantillaImportacion']);
     Route::get('licencias-office/verificar', [VerificacionController::class, 'licencia']);
+    Route::get('licencias-office/exportar', [LicenciaOfficeController::class, 'exportar']);
 
     Route::apiResource('licencias-office', LicenciaOfficeController::class)
         ->parameters(['licencias-office' => 'licencia_office']);
     Route::get('licencias-office/{licencia_office}/password', [LicenciaOfficeController::class, 'mostrarPassword']);
 
+    Route::get('observaciones/exportar', [ObservacionController::class, 'exportar']);
     Route::apiResource('observaciones', ObservacionController::class)
         ->only(['index', 'store', 'show']);
 
@@ -90,10 +97,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // que en equipos (que "masivo" nunca se confunda con un id).
     Route::get('mantenimientos/masivo/equipos', [MantenimientoMasivoController::class, 'equipos']);
     Route::post('mantenimientos/masivo', [MantenimientoMasivoController::class, 'store']);
+    Route::get('mantenimientos/exportar', [MantenimientoController::class, 'exportar']);
 
     Route::apiResource('mantenimientos', MantenimientoController::class)
         ->only(['index', 'store', 'update', 'destroy']);
 
+    Route::get('traslados/exportar', [TrasladoController::class, 'exportar']);
     Route::apiResource('traslados', TrasladoController::class)
         ->only(['index', 'store']);
 

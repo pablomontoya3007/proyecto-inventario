@@ -41,17 +41,11 @@ class EquiposPorCategoriaExport implements FromArray
         }
         $filas[] = [];
 
+        // Columnas elegidas en el reporte (la placa siempre va primero).
         $filas[] = ['LISTADO DE EQUIPOS'];
-        $filas[] = ['Placa SENA', 'Tipo', 'Sede', 'Subsede', 'Ambiente', 'Estado'];
+        $filas[] = collect($this->datos['columnas'])->pluck('etiqueta')->all();
         foreach ($this->datos['listado'] as $fila) {
-            $filas[] = [
-                $fila['placa_sena'],
-                $fila['tipo'],
-                $fila['sede'],
-                $fila['subsede'],
-                $fila['ambiente'],
-                $fila['estado'],
-            ];
+            $filas[] = array_values($fila);
         }
 
         return $filas;

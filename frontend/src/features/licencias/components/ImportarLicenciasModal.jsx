@@ -47,6 +47,15 @@ export function ImportarLicenciasModal({ onClose }) {
             suspendida); en una licencia nueva, si se deja vacío, queda activa.
           </p>
 
+          <div className="rounded border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
+            <p className="font-semibold">⚠ Cuidado: esta es una función peligrosa.</p>
+            <p className="mt-1">
+              Si subes un Excel viejo o desactualizado, las licencias que ya existen se van a actualizar con esos datos
+              antiguos y se perderán los cambios recientes (correo, contraseña y estado). Antes de importar, verifica que el archivo
+              esté al día.
+            </p>
+          </div>
+
           <p className="rounded border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-ink">
             El archivo contiene contraseñas sin cifrar. Después de importarlo, elimínalo de tu equipo y de cualquier
             carpeta compartida: el sistema ya las guarda cifradas.

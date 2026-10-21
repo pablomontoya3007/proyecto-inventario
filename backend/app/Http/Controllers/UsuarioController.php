@@ -2,14 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\TablaExport;
 use App\Http\Requests\UsuarioRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\PersonalAccessToken;
+use Maatwebsite\Excel\Facades\Excel;
 
 /**
  * Gestión de usuarios DENTRO del sistema. No existe registro público:
@@ -28,7 +31,41 @@ class UsuarioController extends Controller
     {
         $this->authorize('viewAny', User::class);
 
-        $usuarios = User::query()
+        $usuarios = $this->consultaFiltrada($request)->paginate(15);
+
+        return UserResource::collection($usuarios);
+    }
+
+    /**
+     * Excel con todos los usuarios que cumplen los filtros de la pantalla.
+     * Solo datos visibles en el listado: nunca contraseñas ni tokens.
+     */
+    public function exportar(Request $request)
+    {
+        $this->authorize('viewAny', User::class);
+
+        $filas = $this->consultaFiltrada($request)
+            ->get()
+            ->map(fn (User $usuario) => [
+                $usuario->name,
+                $usuario->email,
+                $usuario->observaciones_count,
+                $usuario->created_at?->format('d/m/Y') ?? '—',
+            ])
+            ->all();
+
+        return Excel::download(
+            new TablaExport(['Nombre', 'Correo', 'Observaciones registradas', 'Fecha de registro'], $filas),
+            'usuarios.xlsx'
+        );
+    }
+
+    /**
+     * Consulta con todos los filtros, compartida por index() y exportar().
+     */
+    private function consultaFiltrada(Request $request): Builder
+    {
+        return User::query()
             ->withCount('observaciones')
             ->when($request->filled('nombre'), fn ($q) => $q->where('name', 'like', '%' . $request->input('nombre') . '%'))
             ->when($request->filled('correo'), fn ($q) => $q->where('email', 'like', '%' . $request->input('correo') . '%'))
@@ -41,10 +78,7 @@ class UsuarioController extends Controller
             })
             ->when($request->filled('fecha_desde'), fn ($q) => $q->whereDate('created_at', '>=', $request->input('fecha_desde')))
             ->when($request->filled('fecha_hasta'), fn ($q) => $q->whereDate('created_at', '<=', $request->input('fecha_hasta')))
-            ->orderBy('name')
-            ->paginate(15);
-
-        return UserResource::collection($usuarios);
+            ->orderBy('name');
     }
 
     public function store(UsuarioRequest $request): JsonResponse

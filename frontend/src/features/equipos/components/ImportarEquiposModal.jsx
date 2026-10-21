@@ -52,6 +52,15 @@ export function ImportarEquiposModal({ onClose }) {
             deben coincidir con nombres ya registrados; si el cuentadante no existe, se ignora.
           </p>
 
+          <div className="rounded border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
+            <p className="font-semibold">⚠ Cuidado: esta es una función peligrosa.</p>
+            <p className="mt-1">
+              Si subes un Excel viejo o desactualizado, los equipos que ya existen se van a actualizar con esos datos
+              antiguos y se perderán los cambios recientes (cuentadante, ubicación, estado, MAC, etc.). Antes de importar, verifica que el archivo
+              esté al día.
+            </p>
+          </div>
+
           <button
             type="button"
             onClick={handleDescargarPlantilla}

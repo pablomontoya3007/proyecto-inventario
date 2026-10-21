@@ -13,6 +13,8 @@ import { LicenciasSinActualizarPanel } from '../components/LicenciasSinActualiza
 import { ImportarLicenciasModal } from '../components/ImportarLicenciasModal';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 import { Modal } from '../../../shared/components/Modal';
+import { ENDPOINTS } from '../../../api/endpoints';
+import { BotonExportarExcel } from '../../../shared/components/BotonExportarExcel';
 
 // Confirmado contra app/Enums/EstadoLicencia.php. "tono" colorea su contador.
 const ESTADOS_LICENCIA = [
@@ -166,7 +168,8 @@ export function LicenciasPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-bold text-ink">Licencias de Office</h1>
-        <div className="flex gap-2">
+        <div className="flex items-start gap-2">
+          <BotonExportarExcel url={`${ENDPOINTS.licenciasOffice}/exportar`} nombreBase="licencias" filtros={filtros} />
           <button
             onClick={() => setImportando(true)}
             className="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-surface"

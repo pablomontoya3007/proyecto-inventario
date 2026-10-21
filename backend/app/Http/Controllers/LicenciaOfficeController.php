@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Exports\LicenciasImportPlantillaExport;
+use App\Exports\TablaExport;
 use App\Http\Controllers\Concerns\FiltraPorUbicacion;
 use App\Http\Requests\LicenciaOfficeRequest;
 use App\Http\Resources\LicenciaOfficeResource;
 use App\Imports\LicenciasImport;
 use App\Models\LicenciaOffice;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -31,10 +33,55 @@ class LicenciaOfficeController extends Controller
     {
         $this->authorize('viewAny', LicenciaOffice::class);
 
+        $licencias = $this->consultaFiltrada($request)
+            ->with('equipo.ubicacionFormacion.subsede.sede')
+            ->paginate(15);
+
+        return LicenciaOfficeResource::collection($licencias);
+    }
+
+    /**
+     * Excel con TODAS las licencias que cumplen los filtros de la pantalla
+     * (mismos parámetros que index(), sin paginar). Nunca incluye la
+     * contraseña: solo se exportan los datos que ya muestra el listado.
+     */
+    public function exportar(Request $request)
+    {
+        $this->authorize('viewAny', LicenciaOffice::class);
+
+        $filas = $this->consultaFiltrada($request)
+            ->with('equipo.ubicacionFormacion.subsede.sede')
+            ->get()
+            ->map(fn (LicenciaOffice $licencia) => [
+                $licencia->equipo?->placa_sena ?? 'Equipo eliminado',
+                $licencia->equipo?->ubicacionFormacion?->subsede?->sede?->nombre ?? '—',
+                $licencia->equipo?->ubicacionFormacion?->subsede?->nombre ?? '—',
+                $licencia->equipo?->ubicacionFormacion?->nombre ?? '—',
+                $licencia->correo,
+                $licencia->estado_licencia?->label() ?? '—',
+                $licencia->fecha_actualizacion?->format('d/m/Y') ?? '—',
+            ])
+            ->all();
+
+        return Excel::download(
+            new TablaExport(
+                ['Placa SENA', 'Sede', 'Subsede', 'Ubicación', 'Correo', 'Estado', 'Última actualización'],
+                $filas
+            ),
+            'licencias.xlsx'
+        );
+    }
+
+    /**
+     * La consulta con todos los filtros de la pantalla, compartida por
+     * index() (paginada) y exportar() (completa): así el Excel siempre
+     * trae exactamente lo mismo que se ve filtrado.
+     */
+    private function consultaFiltrada(Request $request): Builder
+    {
         [$sedeId, $subsedeId, $ubicacionId] = $this->filtrosUbicacion($request);
 
-        $licencias = LicenciaOffice::query()
-            ->with('equipo.ubicacionFormacion.subsede.sede')
+        return LicenciaOffice::query()
             ->when(
                 $request->filled('correo'),
                 fn ($q) => $q->where('correo', 'like', '%' . $request->input('correo') . '%')
@@ -61,10 +108,7 @@ class LicenciaOfficeController extends Controller
                         );
                 })
             )
-            ->latest()
-            ->paginate(15);
-
-        return LicenciaOfficeResource::collection($licencias);
+            ->latest();
     }
 
     public function store(LicenciaOfficeRequest $request): JsonResponse

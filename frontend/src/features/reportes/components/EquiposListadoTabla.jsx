@@ -10,34 +10,47 @@ const ESTADO_CRUDO_POR_ETIQUETA = {
   Extraviado: 'extraviado',
 };
 
-export function EquiposListadoTabla({ filas }) {
+// Identificadores: letra monoespaciada y sin partirse en dos líneas.
+const COLUMNAS_MONO = new Set(['placa_sena', 'serial', 'mac', 'mac_cableada']);
+
+/**
+ * Listado del reporte de equipos con las columnas que eligió la persona.
+ * columnas: [{ clave, etiqueta }] — vienen del backend, en el mismo
+ * orden que las claves de cada fila (y que el Excel y el PDF).
+ */
+export function EquiposListadoTabla({ columnas = [], filas }) {
   if (filas.length === 0) {
     return <p className="text-sm text-slate-400">No hay equipos para este filtro.</p>;
   }
 
   return (
     <table className="w-full text-left text-sm">
-      <thead>
+      <thead className="sticky top-0 bg-white">
         <tr className="border-b border-slate-200 text-slate-500">
-          <th className="py-2 pr-4 font-medium">Placa SENA</th>
-          <th className="py-2 pr-4 font-medium">Tipo</th>
-          <th className="py-2 pr-4 font-medium">Sede</th>
-          <th className="py-2 pr-4 font-medium">Subsede</th>
-          <th className="py-2 pr-4 font-medium">Ambiente</th>
-          <th className="py-2 pr-4 font-medium">Estado</th>
+          {columnas.map((columna) => (
+            <th key={columna.clave} className="whitespace-nowrap py-2 pr-4 font-medium">
+              {columna.etiqueta}
+            </th>
+          ))}
         </tr>
       </thead>
       <tbody>
-        {filas.map((fila, indice) => (
-          <tr key={indice} className="border-b border-slate-100">
-            <td className="py-2 pr-4 font-mono text-ink">{fila.placa_sena}</td>
-            <td className="py-2 pr-4 text-slate-500">{fila.tipo}</td>
-            <td className="py-2 pr-4 text-slate-500">{fila.sede}</td>
-            <td className="py-2 pr-4 text-slate-500">{fila.subsede}</td>
-            <td className="py-2 pr-4 text-slate-500">{fila.ambiente}</td>
-            <td className="py-2 pr-4">
-              <EstadoBadge estado={ESTADO_CRUDO_POR_ETIQUETA[fila.estado] ?? null} label={fila.estado} />
-            </td>
+        {filas.map((fila) => (
+          <tr key={fila.placa_sena} className="border-b border-slate-100">
+            {columnas.map((columna) => (
+              <td
+                key={columna.clave}
+                className={`py-2 pr-4 ${columna.clave === 'placa_sena' ? 'font-mono text-ink' : 'text-slate-500'} ${
+                  COLUMNAS_MONO.has(columna.clave) ? 'whitespace-nowrap' : ''
+                } ${COLUMNAS_MONO.has(columna.clave) && columna.clave !== 'placa_sena' ? 'font-mono text-xs' : ''}`}
+              >
+                {columna.clave === 'estado' ? (
+                  <EstadoBadge estado={ESTADO_CRUDO_POR_ETIQUETA[fila.estado] ?? null} label={fila.estado} />
+                ) : (
+                  fila[columna.clave]
+                )}
+              </td>
+            ))}
           </tr>
         ))}
       </tbody>

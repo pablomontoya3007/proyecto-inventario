@@ -26,6 +26,25 @@ class ReporteController extends Controller
 {
     use FiltraPorUbicacion;
 
+    /**
+     * Columnas que se pueden elegir para el listado del reporte de
+     * equipos (?columnas[]=serial&columnas[]=ubicacion...). La placa SENA
+     * va SIEMPRE: sin ella no se sabe de qué equipo es cada fila.
+     * "ubicacion" se expande en tres columnas (sede, subsede, ambiente)
+     * para que en Excel se pueda filtrar por cada una.
+     * Si no se elige ninguna, salen todas.
+     */
+    private const COLUMNAS_EQUIPOS = [
+        'serial' => ['serial' => 'Serial'],
+        'mac' => ['mac' => 'MAC inalámbrica (WiFi)'],
+        'mac_cableada' => ['mac_cableada' => 'MAC cableada'],
+        'hostname' => ['hostname' => 'Hostname'],
+        'tipo' => ['tipo' => 'Tipo'],
+        'estado' => ['estado' => 'Estado'],
+        'cuentadante' => ['cuentadante' => 'Cuentadante'],
+        'ubicacion' => ['sede' => 'Sede', 'subsede' => 'Subsede', 'ambiente' => 'Ambiente'],
+    ];
+
     public function equipos(Request $request): JsonResponse
     {
         return response()->json($this->datosEquipos(
@@ -51,7 +70,13 @@ class ReporteController extends Controller
             ...$this->filtrosEquipo($request)
         );
 
-        return Pdf::loadView('reportes.equipos', $datos)->download('equipos-por-categoria.pdf');
+        // Con muchas columnas la hoja vertical queda ilegible: se pasa a
+        // horizontal desde 7 columnas.
+        $orientacion = count($datos['columnas']) > 6 ? 'landscape' : 'portrait';
+
+        return Pdf::loadView('reportes.equipos', $datos)
+            ->setPaper('a4', $orientacion)
+            ->download('equipos-por-categoria.pdf');
     }
 
     public function licencias(Request $request): JsonResponse
@@ -123,14 +148,41 @@ class ReporteController extends Controller
      * a diferencia de sede/subsede/ubicación, no aplican a Licencias ni
      * a Responsables, así que no viven en el trait compartido.
      *
-     * @return array{0: int[], 1: ?string}
+     * @return array{0: int[], 1: ?string, 2: array<string, string>}
      */
     private function filtrosEquipo(Request $request): array
     {
         return [
             $this->tiposEquipo($request),
             $request->filled('estado') ? $request->input('estado') : null,
+            $this->columnasEquipos($request),
         ];
+    }
+
+    /**
+     * Columnas del listado como [clave => encabezado], en el orden fijo de
+     * COLUMNAS_EQUIPOS (no en el orden en que se marcaron), con la placa
+     * siempre primero. Las claves desconocidas se ignoran; ninguna
+     * válida = todas.
+     *
+     * @return array<string, string>
+     */
+    private function columnasEquipos(Request $request): array
+    {
+        $elegidas = array_filter((array) $request->input('columnas', []), 'is_string');
+        $validas = array_intersect(array_keys(self::COLUMNAS_EQUIPOS), $elegidas);
+
+        if (empty($validas)) {
+            $validas = array_keys(self::COLUMNAS_EQUIPOS);
+        }
+
+        $columnas = ['placa_sena' => 'Placa SENA'];
+
+        foreach ($validas as $grupo) {
+            $columnas += self::COLUMNAS_EQUIPOS[$grupo];
+        }
+
+        return $columnas;
     }
 
     /**
@@ -173,16 +225,17 @@ class ReporteController extends Controller
     /**
      * Centraliza las consultas para que JSON, Excel y PDF usen siempre
      * los mismos números. Los soft-deletes de Equipo se excluyen
-     * automáticamente (scope global de SoftDeletes). Los cinco
-     * parámetros son opcionales: sin ellos, el reporte sigue siendo
-     * global, igual que antes.
+     * automáticamente (scope global de SoftDeletes). Todos los filtros
+     * son opcionales: sin ellos, el reporte es global. $columnas decide
+     * qué campos lleva cada fila del listado (ver columnasEquipos()).
      */
     private function datosEquipos(
         ?int $sedeId,
         ?int $subsedeId,
         ?int $ubicacionId,
         array $tiposEquipo,
-        ?string $estado
+        ?string $estado,
+        array $columnas
     ): array {
         $porSede = Equipo::query()
             ->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId)
@@ -218,25 +271,46 @@ class ReporteController extends Controller
                 'total' => $fila->total,
             ]);
 
+        // Se arma la fila completa y luego se recorta a las columnas
+        // elegidas: así el orden de las claves es siempre el de $columnas.
         $listado = Equipo::query()
             ->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId)
             ->filtrarPorAtributos($tiposEquipo, $estado)
-            ->with(['tipoEquipo', 'ubicacionFormacion.subsede.sede'])
+            ->with(['tipoEquipo', 'responsable', 'ubicacionFormacion.subsede.sede'])
             ->orderBy('placa_sena')
             ->get()
-            ->map(fn ($equipo) => [
-                'placa_sena' => $equipo->placa_sena,
-                'tipo' => $equipo->tipoEquipo?->nombre ?? 'Sin tipo',
-                'sede' => $equipo->ubicacionFormacion?->subsede?->sede?->nombre ?? 'Sin sede',
-                'subsede' => $equipo->ubicacionFormacion?->subsede?->nombre ?? 'Sin subsede',
-                'ambiente' => $equipo->ubicacionFormacion?->nombre ?? 'Sin ambiente',
-                'estado' => $equipo->estado?->label() ?? 'Sin estado',
-            ]);
+            ->map(function ($equipo) use ($columnas) {
+                $completa = [
+                    'placa_sena' => $equipo->placa_sena,
+                    'serial' => $equipo->serial ?: '—',
+                    'mac' => $equipo->mac ?: '—',
+                    'mac_cableada' => $equipo->mac_cableada ?: '—',
+                    'hostname' => $equipo->hostname ?: '—',
+                    'tipo' => $equipo->tipoEquipo?->nombre ?? 'Sin tipo',
+                    'estado' => $equipo->estado?->label() ?? 'Sin estado',
+                    'cuentadante' => $equipo->responsable?->nombre ?? 'Sin asignar',
+                    'sede' => $equipo->ubicacionFormacion?->subsede?->sede?->nombre ?? 'Sin sede',
+                    'subsede' => $equipo->ubicacionFormacion?->subsede?->nombre ?? 'Sin subsede',
+                    'ambiente' => $equipo->ubicacionFormacion?->nombre ?? 'Sin ambiente',
+                ];
+
+                $fila = [];
+
+                foreach (array_keys($columnas) as $clave) {
+                    $fila[$clave] = $completa[$clave];
+                }
+
+                return $fila;
+            });
 
         return [
             'por_sede' => $porSede,
             'por_tipo' => $porTipo,
             'por_estado' => $porEstado,
+            // [{clave, etiqueta}]: el frontend arma los encabezados con esto.
+            'columnas' => collect($columnas)
+                ->map(fn ($etiqueta, $clave) => ['clave' => $clave, 'etiqueta' => $etiqueta])
+                ->values(),
             'listado' => $listado,
         ];
     }

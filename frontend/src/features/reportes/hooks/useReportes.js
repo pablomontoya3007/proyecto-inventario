@@ -20,10 +20,14 @@ import {
 
 // --- Equipos ---
 
-export function useReporteEquipos(filtroUbicacion = {}) {
+// enabled: en ReportesPage cada reporte se consulta solo cuando su
+// pestaña está visible.
+
+export function useReporteEquipos(filtroUbicacion = {}, { enabled = true } = {}) {
   return useQuery({
     queryKey: ['reportes', 'equipos', filtroUbicacion],
     queryFn: () => fetchReporteEquipos(filtroUbicacion),
+    enabled,
   });
 }
 
@@ -75,10 +79,11 @@ export function useDescargarReporteEquiposSinLicenciaPdf() {
 
 // --- Responsables ---
 
-export function useReporteResponsables(filtroUbicacion = {}) {
+export function useReporteResponsables(filtroUbicacion = {}, { enabled = true } = {}) {
   return useQuery({
     queryKey: ['reportes', 'responsables', filtroUbicacion],
     queryFn: () => fetchReporteResponsables(filtroUbicacion),
+    enabled,
   });
 }
 

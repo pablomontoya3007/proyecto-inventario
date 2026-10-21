@@ -4,15 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Enums\EstadoEquipo;
 use App\Enums\EstadoMantenimiento;
+use App\Exports\TablaExport;
 use App\Http\Controllers\Concerns\FiltraPorUbicacion;
 use App\Http\Requests\MantenimientoRequest;
 use App\Http\Resources\MantenimientoResource;
 use App\Models\Mantenimiento;
 use App\Services\EnvioCorreoService;
 use App\Support\PlantillasCorreo;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Maatwebsite\Excel\Facades\Excel;
 
 class MantenimientoController extends Controller
 {
@@ -26,10 +29,53 @@ class MantenimientoController extends Controller
     {
         $this->authorize('viewAny', Mantenimiento::class);
 
+        $mantenimientos = $this->consultaFiltrada($request)
+            ->with(['equipo', 'asignado'])
+            ->paginate(15);
+
+        return MantenimientoResource::collection($mantenimientos);
+    }
+
+    /**
+     * Excel con todos los mantenimientos que cumplen los filtros de la
+     * pantalla (incluida la pestaña: completado=1 para el historial).
+     */
+    public function exportar(Request $request)
+    {
+        $this->authorize('viewAny', Mantenimiento::class);
+
+        $filas = $this->consultaFiltrada($request)
+            ->with(['equipo.tipoEquipo', 'equipo.ubicacionFormacion.subsede.sede', 'asignado'])
+            ->get()
+            ->map(fn (Mantenimiento $mantenimiento) => [
+                $mantenimiento->equipo?->placa_sena ?? 'Equipo eliminado',
+                $mantenimiento->equipo?->tipoEquipo?->nombre ?? '—',
+                self::rutaUbicacion($mantenimiento->equipo?->ubicacionFormacion),
+                $mantenimiento->fecha_programada?->format('d/m/Y') ?? '—',
+                $mantenimiento->descripcion ?? '—',
+                $mantenimiento->estado?->label() ?? '—',
+                $mantenimiento->asignado?->name ?? 'Sin asignar',
+                $mantenimiento->fecha_completado?->format('d/m/Y') ?? '—',
+            ])
+            ->all();
+
+        return Excel::download(
+            new TablaExport(
+                ['Placa SENA', 'Tipo de equipo', 'Ubicación', 'Fecha programada', 'Descripción', 'Estado', 'Asignado a', 'Fecha completado'],
+                $filas
+            ),
+            'mantenimientos.xlsx'
+        );
+    }
+
+    /**
+     * Consulta con todos los filtros, compartida por index() y exportar().
+     */
+    private function consultaFiltrada(Request $request): Builder
+    {
         [$sedeId, $subsedeId, $ubicacionId] = $this->filtrosUbicacion($request);
 
-        $mantenimientos = Mantenimiento::query()
-            ->with(['equipo', 'asignado'])
+        return Mantenimiento::query()
             ->when($request->filled('completado'), function ($query) use ($request) {
                 $completado = filter_var($request->input('completado'), FILTER_VALIDATE_BOOLEAN);
 
@@ -43,10 +89,20 @@ class MantenimientoController extends Controller
                 fn ($q) => $q->whereHas('equipo', fn ($sub) => $sub->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId))
             )
             ->when($request->filled('asignado_a'), fn ($q) => $q->where('asignado_a', $request->integer('asignado_a')))
-            ->orderBy('fecha_programada')
-            ->paginate(15);
+            ->orderBy('fecha_programada');
+    }
 
-        return MantenimientoResource::collection($mantenimientos);
+    private static function rutaUbicacion($ubicacion): string
+    {
+        if (!$ubicacion) {
+            return '—';
+        }
+
+        return implode(' / ', array_filter([
+            $ubicacion->subsede?->sede?->nombre,
+            $ubicacion->subsede?->nombre,
+            $ubicacion->nombre,
+        ]));
     }
 
     /**

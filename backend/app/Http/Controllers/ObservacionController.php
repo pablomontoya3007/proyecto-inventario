@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\TablaExport;
 use App\Http\Controllers\Concerns\FiltraPorUbicacion;
 use App\Http\Requests\ObservacionRequest;
 use App\Http\Resources\ObservacionResource;
 use App\Models\Observacion;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ObservacionController extends Controller
 {
@@ -25,10 +28,45 @@ class ObservacionController extends Controller
     {
         $this->authorize('viewAny', Observacion::class);
 
+        $observaciones = $this->consultaFiltrada($request)
+            ->with(['equipo', 'usuario'])
+            ->paginate(15);
+
+        return ObservacionResource::collection($observaciones);
+    }
+
+    /**
+     * Excel con todas las observaciones que cumplen los filtros de la pantalla.
+     */
+    public function exportar(Request $request)
+    {
+        $this->authorize('viewAny', Observacion::class);
+
+        $filas = $this->consultaFiltrada($request)
+            ->with(['equipo', 'usuario'])
+            ->get()
+            ->map(fn (Observacion $observacion) => [
+                $observacion->created_at?->format('d/m/Y H:i') ?? '—',
+                $observacion->equipo?->placa_sena ?? 'Equipo eliminado',
+                $observacion->usuario?->name ?? '—',
+                $observacion->descripcion,
+            ])
+            ->all();
+
+        return Excel::download(
+            new TablaExport(['Fecha', 'Placa SENA', 'Registrada por', 'Descripción'], $filas),
+            'observaciones.xlsx'
+        );
+    }
+
+    /**
+     * Consulta con todos los filtros, compartida por index() y exportar().
+     */
+    private function consultaFiltrada(Request $request): Builder
+    {
         [$sedeId, $subsedeId, $ubicacionId] = $this->filtrosUbicacion($request);
 
-        $observaciones = Observacion::query()
-            ->with(['equipo', 'usuario'])
+        return Observacion::query()
             ->when(
                 $sedeId || $subsedeId || $ubicacionId || $request->filled('placa_sena'),
                 fn ($q) => $q->whereHas('equipo', function ($sub) use ($sedeId, $subsedeId, $ubicacionId, $request) {
@@ -43,10 +81,7 @@ class ObservacionController extends Controller
                 $request->filled('usuario'),
                 fn ($q) => $q->whereHas('usuario', fn ($s) => $s->where('name', 'like', '%' . $request->input('usuario') . '%'))
             )
-            ->latest()
-            ->paginate(15);
-
-        return ObservacionResource::collection($observaciones);
+            ->latest();
     }
 
     /**

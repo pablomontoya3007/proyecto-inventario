@@ -7,6 +7,8 @@ import { FiltroUbicacionCascada } from '../../../shared/components/FiltroUbicaci
 import { TrasladoTable } from '../components/TrasladoTable';
 import { TrasladoForm } from '../components/TrasladoForm';
 import { Modal } from '../../../shared/components/Modal';
+import { ENDPOINTS } from '../../../api/endpoints';
+import { BotonExportarExcel } from '../../../shared/components/BotonExportarExcel';
 
 export function TrasladosPage() {
   const [page, setPage] = useState(1);
@@ -69,12 +71,15 @@ export function TrasladosPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-bold text-ink">Traslados</h1>
-        <button
-          onClick={() => setCreando(true)}
-          className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark"
-        >
-          Registrar traslado
-        </button>
+        <div className="flex items-start gap-2">
+          <BotonExportarExcel url={`${ENDPOINTS.traslados}/exportar`} nombreBase="traslados" filtros={filtros} />
+          <button
+            onClick={() => setCreando(true)}
+            className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark"
+          >
+            Registrar traslado
+          </button>
+        </div>
       </div>
 
       <FiltroUbicacionCascada

@@ -21,6 +21,8 @@ import { MantenimientoMasivoModal } from '../components/MantenimientoMasivoModal
 import { MarcarListoForm } from '../components/MarcarListoForm';
 import { Modal } from '../../../shared/components/Modal';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
+import { ENDPOINTS } from '../../../api/endpoints';
+import { BotonExportarExcel } from '../../../shared/components/BotonExportarExcel';
 
 // Estados de la pestaña Activos que se pueden filtrar con su contador.
 const ESTADOS_ACTIVOS = [
@@ -194,7 +196,14 @@ export function MantenimientosPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-bold text-ink">Mantenimientos</h1>
-        <div className="flex gap-2">
+        <div className="flex items-start gap-2">
+          {/* Exporta la pestaña que se está viendo (activos o historial). */}
+          <BotonExportarExcel
+            url={`${ENDPOINTS.mantenimientos}/exportar`}
+            nombreBase={pestana === 'historial' ? 'mantenimientos-historial' : 'mantenimientos-activos'}
+            filtros={{ ...filtros, completado: pestana === 'historial' }}
+            hayFiltros={Object.keys(filtros).length > 0}
+          />
           <button
             onClick={abrirMasivo}
             className="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-surface"

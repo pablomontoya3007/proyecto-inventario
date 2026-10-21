@@ -3,15 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Enums\EstadoNovedad;
+use App\Exports\TablaExport;
 use App\Http\Controllers\Concerns\FiltraPorUbicacion;
 use App\Http\Requests\NovedadRequest;
 use App\Http\Resources\NovedadResource;
 use App\Models\Novedad;
 use App\Services\EnvioCorreoService;
 use App\Support\PlantillasCorreo;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Maatwebsite\Excel\Facades\Excel;
 
 class NovedadController extends Controller
 {
@@ -35,10 +38,54 @@ class NovedadController extends Controller
     {
         $this->authorize('viewAny', Novedad::class);
 
+        $novedades = $this->consultaFiltrada($request)
+            ->with(self::RELACIONES)
+            ->paginate(15);
+
+        return NovedadResource::collection($novedades);
+    }
+
+    /**
+     * Excel con todas las novedades que cumplen los filtros de la pantalla.
+     */
+    public function exportar(Request $request)
+    {
+        $this->authorize('viewAny', Novedad::class);
+
+        $filas = $this->consultaFiltrada($request)
+            ->with(self::RELACIONES)
+            ->get()
+            ->map(fn (Novedad $novedad) => [
+                $novedad->created_at?->format('d/m/Y H:i') ?? '—',
+                $novedad->equipo?->placa_sena ?? 'Equipo eliminado',
+                $novedad->equipo?->responsable?->nombre ?? 'Sin cuentadante',
+                $novedad->descripcion,
+                $novedad->usuario?->name ?? '—',
+                $novedad->asignado?->name ?? 'Sin asignar',
+                $novedad->estado?->label() ?? '—',
+                $novedad->resuelta_en?->format('d/m/Y H:i') ?? '—',
+                $novedad->resueltaPor?->name ?? '—',
+                $novedad->nota_resolucion ?? '—',
+            ])
+            ->all();
+
+        return Excel::download(
+            new TablaExport(
+                ['Fecha', 'Placa SENA', 'Cuentadante', 'Descripción', 'Reportada por', 'Asignada a', 'Estado', 'Resuelta el', 'Resuelta por', 'Nota de resolución'],
+                $filas
+            ),
+            'novedades.xlsx'
+        );
+    }
+
+    /**
+     * Consulta con todos los filtros, compartida por index() y exportar().
+     */
+    private function consultaFiltrada(Request $request): Builder
+    {
         [$sedeId, $subsedeId, $ubicacionId] = $this->filtrosUbicacion($request);
 
-        $novedades = Novedad::query()
-            ->with(self::RELACIONES)
+        return Novedad::query()
             ->when(
                 $sedeId || $subsedeId || $ubicacionId || $request->filled('placa_sena'),
                 fn ($q) => $q->whereHas('equipo', function ($sub) use ($sedeId, $subsedeId, $ubicacionId, $request) {
@@ -58,10 +105,7 @@ class NovedadController extends Controller
             ->when($request->boolean('sin_asignar'), fn ($q) => $q->whereNull('asignado_a'))
             ->when($request->filled('fecha_desde'), fn ($q) => $q->whereDate('created_at', '>=', $request->input('fecha_desde')))
             ->when($request->filled('fecha_hasta'), fn ($q) => $q->whereDate('created_at', '<=', $request->input('fecha_hasta')))
-            ->latest()
-            ->paginate(15);
-
-        return NovedadResource::collection($novedades);
+            ->latest();
     }
 
     /**
