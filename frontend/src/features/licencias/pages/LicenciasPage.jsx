@@ -4,7 +4,6 @@ import { useLicencias, useCreateLicencia, useUpdateLicencia, useDeleteLicencia }
 import { useSedes } from '../../sedes/hooks/useSedes';
 import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
 import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
-import { useDashboard } from '../../dashboard/hooks/useDashboard';
 import { FiltroUbicacionCascada } from '../../../shared/components/FiltroUbicacionCascada';
 import { ContadoresModulo } from '../../../shared/components/ContadoresModulo';
 import { LicenciaTable } from '../components/LicenciaTable';
@@ -104,7 +103,6 @@ export function LicenciasPage() {
   const { data: sedesData } = useSedes(1);
   const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeFiltro || undefined });
   const { data: ubicacionesData } = useUbicaciones({ page: 1, subsedeId: subsedeFiltro || undefined });
-  const { data: resumen, isLoading: cargandoResumen } = useDashboard();
 
   const { data, isLoading, isError } = useLicencias(page, filtros);
   const createLicencia = useCreateLicencia();
@@ -113,13 +111,27 @@ export function LicenciasPage() {
 
   const serverErrors = createLicencia.error?.response?.data?.errors ?? updateLicencia.error?.response?.data?.errors;
 
-  // Contadores: totales del sistema. Clic = aplicar/quitar ese filtro;
-  // "Equipos sin licencia" lleva a Equipos ya filtrado.
+  // Contadores calculados por el backend con los filtros de la pantalla
+  // (sin contar el estado, que es lo que ellos mismos aplican). Clic =
+  // aplicar/quitar ese filtro; "Equipos sin licencia" lleva a Equipos con
+  // la misma ubicación y placa, para que allá se vea el mismo número.
+  const resumen = data?.contadores;
+  const hayFiltrosPropios = Object.keys(filtros).some((clave) => clave !== 'estado');
+
+  function irAEquiposSinLicencia() {
+    const parametros = new URLSearchParams({ sin_licencia: '1' });
+    if (sedeFiltro) parametros.set('sede_id', sedeFiltro);
+    if (subsedeFiltro) parametros.set('subsede_id', subsedeFiltro);
+    if (ubicacionFiltro) parametros.set('ubicacion_formacion_id', ubicacionFiltro);
+    if (placaFiltro) parametros.set('placa_sena', placaFiltro);
+    navigate(`/equipos?${parametros.toString()}`);
+  }
+
   const contadores = [
     {
       clave: 'total',
       etiqueta: 'Total de licencias',
-      valor: resumen?.licencias?.total,
+      valor: resumen?.total,
       activo: !estadoFiltro,
       onClick: () => {
         setEstadoFiltro('');
@@ -129,7 +141,7 @@ export function LicenciasPage() {
     ...ESTADOS_LICENCIA.map((estado) => ({
       clave: estado.value,
       etiqueta: estado.label,
-      valor: resumen?.licencias?.por_estado?.[estado.value],
+      valor: resumen?.por_estado?.[estado.value],
       tono: estado.tono,
       activo: estadoFiltro === estado.value,
       onClick: () => {
@@ -140,9 +152,9 @@ export function LicenciasPage() {
     {
       clave: 'sin_licencia',
       etiqueta: 'Equipos sin licencia →',
-      valor: resumen?.equipos?.sin_licencia,
+      valor: resumen?.equipos_sin_licencia,
       tono: 'warning',
-      onClick: () => navigate('/equipos?sin_licencia=1'),
+      onClick: irAEquiposSinLicencia,
     },
   ];
 
@@ -185,7 +197,7 @@ export function LicenciasPage() {
         </div>
       </div>
 
-      <ContadoresModulo contadores={contadores} cargando={cargandoResumen} />
+      <ContadoresModulo contadores={contadores} cargando={isLoading} filtrado={hayFiltrosPropios} />
 
       <LicenciasSinActualizarPanel onVerLicencia={handleVerLicencia} />
 

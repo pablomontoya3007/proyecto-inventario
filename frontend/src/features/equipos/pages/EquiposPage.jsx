@@ -5,7 +5,6 @@ import { useTiposEquipo } from '../../tipos-equipo/hooks/useTiposEquipo';
 import { useSedes } from '../../sedes/hooks/useSedes';
 import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
 import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
-import { useDashboard } from '../../dashboard/hooks/useDashboard';
 import { BuscadorResponsable } from '../../responsables/components/BuscadorResponsable';
 import { EquipoTable } from '../components/EquipoTable';
 import { EquipoForm } from '../components/EquipoForm';
@@ -27,23 +26,24 @@ const CAMPO =
   'rounded border border-slate-300 px-2 py-1 text-sm focus:border-sena focus:outline-none focus:ring-1 focus:ring-sena';
 
 /**
- * Los filtros iniciales de estado y "sin licencia" pueden venir en la
- * URL (?estado=activo, ?sin_licencia=1): así llegan las tarjetas del
- * Inicio, ya filtradas.
+ * Los filtros iniciales pueden venir en la URL (?estado=activo,
+ * ?sin_licencia=1, ?sede_id=&subsede_id=&ubicacion_formacion_id=,
+ * ?placa_sena=): así llegan las tarjetas del Inicio y el contador
+ * "Equipos sin licencia" de Licencias, ya filtrados.
  */
 export function EquiposPage() {
   const [searchParams] = useSearchParams();
 
   const [page, setPage] = useState(1);
-  const [placaFiltro, setPlacaFiltro] = useState('');
+  const [placaFiltro, setPlacaFiltro] = useState(() => searchParams.get('placa_sena') ?? '');
   const [serialFiltro, setSerialFiltro] = useState('');
   const [tipoFiltro, setTipoFiltro] = useState('');
   const [responsableFiltro, setResponsableFiltro] = useState(null);
   const [estadoFiltro, setEstadoFiltro] = useState(() => searchParams.get('estado') ?? '');
   const [sinLicencia, setSinLicencia] = useState(() => searchParams.get('sin_licencia') === '1');
-  const [sedeFiltro, setSedeFiltro] = useState('');
-  const [subsedeFiltro, setSubsedeFiltro] = useState('');
-  const [ubicacionFiltro, setUbicacionFiltro] = useState('');
+  const [sedeFiltro, setSedeFiltro] = useState(() => searchParams.get('sede_id') ?? '');
+  const [subsedeFiltro, setSubsedeFiltro] = useState(() => searchParams.get('subsede_id') ?? '');
+  const [ubicacionFiltro, setUbicacionFiltro] = useState(() => searchParams.get('ubicacion_formacion_id') ?? '');
 
   const [editingEquipo, setEditingEquipo] = useState(null);
   const [viendoHojaDeVida, setViendoHojaDeVida] = useState(null);
@@ -68,7 +68,6 @@ export function EquiposPage() {
   };
 
   const { data, isLoading, isError } = useEquipos(filtros, page);
-  const { data: resumen, isLoading: cargandoResumen } = useDashboard();
   const { data: tiposData } = useTiposEquipo();
   const { data: sedesData } = useSedes(1);
   const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeFiltro || undefined });
@@ -80,12 +79,17 @@ export function EquiposPage() {
 
   const serverErrors = createEquipo.error?.response?.data?.errors ?? updateEquipo.error?.response?.data?.errors;
 
-  // Contadores: totales del sistema. Clic = aplicar/quitar ese filtro.
+  // Contadores calculados por el backend con los filtros de la pantalla
+  // (sin contar estado ni "sin licencia", que son los que ellos mismos
+  // aplican). Clic = aplicar/quitar ese filtro.
+  const resumen = data?.contadores;
+  const hayFiltrosPropios = Object.keys(filtros).some((clave) => !['estado', 'sin_licencia'].includes(clave));
+
   const contadores = [
     {
       clave: 'total',
       etiqueta: 'Total de equipos',
-      valor: resumen?.equipos?.total,
+      valor: resumen?.total,
       activo: !estadoFiltro && !sinLicencia,
       onClick: () => {
         setEstadoFiltro('');
@@ -96,7 +100,7 @@ export function EquiposPage() {
     ...ESTADOS_EQUIPO.map((estado) => ({
       clave: estado.value,
       etiqueta: estado.label,
-      valor: resumen?.equipos?.por_estado?.[estado.value],
+      valor: resumen?.por_estado?.[estado.value],
       tono: estado.tono,
       activo: estadoFiltro === estado.value,
       onClick: () => {
@@ -107,7 +111,7 @@ export function EquiposPage() {
     {
       clave: 'sin_licencia',
       etiqueta: 'Sin licencia',
-      valor: resumen?.equipos?.sin_licencia,
+      valor: resumen?.sin_licencia,
       tono: 'warning',
       activo: sinLicencia,
       onClick: () => {
@@ -168,7 +172,7 @@ export function EquiposPage() {
         </div>
       </div>
 
-      <ContadoresModulo contadores={contadores} cargando={cargandoResumen} />
+      <ContadoresModulo contadores={contadores} cargando={isLoading} filtrado={hayFiltrosPropios} />
 
       <div className="mb-4 flex flex-wrap items-center gap-3 rounded border border-slate-200 bg-white p-4">
         <input

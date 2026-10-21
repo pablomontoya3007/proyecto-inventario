@@ -5,7 +5,6 @@ import { useNovedades, useCreateNovedad, useResolverNovedad } from '../hooks/use
 import { useSedes } from '../../sedes/hooks/useSedes';
 import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
 import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
-import { useDashboard } from '../../dashboard/hooks/useDashboard';
 import { FiltroUbicacionCascada } from '../../../shared/components/FiltroUbicacionCascada';
 import { ContadoresModulo } from '../../../shared/components/ContadoresModulo';
 import { AvisoBanner } from '../../../shared/components/AvisoBanner';
@@ -74,16 +73,18 @@ export function NovedadesPage() {
     const { data: sedesData } = useSedes(1);
     const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeFiltro || undefined });
     const { data: ubicacionesData } = useUbicaciones({ page: 1, subsedeId: subsedeFiltro || undefined });
-    const { data: resumen, isLoading: cargandoResumen } = useDashboard();
 
     const { data, isLoading, isError } = useNovedades({ page, filtros });
     const crear = useCreateNovedad();
     const resolver = useResolverNovedad();
 
     const serverErrors = crear.error?.response?.data?.errors;
-    const novedades = resumen?.novedades ?? {};
+    // Calculados por el backend con los filtros de la pantalla, sin contar
+    // estado ni "sin asignar" (que son lo que los contadores aplican).
+    const novedades = data?.contadores ?? {};
+    const hayFiltrosContadores = Object.keys(filtros).some((clave) => !['estado', 'sin_asignar'].includes(clave));
 
-    // Contadores (totales del sistema). Clic = aplicar/quitar ese filtro.
+    // Contadores. Clic = aplicar/quitar ese filtro.
     const filtroSinAtender = estadoFiltro === 'abierta' && !sinAsignar;
     const filtroSinAsignar = estadoFiltro === 'abierta' && sinAsignar;
     const filtroResueltas = estadoFiltro === 'resuelta';
@@ -198,7 +199,7 @@ export function NovedadesPage() {
                 </div>
             </div>
 
-            <ContadoresModulo contadores={contadores} cargando={cargandoResumen} />
+            <ContadoresModulo contadores={contadores} cargando={isLoading} filtrado={hayFiltrosContadores} />
 
             <AvisoBanner aviso={aviso} onCerrar={() => setAviso(null)} />
 

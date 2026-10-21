@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EstadoLicencia;
 use App\Exports\LicenciasImportPlantillaExport;
 use App\Exports\TablaExport;
+use App\Http\Controllers\Concerns\CuentaPorColumna;
 use App\Http\Controllers\Concerns\FiltraPorUbicacion;
 use App\Http\Requests\LicenciaOfficeRequest;
 use App\Http\Resources\LicenciaOfficeResource;
 use App\Imports\LicenciasImport;
+use App\Models\Equipo;
 use App\Models\LicenciaOffice;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -17,6 +20,7 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class LicenciaOfficeController extends Controller
 {
+    use CuentaPorColumna;
     use FiltraPorUbicacion;
 
     /**
@@ -37,7 +41,44 @@ class LicenciaOfficeController extends Controller
             ->with('equipo.ubicacionFormacion.subsede.sede')
             ->paginate(15);
 
-        return LicenciaOfficeResource::collection($licencias);
+        return LicenciaOfficeResource::collection($licencias)
+            ->additional(['contadores' => $this->contadores($request)]);
+    }
+
+    /**
+     * Contadores de la parte superior, calculados con los filtros de la
+     * pantalla. El filtro de ESTADO se ignora a propósito: los contadores
+     * son justamente para elegir estado, y si se aplicara, al hacer clic
+     * en "Vencidas" todos los demás quedarían en 0.
+     *
+     * equipos_sin_licencia: equipos en uso sin licencia dentro de la
+     * misma ubicación (y placa, si se escribió). Correo, estado y fechas
+     * no aplican: son datos de una licencia que esos equipos no tienen.
+     */
+    private function contadores(Request $request): array
+    {
+        $porEstado = $this->contarPorColumna(
+            $this->consultaFiltrada($request, ['estado']),
+            'estado_licencia',
+            EstadoLicencia::cases()
+        );
+
+        [$sedeId, $subsedeId, $ubicacionId] = $this->filtrosUbicacion($request);
+
+        $sinLicencia = Equipo::query()
+            ->sinLicencia()
+            ->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId)
+            ->when(
+                $request->filled('placa_sena'),
+                fn ($q) => $q->where('placa_sena', 'like', '%' . $request->input('placa_sena') . '%')
+            )
+            ->count();
+
+        return [
+            'total' => array_sum($porEstado),
+            'por_estado' => $porEstado,
+            'equipos_sin_licencia' => $sinLicencia,
+        ];
     }
 
     /**
@@ -76,8 +117,10 @@ class LicenciaOfficeController extends Controller
      * La consulta con todos los filtros de la pantalla, compartida por
      * index() (paginada) y exportar() (completa): así el Excel siempre
      * trae exactamente lo mismo que se ve filtrado.
+     *
+     * $ignorar: filtros que no se aplican (los usan los contadores).
      */
-    private function consultaFiltrada(Request $request): Builder
+    private function consultaFiltrada(Request $request, array $ignorar = []): Builder
     {
         [$sedeId, $subsedeId, $ubicacionId] = $this->filtrosUbicacion($request);
 
@@ -87,7 +130,7 @@ class LicenciaOfficeController extends Controller
                 fn ($q) => $q->where('correo', 'like', '%' . $request->input('correo') . '%')
             )
             ->when(
-                $request->filled('estado'),
+                $request->filled('estado') && !in_array('estado', $ignorar, true),
                 fn ($q) => $q->where('estado_licencia', $request->input('estado'))
             )
             ->when(

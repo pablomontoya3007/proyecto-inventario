@@ -5,11 +5,13 @@ namespace App\Http\Controllers;
 use App\Enums\EstadoEquipo;
 use App\Enums\EstadoNovedad;
 use App\Exports\EquiposImportPlantillaExport;
+use App\Http\Controllers\Concerns\CuentaPorColumna;
 use App\Http\Requests\EquipoRequest;
 use App\Http\Resources\EquipoResource;
 use App\Imports\EquiposImport;
 use App\Models\Equipo;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -17,6 +19,8 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class EquipoController extends Controller
 {
+    use CuentaPorColumna;
+
     /**
      * Cubre los criterios de búsqueda de la sección 7 de los requisitos:
      * placa, serial, mac, hostname, responsable, sede, subsede, ubicación,
@@ -31,30 +35,61 @@ class EquipoController extends Controller
     {
         $this->authorize('viewAny', Equipo::class);
 
-        $equipos = Equipo::query()
+        $equipos = $this->consultaFiltrada($request)
             ->with(['tipoEquipo', 'responsable', 'ubicacionFormacion.subsede.sede'])
             ->withCount([
                 'novedades as novedades_abiertas_count' => fn ($q) => $q->where('estado', EstadoNovedad::Abierta),
             ])
+            ->paginate(15);
+
+        return EquipoResource::collection($equipos)
+            ->additional(['contadores' => $this->contadores($request)]);
+    }
+
+    /**
+     * Contadores de la parte superior con los filtros de la pantalla
+     * (placa, serial, tipo, cuentadante, ubicación...), EXCEPTO estado y
+     * sin_licencia: son lo que esos contadores aplican al hacer clic.
+     */
+    private function contadores(Request $request): array
+    {
+        $porEstado = $this->contarPorColumna(
+            $this->consultaFiltrada($request, ['estado', 'sin_licencia']),
+            'estado',
+            EstadoEquipo::cases()
+        );
+
+        return [
+            'total' => array_sum($porEstado),
+            'por_estado' => $porEstado,
+            'sin_licencia' => $this->consultaFiltrada($request, ['estado', 'sin_licencia'])
+                ->reorder()
+                ->sinLicencia()
+                ->count(),
+        ];
+    }
+
+    /**
+     * Consulta con todos los filtros del listado. $ignorar: filtros que no
+     * se aplican (los usan los contadores).
+     */
+    private function consultaFiltrada(Request $request, array $ignorar = []): Builder
+    {
+        $usar = fn (string $filtro) => !in_array($filtro, $ignorar, true);
+
+        return Equipo::query()
             ->when($request->filled('placa_sena'), fn ($q) => $q->where('placa_sena', 'like', '%' . $request->input('placa_sena') . '%'))
             ->when($request->filled('serial'), fn ($q) => $q->where('serial', 'like', '%' . $request->input('serial') . '%'))
             ->when($request->filled('mac'), fn ($q) => $q->where('mac', 'like', '%' . $request->input('mac') . '%'))
             ->when($request->filled('hostname'), fn ($q) => $q->where('hostname', 'like', '%' . $request->input('hostname') . '%'))
-            ->when($request->filled('estado'), fn ($q) => $q->where('estado', $request->input('estado')))
+            ->when($usar('estado') && $request->filled('estado'), fn ($q) => $q->where('estado', $request->input('estado')))
             ->when($request->filled('tipo_equipo_id'), fn ($q) => $q->where('tipo_equipo_id', $request->input('tipo_equipo_id')))
             ->when($request->filled('responsable_id'), fn ($q) => $q->where('responsable_id', $request->input('responsable_id')))
             ->when($request->filled('ubicacion_formacion_id'), fn ($q) => $q->where('ubicacion_formacion_id', $request->input('ubicacion_formacion_id')))
             ->when($request->filled('subsede_id'), fn ($q) => $q->whereHas('ubicacionFormacion', fn ($sub) => $sub->where('subsede_id', $request->input('subsede_id'))))
             ->when($request->filled('sede_id'), fn ($q) => $q->whereHas('ubicacionFormacion.subsede', fn ($sub) => $sub->where('sede_id', $request->input('sede_id'))))
-            ->when(
-                $request->boolean('sin_licencia'),
-                fn ($q) => $q->doesntHave('licenciaOffice')
-                    ->whereNotIn('estado', [EstadoEquipo::DeBaja, EstadoEquipo::Extraviado])
-            )
-            ->latest()
-            ->paginate(15);
-
-        return EquipoResource::collection($equipos);
+            ->when($usar('sin_licencia') && $request->boolean('sin_licencia'), fn ($q) => $q->sinLicencia())
+            ->latest();
     }
 
     public function store(EquipoRequest $request): JsonResponse

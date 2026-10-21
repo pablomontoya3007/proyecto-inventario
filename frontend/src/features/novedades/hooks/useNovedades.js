@@ -1,10 +1,14 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { fetchNovedades, createNovedad, resolverNovedad } from '../services/novedadesApi';
 
 export function useNovedades({ page = 1, filtros = {} } = {}) {
     return useQuery({
         queryKey: ['novedades', page, filtros],
         queryFn: () => fetchNovedades({ page, filtros }),
+        // Al cambiar un filtro se conserva el resultado anterior en pantalla
+        // hasta que llega el nuevo: así los contadores y la tabla no
+        // parpadean con un "Cargando..." en cada tecla.
+        placeholderData: keepPreviousData,
     });
 }
 

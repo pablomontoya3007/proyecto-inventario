@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import {
   fetchEquipos,
   fetchEquipo,
@@ -12,6 +12,10 @@ export function useEquipos(filtros = {}, page = 1) {
   return useQuery({
     queryKey: ['equipos', filtros, page],
     queryFn: () => fetchEquipos(filtros, page),
+    // Al cambiar un filtro se conserva el resultado anterior en pantalla
+    // hasta que llega el nuevo: así los contadores y la tabla no
+    // parpadean con un "Cargando..." en cada tecla.
+    placeholderData: keepPreviousData,
   });
 }
 

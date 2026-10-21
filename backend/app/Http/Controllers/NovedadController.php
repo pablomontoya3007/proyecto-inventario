@@ -42,7 +42,24 @@ class NovedadController extends Controller
             ->with(self::RELACIONES)
             ->paginate(15);
 
-        return NovedadResource::collection($novedades);
+        return NovedadResource::collection($novedades)
+            ->additional(['contadores' => $this->contadores($request)]);
+    }
+
+    /**
+     * Contadores con los filtros de la pantalla, EXCEPTO estado y
+     * sin_asignar: son justamente lo que esos contadores aplican al hacer
+     * clic (si se respetaran, al elegir uno los demás quedarían en 0).
+     */
+    private function contadores(Request $request): array
+    {
+        $base = fn () => $this->consultaFiltrada($request, ['estado', 'sin_asignar'])->reorder();
+
+        return [
+            'sin_atender' => $base()->where('estado', EstadoNovedad::Abierta)->count(),
+            'sin_asignar' => $base()->where('estado', EstadoNovedad::Abierta)->whereNull('asignado_a')->count(),
+            'resueltas' => $base()->where('estado', EstadoNovedad::Resuelta)->count(),
+        ];
     }
 
     /**
@@ -80,8 +97,9 @@ class NovedadController extends Controller
 
     /**
      * Consulta con todos los filtros, compartida por index() y exportar().
+     * $ignorar: filtros que no se aplican (los usan los contadores).
      */
-    private function consultaFiltrada(Request $request): Builder
+    private function consultaFiltrada(Request $request, array $ignorar = []): Builder
     {
         [$sedeId, $subsedeId, $ubicacionId] = $this->filtrosUbicacion($request);
 
@@ -96,13 +114,19 @@ class NovedadController extends Controller
                         );
                 })
             )
-            ->when($request->filled('estado'), fn ($q) => $q->where('estado', $request->input('estado')))
+            ->when(
+                $request->filled('estado') && !in_array('estado', $ignorar, true),
+                fn ($q) => $q->where('estado', $request->input('estado'))
+            )
             ->when(
                 $request->filled('usuario'),
                 fn ($q) => $q->whereHas('usuario', fn ($s) => $s->where('name', 'like', '%' . $request->input('usuario') . '%'))
             )
             ->when($request->filled('asignado_a'), fn ($q) => $q->where('asignado_a', $request->integer('asignado_a')))
-            ->when($request->boolean('sin_asignar'), fn ($q) => $q->whereNull('asignado_a'))
+            ->when(
+                $request->boolean('sin_asignar') && !in_array('sin_asignar', $ignorar, true),
+                fn ($q) => $q->whereNull('asignado_a')
+            )
             ->when($request->filled('fecha_desde'), fn ($q) => $q->whereDate('created_at', '>=', $request->input('fecha_desde')))
             ->when($request->filled('fecha_hasta'), fn ($q) => $q->whereDate('created_at', '<=', $request->input('fecha_hasta')))
             ->latest();

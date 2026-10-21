@@ -9,7 +9,6 @@ import {
 import { useSedes } from '../../sedes/hooks/useSedes';
 import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
 import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
-import { useDashboard } from '../../dashboard/hooks/useDashboard';
 import { FiltroUbicacionCascada } from '../../../shared/components/FiltroUbicacionCascada';
 import { ContadoresModulo } from '../../../shared/components/ContadoresModulo';
 import { AvisoBanner } from '../../../shared/components/AvisoBanner';
@@ -94,7 +93,6 @@ export function MantenimientosPage() {
   const { data: sedesData } = useSedes(1);
   const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeFiltro || undefined });
   const { data: ubicacionesData } = useUbicaciones({ page: 1, subsedeId: subsedeFiltro || undefined });
-  const { data: resumen, isLoading: cargandoResumen } = useDashboard();
 
   const { data, isLoading, isError } = useMantenimientos({ page, completado: pestana === 'historial', filtros });
   const createMantenimiento = useCreateMantenimiento();
@@ -102,10 +100,13 @@ export function MantenimientosPage() {
   const deleteMantenimiento = useDeleteMantenimiento();
 
   const serverErrors = createMantenimiento.error?.response?.data?.errors;
-  const porEstado = resumen?.mantenimientos?.por_estado ?? {};
+  // Calculados por el backend con la ubicación y "asignados a mí" (sin
+  // estado ni pestaña, que son lo que los propios contadores aplican).
+  const porEstado = data?.contadores?.por_estado ?? {};
+  const hayFiltrosPropios = Boolean(sedeFiltro || subsedeFiltro || ubicacionFiltro || soloMios);
 
-  // Contadores por estado (totales del sistema). En espera / En
-  // mantenimiento filtran la pestaña Activos; Listos abre el Historial.
+  // Contadores por estado. En espera / En mantenimiento filtran la
+  // pestaña Activos; Listos abre el Historial.
   const contadores = [
     ...ESTADOS_ACTIVOS.map((estado) => ({
       clave: estado.value,
@@ -219,7 +220,7 @@ export function MantenimientosPage() {
         </div>
       </div>
 
-      <ContadoresModulo contadores={contadores} cargando={cargandoResumen} />
+      <ContadoresModulo contadores={contadores} cargando={isLoading} filtrado={hayFiltrosPropios} />
 
       <AvisoBanner aviso={aviso} onCerrar={() => setAviso(null)} />
 

@@ -15,6 +15,10 @@ export function useLicencias(page = 1, filtros = {}) {
   return useQuery({
     queryKey: ['licencias-office', page, filtros],
     queryFn: () => fetchLicencias(page, filtros),
+    // Al cambiar un filtro se conserva el resultado anterior en pantalla
+    // hasta que llega el nuevo: así los contadores y la tabla no
+    // parpadean con un "Cargando..." en cada tecla.
+    placeholderData: keepPreviousData,
   });
 }
 
