@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\EstadoEquipo;
 use App\Enums\EstadoMantenimiento;
 use App\Exports\TablaExport;
+use App\Http\Controllers\Concerns\CuentaPorColumna;
 use App\Http\Controllers\Concerns\FiltraPorUbicacion;
 use App\Http\Requests\MantenimientoRequest;
 use App\Http\Resources\MantenimientoResource;
@@ -19,6 +20,7 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class MantenimientoController extends Controller
 {
+    use CuentaPorColumna;
     use FiltraPorUbicacion;
 
     /**
@@ -33,7 +35,16 @@ class MantenimientoController extends Controller
             ->with(['equipo', 'asignado'])
             ->paginate(15);
 
-        return MantenimientoResource::collection($mantenimientos);
+        return MantenimientoResource::collection($mantenimientos)
+            ->additional(['contadores' => [
+                // Sin estado ni pestaña (completado): son lo que los
+                // contadores eligen. Sí respetan ubicación y "asignados a mí".
+                'por_estado' => $this->contarPorColumna(
+                    $this->consultaFiltrada($request, ['estado', 'completado']),
+                    'estado',
+                    EstadoMantenimiento::cases()
+                ),
+            ]]);
     }
 
     /**
@@ -70,20 +81,24 @@ class MantenimientoController extends Controller
 
     /**
      * Consulta con todos los filtros, compartida por index() y exportar().
+     * $ignorar: filtros que no se aplican (los usan los contadores).
      */
-    private function consultaFiltrada(Request $request): Builder
+    private function consultaFiltrada(Request $request, array $ignorar = []): Builder
     {
         [$sedeId, $subsedeId, $ubicacionId] = $this->filtrosUbicacion($request);
 
         return Mantenimiento::query()
-            ->when($request->filled('completado'), function ($query) use ($request) {
+            ->when($request->filled('completado') && !in_array('completado', $ignorar, true), function ($query) use ($request) {
                 $completado = filter_var($request->input('completado'), FILTER_VALIDATE_BOOLEAN);
 
                 $completado
                     ? $query->where('estado', EstadoMantenimiento::Listo)
                     : $query->where('estado', '!=', EstadoMantenimiento::Listo);
             })
-            ->when($request->filled('estado'), fn ($q) => $q->where('estado', $request->input('estado')))
+            ->when(
+                $request->filled('estado') && !in_array('estado', $ignorar, true),
+                fn ($q) => $q->where('estado', $request->input('estado'))
+            )
             ->when(
                 $sedeId || $subsedeId || $ubicacionId,
                 fn ($q) => $q->whereHas('equipo', fn ($sub) => $sub->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId))
