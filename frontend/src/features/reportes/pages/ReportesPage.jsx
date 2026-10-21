@@ -22,6 +22,7 @@ import { EquiposListadoTabla } from '../components/EquiposListadoTabla';
 import { LicenciasAtencionTabla } from '../components/LicenciasAtencionTabla';
 import { LicenciasListadoTabla } from '../components/LicenciasListadoTabla';
 import { EquiposSinLicenciaTabla } from '../components/EquiposSinLicenciaTabla';
+import { SelectorTiposEquipo } from '../components/SelectorTiposEquipo';
 
 // Confirmado contra app/Enums/EstadoEquipo.php.
 const ESTADOS_EQUIPO = [
@@ -66,10 +67,10 @@ export function ReportesPage() {
   const [sedeFiltro, setSedeFiltro] = useState('');
   const [subsedeFiltro, setSubsedeFiltro] = useState('');
   const [ubicacionFiltro, setUbicacionFiltro] = useState('');
-  const [tipoFiltro, setTipoFiltro] = useState('');
+  const [tiposFiltro, setTiposFiltro] = useState([]);
   const [estadoFiltro, setEstadoFiltro] = useState('');
   const [vistaLicencias, setVistaLicencias] = useState('registradas');
-  const [tipoSinLicenciaFiltro, setTipoSinLicenciaFiltro] = useState('');
+  const [tiposSinLicenciaFiltro, setTiposSinLicenciaFiltro] = useState([]);
 
   const { data: sedesData } = useSedes(1);
   const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeFiltro || undefined });
@@ -87,19 +88,20 @@ export function ReportesPage() {
         ? { sede_id: sedeFiltro }
         : {};
 
-  // Filtro de la sección Equipos: el de ubicación + tipo/estado, propios
-  // de esta sección (Licencias y Responsables no los usan).
+  // Filtro de la sección Equipos: el de ubicación + tipos/estado, propios
+  // de esta sección (Licencias y Responsables no los usan). Los tipos van
+  // como arreglo: axios los manda como tipo_equipo_ids[]=1&tipo_equipo_ids[]=3.
   const filtroEquipos = {
     ...filtroUbicacion,
-    ...(tipoFiltro ? { tipo_equipo_id: tipoFiltro } : {}),
+    ...(tiposFiltro.length > 0 ? { tipo_equipo_ids: tiposFiltro } : {}),
     ...(estadoFiltro ? { estado: estadoFiltro } : {}),
   };
 
-  // Equipos sin licencia: el de ubicación + un tipo propio (independiente
-  // del de la sección Equipos), para poder sacar p. ej. solo portátiles.
+  // Equipos sin licencia: el de ubicación + sus propios tipos (independientes
+  // de los de la sección Equipos), p. ej. solo portátiles y todo en uno.
   const filtroSinLicencia = {
     ...filtroUbicacion,
-    ...(tipoSinLicenciaFiltro ? { tipo_equipo_id: tipoSinLicenciaFiltro } : {}),
+    ...(tiposSinLicenciaFiltro.length > 0 ? { tipo_equipo_ids: tiposSinLicenciaFiltro } : {}),
   };
   const verSinLicencia = vistaLicencias === 'sin_licencia';
 
@@ -223,18 +225,7 @@ export function ReportesPage() {
         </div>
 
         <div className="mb-3 flex flex-wrap gap-3">
-          <select
-            value={tipoFiltro}
-            onChange={(event) => setTipoFiltro(event.target.value)}
-            className="rounded border border-slate-300 px-2 py-1 text-sm focus:border-sena focus:outline-none focus:ring-1 focus:ring-sena"
-          >
-            <option value="">Todos los tipos</option>
-            {tiposData?.map((tipo) => (
-              <option key={tipo.id} value={tipo.id}>
-                {tipo.nombre}
-              </option>
-            ))}
-          </select>
+          <SelectorTiposEquipo tipos={tiposData} seleccionados={tiposFiltro} onChange={setTiposFiltro} />
           <select
             value={estadoFiltro}
             onChange={(event) => setEstadoFiltro(event.target.value)}
@@ -307,19 +298,11 @@ export function ReportesPage() {
           </div>
 
           {verSinLicencia && (
-            <select
-              aria-label="Tipo de equipo"
-              value={tipoSinLicenciaFiltro}
-              onChange={(event) => setTipoSinLicenciaFiltro(event.target.value)}
-              className="rounded border border-slate-300 px-2 py-1 text-sm focus:border-sena focus:outline-none focus:ring-1 focus:ring-sena"
-            >
-              <option value="">Todos los tipos</option>
-              {tiposData?.map((tipo) => (
-                <option key={tipo.id} value={tipo.id}>
-                  {tipo.nombre}
-                </option>
-              ))}
-            </select>
+            <SelectorTiposEquipo
+              tipos={tiposData}
+              seleccionados={tiposSinLicenciaFiltro}
+              onChange={setTiposSinLicenciaFiltro}
+            />
           )}
         </div>
 

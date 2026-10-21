@@ -75,7 +75,7 @@ class ReporteController extends Controller
 
     /**
      * Reporte de equipos sin licencia de Office. Respeta el filtro de
-     * ubicación de la página y, opcionalmente, el tipo de equipo (útil
+     * ubicación de la página y, opcionalmente, uno o varios tipos (útil
      * para sacar solo computadores y dejar fuera routers o impresoras,
      * que no usan Office).
      */
@@ -119,31 +119,55 @@ class ReporteController extends Controller
     }
 
     /**
-     * Filtros propios del reporte de Equipos (tipo_equipo_id, estado) —
+     * Filtros propios del reporte de Equipos (tipos de equipo, estado) —
      * a diferencia de sede/subsede/ubicación, no aplican a Licencias ni
      * a Responsables, así que no viven en el trait compartido.
      *
-     * @return array{0: ?int, 1: ?string}
+     * @return array{0: int[], 1: ?string}
      */
     private function filtrosEquipo(Request $request): array
     {
         return [
-            $request->filled('tipo_equipo_id') ? (int) $request->input('tipo_equipo_id') : null,
+            $this->tiposEquipo($request),
             $request->filled('estado') ? $request->input('estado') : null,
         ];
     }
 
     /**
+     * Tipos de equipo elegidos, como arreglo de ids. Acepta varios
+     * (?tipo_equipo_ids[]=1&tipo_equipo_ids[]=3, como los manda axios) y
+     * también el parámetro antiguo de un solo tipo (?tipo_equipo_id=1),
+     * para no romper nada que todavía lo use. Lo que no sea un número
+     * entero positivo se descarta. Vacío = todos los tipos.
+     *
+     * @return int[]
+     */
+    private function tiposEquipo(Request $request): array
+    {
+        $tipos = (array) $request->input('tipo_equipo_ids', []);
+
+        if ($request->filled('tipo_equipo_id')) {
+            $tipos[] = $request->input('tipo_equipo_id');
+        }
+
+        return collect($tipos)
+            ->filter(fn ($tipo) => is_scalar($tipo) && ctype_digit((string) $tipo) && (int) $tipo > 0)
+            ->map(fn ($tipo) => (int) $tipo)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
      * Lee de la query string los filtros que acepta el reporte de
-     * equipos sin licencia (ubicación + tipo) — un solo punto de entrada
+     * equipos sin licencia (ubicación + uno o varios tipos) — un solo punto de entrada
      * para que JSON, Excel y PDF no puedan quedar desincronizados.
      */
     private function datosEquiposSinLicenciaDesde(Request $request): array
     {
         [$sedeId, $subsedeId, $ubicacionId] = $this->filtrosUbicacion($request);
-        $tipoEquipoId = $request->filled('tipo_equipo_id') ? (int) $request->input('tipo_equipo_id') : null;
 
-        return $this->datosEquiposSinLicencia($sedeId, $subsedeId, $ubicacionId, $tipoEquipoId);
+        return $this->datosEquiposSinLicencia($sedeId, $subsedeId, $ubicacionId, $this->tiposEquipo($request));
     }
 
     /**
@@ -157,12 +181,12 @@ class ReporteController extends Controller
         ?int $sedeId,
         ?int $subsedeId,
         ?int $ubicacionId,
-        ?int $tipoEquipoId,
+        array $tiposEquipo,
         ?string $estado
     ): array {
         $porSede = Equipo::query()
             ->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId)
-            ->filtrarPorAtributos($tipoEquipoId, $estado)
+            ->filtrarPorAtributos($tiposEquipo, $estado)
             ->join('ubicaciones_formacion', 'equipos.ubicacion_formacion_id', '=', 'ubicaciones_formacion.id')
             ->join('subsedes', 'ubicaciones_formacion.subsede_id', '=', 'subsedes.id')
             ->join('sedes', 'subsedes.sede_id', '=', 'sedes.id')
@@ -174,7 +198,7 @@ class ReporteController extends Controller
 
         $porTipo = Equipo::query()
             ->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId)
-            ->filtrarPorAtributos($tipoEquipoId, $estado)
+            ->filtrarPorAtributos($tiposEquipo, $estado)
             ->join('tipos_equipo', 'equipos.tipo_equipo_id', '=', 'tipos_equipo.id')
             ->select('tipos_equipo.nombre')
             ->selectRaw('count(*) as total')
@@ -184,7 +208,7 @@ class ReporteController extends Controller
 
         $porEstado = Equipo::query()
             ->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId)
-            ->filtrarPorAtributos($tipoEquipoId, $estado)
+            ->filtrarPorAtributos($tiposEquipo, $estado)
             ->select('estado')
             ->selectRaw('count(*) as total')
             ->groupBy('estado')
@@ -196,7 +220,7 @@ class ReporteController extends Controller
 
         $listado = Equipo::query()
             ->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId)
-            ->filtrarPorAtributos($tipoEquipoId, $estado)
+            ->filtrarPorAtributos($tiposEquipo, $estado)
             ->with(['tipoEquipo', 'ubicacionFormacion.subsede.sede'])
             ->orderBy('placa_sena')
             ->get()
@@ -282,12 +306,12 @@ class ReporteController extends Controller
         ?int $sedeId,
         ?int $subsedeId,
         ?int $ubicacionId,
-        ?int $tipoEquipoId
+        array $tiposEquipo
     ): array {
         $equipos = Equipo::query()
             ->sinLicencia()
             ->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId)
-            ->filtrarPorAtributos($tipoEquipoId, null)
+            ->filtrarPorAtributos($tiposEquipo, null)
             ->with(['tipoEquipo', 'responsable', 'ubicacionFormacion.subsede.sede'])
             ->orderBy('placa_sena')
             ->get();

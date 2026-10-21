@@ -127,11 +127,19 @@ class Equipo extends Model
      * Filtra equipos por tipo y/o estado — a diferencia de
      * filtrarPorUbicacion, estos son columnas propias de la tabla
      * equipos, sin necesidad de whereHas.
+     *
+     * $tiposEquipo acepta uno o VARIOS tipos (un id o un arreglo de ids):
+     * con varios, trae los equipos de cualquiera de ellos (WHERE IN).
+     * Vacío o null = todos los tipos.
+     *
+     * @param  int|int[]|null  $tiposEquipo
      */
-    public function scopeFiltrarPorAtributos(Builder $query, ?int $tipoEquipoId, ?string $estado): Builder
+    public function scopeFiltrarPorAtributos(Builder $query, int|array|null $tiposEquipo, ?string $estado): Builder
     {
+        $tipos = array_filter((array) $tiposEquipo);
+
         return $query
-            ->when($tipoEquipoId, fn (Builder $q) => $q->where('tipo_equipo_id', $tipoEquipoId))
+            ->when($tipos, fn (Builder $q) => $q->whereIn('tipo_equipo_id', $tipos))
             ->when($estado, fn (Builder $q) => $q->where('estado', $estado));
     }
 
