@@ -11,6 +11,14 @@ import { ENDPOINTS } from '../../../api/endpoints';
  * - DELETE /responsables/{id} -> { mensaje: '...' } — siempre permitido:
  *          equipo.responsable_id usa nullOnDelete, así que borrar un
  *          responsable solo desasigna sus equipos, no lo bloquea.
+ * - Cada responsable del listado trae equipos_count (equipos a su cargo).
+ *
+ * Traslado de cuentadantes (TrasladoCuentadanteController):
+ * - GET  /responsables/traslado/equipos?buscar=&responsable_id=&sin_cuentadante=1
+ *        -> { total, limite, data: [{ id, placa_sena, serial, tipo_equipo,
+ *             ubicacion, responsable: { id, nombre, documento } | null }] }
+ * - POST /responsables/traslado { asignaciones: [{ equipo_id, responsable_id }] }
+ *        -> { mensaje, actualizados, sin_cambios, detalle }
  */
 
 export async function fetchResponsables({ page = 1, nombre, documento, buscar, filtros = {} } = {}) {
@@ -38,5 +46,21 @@ export async function updateResponsable(id, payload) {
 
 export async function deleteResponsable(id) {
   const { data } = await httpClient.delete(`${ENDPOINTS.responsables}/${id}`);
+  return data;
+}
+
+export async function fetchEquiposParaTraslado({ buscar, responsableId, sinCuentadante } = {}) {
+  const { data } = await httpClient.get(ENDPOINTS.responsablesTrasladoEquipos, {
+    params: {
+      ...(buscar ? { buscar } : {}),
+      ...(responsableId ? { responsable_id: responsableId } : {}),
+      ...(sinCuentadante ? { sin_cuentadante: 1 } : {}),
+    },
+  });
+  return data;
+}
+
+export async function trasladarCuentadantes(asignaciones) {
+  const { data } = await httpClient.post(ENDPOINTS.responsablesTraslado, { asignaciones });
   return data;
 }

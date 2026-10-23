@@ -12,6 +12,7 @@ const COLUMNAS_EQUIPOS = [
     { clave: 'hostname', etiqueta: 'Hostname' },
     { clave: 'tipo', etiqueta: 'Tipo' },
     { clave: 'estado', etiqueta: 'Estado' },
+    { clave: 'tipo_uso', etiqueta: 'Tipo de uso' },
     { clave: 'cuentadante', etiqueta: 'Cuentadante' },
     { clave: 'ubicacion', etiqueta: 'Ubicación (sede, subsede y ambiente)' },
 ];

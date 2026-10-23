@@ -11,6 +11,7 @@ import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
 import { FiltroUbicacionCascada } from '../../../shared/components/FiltroUbicacionCascada';
 import { ResponsableTable } from '../components/ResponsableTable';
 import { ResponsableForm } from '../components/ResponsableForm';
+import { TrasladoCuentadanteModal } from '../components/TrasladoCuentadanteModal';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 import { Modal } from '../../../shared/components/Modal';
 
@@ -27,6 +28,9 @@ export function ResponsablesPage() {
   const [editingResponsable, setEditingResponsable] = useState(null);
   const [deletingResponsable, setDeletingResponsable] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
+  // undefined = cerrado; null = abierto sin cuentadante de origen;
+  // objeto = abierto desde la fila de ese cuentadante.
+  const [trasladando, setTrasladando] = useState(undefined);
 
   function handleSedeChange(valor) {
     setSedeFiltro(valor);
@@ -107,12 +111,20 @@ export function ResponsablesPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-bold text-ink">Cuentadantes</h1>
-        <button
-          onClick={() => setEditingResponsable({})}
-          className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark"
-        >
-          Nuevo cuentadante
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setTrasladando(null)}
+            className="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-surface"
+          >
+            Trasladar equipos
+          </button>
+          <button
+            onClick={() => setEditingResponsable({})}
+            className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark"
+          >
+            Nuevo cuentadante
+          </button>
+        </div>
       </div>
 
       <div className="mb-4 flex flex-wrap gap-3">
@@ -159,6 +171,7 @@ export function ResponsablesPage() {
           <ResponsableTable
             responsables={data.data}
             onEdit={setEditingResponsable}
+            onTrasladar={setTrasladando}
             onDelete={(responsable) => {
               setDeleteError(null);
               setDeletingResponsable(responsable);
@@ -197,6 +210,12 @@ export function ResponsablesPage() {
             isSubmitting={createResponsable.isPending || updateResponsable.isPending}
             serverErrors={serverErrors}
           />
+        </Modal>
+      )}
+
+      {trasladando !== undefined && (
+        <Modal title="Trasladar equipos a otro cuentadante" onClose={() => setTrasladando(undefined)} maxWidth="max-w-5xl">
+          <TrasladoCuentadanteModal origenInicial={trasladando} onClose={() => setTrasladando(undefined)} />
         </Modal>
       )}
 

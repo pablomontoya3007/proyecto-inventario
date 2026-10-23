@@ -64,6 +64,8 @@ export function HojaDeVidaModal({ equipoId, placaSena, onClose }) {
               <dd className="text-ink">{equipo.tipo_equipo?.nombre ?? '—'}</dd>
               <dt className="text-slate-500">Estado</dt>
               <dd className="text-ink">{equipo.estado_label ?? '—'}</dd>
+              <dt className="text-slate-500">Tipo de uso</dt>
+              <dd className="text-ink">{equipo.tipo_uso_label ?? '—'}</dd>
               <dt className="text-slate-500">Cuentadante</dt>
               <dd className="text-ink">{equipo.responsable?.nombre ?? 'Sin asignar'}</dd>
               <dt className="text-slate-500">Ubicación</dt>

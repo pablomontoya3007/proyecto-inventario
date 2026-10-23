@@ -49,6 +49,16 @@
         </tbody>
     </table>
 
+    <h2>Equipos por tipo de uso</h2>
+    <table>
+        <thead><tr><th>Tipo de uso</th><th>Total</th></tr></thead>
+        <tbody>
+            @foreach ($por_uso as $fila)
+                <tr><td>{{ $fila['tipo_uso'] }}</td><td>{{ $fila['total'] }}</td></tr>
+            @endforeach
+        </tbody>
+    </table>
+
     <h2>Listado de equipos</h2>
     <table class="listado">
         <thead>

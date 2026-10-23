@@ -1,5 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { EstadoBadge } from '../../../shared/components/EstadoBadge';
+import { TIPOS_USO } from '../../../shared/constants/tiposUso';
+
+const USO_CORTO = Object.fromEntries(TIPOS_USO.map((tipoUso) => [tipoUso.value, tipoUso.corto]));
 
 /**
  * Indicador de novedades: si el equipo tiene novedades ABIERTAS, junto a
@@ -23,6 +26,7 @@ export function EquipoTable({ equipos, onVerHojaDeVida, onEdit, onDelete }) {
         <tr className="border-b border-slate-200 text-slate-500">
           <th className="py-2 pr-4 font-medium">Placa SENA</th>
           <th className="py-2 pr-4 font-medium">Tipo</th>
+          <th className="py-2 pr-4 font-medium">Uso</th>
           <th className="py-2 pr-4 font-medium">Ubicación</th>
           <th className="py-2 pr-4 font-medium">Cuentadante</th>
           <th className="py-2 pr-4 font-medium">Estado</th>
@@ -37,7 +41,7 @@ export function EquipoTable({ equipos, onVerHojaDeVida, onEdit, onDelete }) {
             <tr key={equipo.id} className="border-b border-slate-100">
               {/* Roboto Mono para la placa: es un identificador tabular,
                   igual que serial/MAC/fechas (norma 4.1 del acta). */}
-              <td className="py-2 pr-4 font-mono text-ink">
+              <td className="whitespace-nowrap py-2 pr-4 font-mono text-ink">
                 {equipo.placa_sena}
                 {novedadesAbiertas > 0 && (
                   <button
@@ -51,6 +55,9 @@ export function EquipoTable({ equipos, onVerHojaDeVida, onEdit, onDelete }) {
                 )}
               </td>
               <td className="py-2 pr-4 text-slate-500">{equipo.tipo_equipo?.nombre ?? '—'}</td>
+              <td className="py-2 pr-4 text-slate-500" title={equipo.tipo_uso_label ?? ''}>
+                {USO_CORTO[equipo.tipo_uso] ?? '—'}
+              </td>
               <td className="py-2 pr-4 text-slate-500">
                 {equipo.ubicacion_formacion?.nombre ?? '—'}
                 {equipo.ubicacion_formacion?.subsede?.nombre && (

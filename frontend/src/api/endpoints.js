@@ -30,6 +30,10 @@ export const ENDPOINTS = {
   // Fase 2
   tiposEquipo: '/tipos-equipo', // parámetro de ruta: tipo_equipo
   responsables: '/responsables',
+  // Traslado de cuentadantes: GET equipos para el selector
+  // (?buscar=&responsable_id=&sin_cuentadante=1), POST { asignaciones }.
+  responsablesTraslado: '/responsables/traslado',
+  responsablesTrasladoEquipos: '/responsables/traslado/equipos',
   equipos: '/equipos',
   mantenimientos: '/mantenimientos',
   mantenimientosMasivo: '/mantenimientos/masivo', // POST: crea un lote

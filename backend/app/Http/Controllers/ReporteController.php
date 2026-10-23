@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\EstadoLicencia;
+use App\Enums\TipoUso;
 use App\Exports\EquiposPorCategoriaExport;
 use App\Exports\EquiposSinLicenciaExport;
 use App\Exports\LicenciasExport;
@@ -41,6 +42,7 @@ class ReporteController extends Controller
         'hostname' => ['hostname' => 'Hostname'],
         'tipo' => ['tipo' => 'Tipo'],
         'estado' => ['estado' => 'Estado'],
+        'tipo_uso' => ['tipo_uso' => 'Tipo de uso'],
         'cuentadante' => ['cuentadante' => 'Cuentadante'],
         'ubicacion' => ['sede' => 'Sede', 'subsede' => 'Subsede', 'ambiente' => 'Ambiente'],
     ];
@@ -144,17 +146,23 @@ class ReporteController extends Controller
     }
 
     /**
-     * Filtros propios del reporte de Equipos (tipos de equipo, estado) —
-     * a diferencia de sede/subsede/ubicación, no aplican a Licencias ni
-     * a Responsables, así que no viven en el trait compartido.
+     * Filtros propios del reporte de Equipos (tipos de equipo, estado,
+     * tipo de uso) — a diferencia de sede/subsede/ubicación, no aplican a
+     * Licencias ni a Responsables, así que no viven en el trait compartido.
      *
-     * @return array{0: int[], 1: ?string, 2: array<string, string>}
+     * Un tipo de uso desconocido se ignora (= todos), igual que las
+     * columnas desconocidas.
+     *
+     * @return array{0: int[], 1: ?string, 2: ?string, 3: array<string, string>}
      */
     private function filtrosEquipo(Request $request): array
     {
+        $tipoUso = TipoUso::tryFrom((string) $request->input('tipo_uso', ''))?->value;
+
         return [
             $this->tiposEquipo($request),
             $request->filled('estado') ? $request->input('estado') : null,
+            $tipoUso,
             $this->columnasEquipos($request),
         ];
     }
@@ -235,11 +243,12 @@ class ReporteController extends Controller
         ?int $ubicacionId,
         array $tiposEquipo,
         ?string $estado,
+        ?string $tipoUso,
         array $columnas
     ): array {
         $porSede = Equipo::query()
             ->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId)
-            ->filtrarPorAtributos($tiposEquipo, $estado)
+            ->filtrarPorAtributos($tiposEquipo, $estado, $tipoUso)
             ->join('ubicaciones_formacion', 'equipos.ubicacion_formacion_id', '=', 'ubicaciones_formacion.id')
             ->join('subsedes', 'ubicaciones_formacion.subsede_id', '=', 'subsedes.id')
             ->join('sedes', 'subsedes.sede_id', '=', 'sedes.id')
@@ -251,7 +260,7 @@ class ReporteController extends Controller
 
         $porTipo = Equipo::query()
             ->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId)
-            ->filtrarPorAtributos($tiposEquipo, $estado)
+            ->filtrarPorAtributos($tiposEquipo, $estado, $tipoUso)
             ->join('tipos_equipo', 'equipos.tipo_equipo_id', '=', 'tipos_equipo.id')
             ->select('tipos_equipo.nombre')
             ->selectRaw('count(*) as total')
@@ -261,7 +270,7 @@ class ReporteController extends Controller
 
         $porEstado = Equipo::query()
             ->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId)
-            ->filtrarPorAtributos($tiposEquipo, $estado)
+            ->filtrarPorAtributos($tiposEquipo, $estado, $tipoUso)
             ->select('estado')
             ->selectRaw('count(*) as total')
             ->groupBy('estado')
@@ -271,11 +280,27 @@ class ReporteController extends Controller
                 'total' => $fila->total,
             ]);
 
+        // Se listan los tres tipos de uso aunque alguno quede en 0, para
+        // que la tabla tenga siempre la misma forma.
+        $conteoUso = Equipo::query()
+            ->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId)
+            ->filtrarPorAtributos($tiposEquipo, $estado, $tipoUso)
+            ->toBase()
+            ->select('tipo_uso')
+            ->selectRaw('count(*) as total')
+            ->groupBy('tipo_uso')
+            ->pluck('total', 'tipo_uso');
+
+        $porUso = collect(TipoUso::cases())->map(fn (TipoUso $caso) => [
+            'tipo_uso' => $caso->label(),
+            'total' => (int) ($conteoUso[$caso->value] ?? 0),
+        ]);
+
         // Se arma la fila completa y luego se recorta a las columnas
         // elegidas: así el orden de las claves es siempre el de $columnas.
         $listado = Equipo::query()
             ->filtrarPorUbicacion($sedeId, $subsedeId, $ubicacionId)
-            ->filtrarPorAtributos($tiposEquipo, $estado)
+            ->filtrarPorAtributos($tiposEquipo, $estado, $tipoUso)
             ->with(['tipoEquipo', 'responsable', 'ubicacionFormacion.subsede.sede'])
             ->orderBy('placa_sena')
             ->get()
@@ -288,6 +313,7 @@ class ReporteController extends Controller
                     'hostname' => $equipo->hostname ?: '—',
                     'tipo' => $equipo->tipoEquipo?->nombre ?? 'Sin tipo',
                     'estado' => $equipo->estado?->label() ?? 'Sin estado',
+                    'tipo_uso' => $equipo->tipo_uso?->label() ?? 'Sin definir',
                     'cuentadante' => $equipo->responsable?->nombre ?? 'Sin asignar',
                     'sede' => $equipo->ubicacionFormacion?->subsede?->sede?->nombre ?? 'Sin sede',
                     'subsede' => $equipo->ubicacionFormacion?->subsede?->nombre ?? 'Sin subsede',
@@ -307,6 +333,7 @@ class ReporteController extends Controller
             'por_sede' => $porSede,
             'por_tipo' => $porTipo,
             'por_estado' => $porEstado,
+            'por_uso' => $porUso,
             // [{clave, etiqueta}]: el frontend arma los encabezados con esto.
             'columnas' => collect($columnas)
                 ->map(fn ($etiqueta, $clave) => ['clave' => $clave, 'etiqueta' => $etiqueta])

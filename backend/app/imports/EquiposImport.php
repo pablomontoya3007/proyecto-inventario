@@ -3,6 +3,7 @@
 namespace App\Imports;
 
 use App\Enums\EstadoEquipo;
+use App\Enums\TipoUso;
 use App\Imports\Concerns\ResumeFallas;
 use App\Models\Equipo;
 use App\Models\Responsable;
@@ -25,7 +26,12 @@ use Maatwebsite\Excel\Concerns\WithValidation;
  * importan, Laravel Excel las normaliza solo):
  *
  *   Placa SENA | Serial | MAC | MAC Cableada | Hostname |
- *   Tipo de equipo | Responsable | Sede | Subsede | Ambiente | Estado
+ *   Tipo de equipo | Responsable | Sede | Subsede | Ambiente | Estado |
+ *   Tipo de uso
+ *
+ * "Tipo de uso" es opcional: vacío en un equipo nuevo = "Uso de
+ * formación"; vacío en uno existente = no se cambia. La columna puede
+ * faltar por completo (Excel viejos siguen funcionando igual).
  *
  * La PLACA SENA decide qué pasa con cada fila:
  * - Placa nueva → se CREA el equipo (serial, tipo y ubicación obligatorios).
@@ -65,7 +71,7 @@ class EquiposImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
 
     private const COLUMNAS_FIJAS = [
         'placa_sena', 'serial', 'mac', 'mac_cableada', 'hostname',
-        'tipo_de_equipo', 'responsable', 'sede', 'subsede', 'ambiente', 'estado',
+        'tipo_de_equipo', 'responsable', 'sede', 'subsede', 'ambiente', 'estado', 'tipo_de_uso',
     ];
 
     /** Nombre legible de cada campo en el detalle de "actualizados". */
@@ -78,6 +84,7 @@ class EquiposImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
         'responsable_id' => 'Cuentadante',
         'ubicacion_formacion_id' => 'Ubicación',
         'estado' => 'Estado',
+        'tipo_uso' => 'Tipo de uso',
     ];
 
     public int $importados = 0;
@@ -163,6 +170,7 @@ class EquiposImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
             'subsede' => ['nullable', 'string', Rule::exists('subsedes', 'nombre')],
             'ambiente' => ['nullable', 'string'],
             'estado' => ['nullable', Rule::in(array_map(fn ($caso) => $caso->value, EstadoEquipo::cases()))],
+            'tipo_de_uso' => ['nullable', Rule::in(array_map(fn ($caso) => $caso->value, TipoUso::cases()))],
         ];
     }
 
@@ -185,6 +193,7 @@ class EquiposImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
             'sede.exists' => 'No existe la sede ":input".',
             'subsede.exists' => 'No existe la subsede ":input".',
             'estado.in' => 'El estado ":input" no es válido (usa: activo, mantenimiento, de baja o extraviado).',
+            'tipo_de_uso.in' => 'El tipo de uso ":input" no es válido (usa: formación, administrativo o no aplica).',
         ];
     }
 
@@ -291,6 +300,9 @@ class EquiposImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
             'responsable_id' => $this->resolverResponsable($row['responsable']),
             'ubicacion_formacion_id' => $ubicacionId,
             'estado' => $row['estado'] ?? EstadoEquipo::Activo->value,
+            // Siempre explícito (aunque la BD tenga default): el insert por
+            // lotes necesita las mismas columnas en todas las filas.
+            'tipo_uso' => $row['tipo_de_uso'] ?? TipoUso::Formacion->value,
             'caracteristicas_tecnicas' => $this->extraerCaracteristicas($row) ?: null,
         ]);
     }
@@ -315,6 +327,7 @@ class EquiposImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
             'responsable_id' => $this->resolverResponsable($row['responsable']),
             'ubicacion_formacion_id' => $this->resolverUbicacion($row['sede'], $row['subsede'], $row['ambiente']),
             'estado' => $row['estado'],
+            'tipo_uso' => $row['tipo_de_uso'],
         ], fn ($valor) => $valor !== null);
 
         $cambios = [];
@@ -399,6 +412,11 @@ class EquiposImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
                 $etiqueta,
                 $equipo->estado?->label(),
                 EstadoEquipo::tryFrom($nuevo)?->label() ?? $nuevo
+            ),
+            'tipo_uso' => $this->textoCambio(
+                $etiqueta,
+                $equipo->tipo_uso?->label(),
+                TipoUso::tryFrom($nuevo)?->label() ?? $nuevo
             ),
             default => $this->textoCambio($etiqueta, $equipo->{$campo}, $nuevo),
         };
@@ -579,6 +597,7 @@ class EquiposImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
         }
 
         $row['estado'] = NormalizadorEquipo::estado($row['estado'] ?? null);
+        $row['tipo_de_uso'] = NormalizadorEquipo::tipoUso($row['tipo_de_uso'] ?? null);
 
         return $row;
     }

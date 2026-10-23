@@ -41,8 +41,13 @@ export function ImportarEquiposModal({ onClose }) {
         <>
           <p className="text-sm text-slate-600">
             El archivo debe tener las columnas: Placa SENA, Serial, MAC, MAC Cableada, Hostname, Tipo de equipo,
-            Responsable (ahí va el cuentadante), Sede, Subsede, Ambiente y Estado. Cualquier columna adicional (ej.
-            "RAM (GB)", "Procesador") se guarda como característica técnica del equipo.
+            Responsable (ahí va el cuentadante), Sede, Subsede, Ambiente, Estado y Tipo de uso. Cualquier columna
+            adicional (ej. "RAM (GB)", "Procesador") se guarda como característica técnica del equipo.
+          </p>
+
+          <p className="text-sm text-slate-600">
+            Tipo de uso acepta: formación, administrativo o no aplica. Es opcional: si se deja vacío, un equipo nuevo
+            queda como "Uso de formación" y uno existente conserva el que tiene.
           </p>
 
           <p className="text-sm text-slate-600">

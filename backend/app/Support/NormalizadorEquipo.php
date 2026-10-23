@@ -34,6 +34,24 @@ final class NormalizadorEquipo
     ];
 
     /**
+     * Variantes escritas a mano del tipo de uso (enum TipoUso:
+     * formacion, administrativo, no_aplica). Las claves ya vienen sin
+     * tildes, en minúsculas y con "_" en vez de espacios.
+     */
+    private const ALIAS_TIPO_USO = [
+        'formacion' => 'formacion',
+        'uso_de_formacion' => 'formacion',
+        'de_formacion' => 'formacion',
+        'administrativo' => 'administrativo',
+        'uso_administrativo' => 'administrativo',
+        'de_uso_administrativo' => 'administrativo',
+        'admin' => 'administrativo',
+        'no_aplica' => 'no_aplica',
+        'n/a' => 'no_aplica',
+        'na' => 'no_aplica',
+    ];
+
+    /**
      * Convierte cualquier valor escalar a texto recortado. Cubre el caso
      * de Excel, que entrega números cuando la celda es numérica: un float
      * entero grande (ej. un serial 123456789012345) se escribe completo
@@ -108,5 +126,24 @@ final class NormalizadorEquipo
         $clave = preg_replace('/_+/', '_', str_replace([' ', '-'], '_', mb_strtolower($texto)));
 
         return self::ALIAS_ESTADO[$clave] ?? $clave;
+    }
+
+    /**
+     * "Uso de formación", "FORMACION", "Administrativo", "No aplica",
+     * "N/A" → el valor real del enum TipoUso. Lo que no se reconozca se
+     * devuelve igual y lo rechaza la regla de validación.
+     */
+    public static function tipoUso(mixed $valor): ?string
+    {
+        $texto = self::texto($valor);
+
+        if ($texto === null) {
+            return null;
+        }
+
+        $sinTildes = strtr(mb_strtolower($texto), ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u']);
+        $clave = preg_replace('/_+/', '_', str_replace([' ', '-'], '_', $sinTildes));
+
+        return self::ALIAS_TIPO_USO[$clave] ?? $clave;
     }
 }

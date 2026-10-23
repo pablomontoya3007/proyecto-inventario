@@ -50,18 +50,22 @@ class MantenimientoController extends Controller
     /**
      * Excel con todos los mantenimientos que cumplen los filtros de la
      * pantalla (incluida la pestaña: completado=1 para el historial).
+     * Con ?asignado_a= sirve para hacerle seguimiento a una persona: cada
+     * fila trae qué equipo es, dónde está, de quién es, qué hay que hacer
+     * (descripción), para cuándo y en qué va.
      */
     public function exportar(Request $request)
     {
         $this->authorize('viewAny', Mantenimiento::class);
 
         $filas = $this->consultaFiltrada($request)
-            ->with(['equipo.tipoEquipo', 'equipo.ubicacionFormacion.subsede.sede', 'asignado'])
+            ->with(['equipo.tipoEquipo', 'equipo.responsable', 'equipo.ubicacionFormacion.subsede.sede', 'asignado'])
             ->get()
             ->map(fn (Mantenimiento $mantenimiento) => [
                 $mantenimiento->equipo?->placa_sena ?? 'Equipo eliminado',
                 $mantenimiento->equipo?->tipoEquipo?->nombre ?? '—',
                 self::rutaUbicacion($mantenimiento->equipo?->ubicacionFormacion),
+                $mantenimiento->equipo?->responsable?->nombre ?? 'Sin cuentadante',
                 $mantenimiento->fecha_programada?->format('d/m/Y') ?? '—',
                 $mantenimiento->descripcion ?? '—',
                 $mantenimiento->estado?->label() ?? '—',
@@ -72,7 +76,7 @@ class MantenimientoController extends Controller
 
         return Excel::download(
             new TablaExport(
-                ['Placa SENA', 'Tipo de equipo', 'Ubicación', 'Fecha programada', 'Descripción', 'Estado', 'Asignado a', 'Fecha completado'],
+                ['Placa SENA', 'Tipo de equipo', 'Ubicación', 'Cuentadante', 'Fecha programada', 'Descripción', 'Estado', 'Asignado a', 'Fecha completado'],
                 $filas
             ),
             'mantenimientos.xlsx'

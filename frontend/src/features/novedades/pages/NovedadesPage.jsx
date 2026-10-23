@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useAuth } from '../../auth/hooks/useAuth';
 import { useNovedades, useCreateNovedad, useResolverNovedad } from '../hooks/useNovedades';
 import { useSedes } from '../../sedes/hooks/useSedes';
 import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
 import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
 import { FiltroUbicacionCascada } from '../../../shared/components/FiltroUbicacionCascada';
+import { FiltroAsignado } from '../../usuarios/components/FiltroAsignado';
+import { aSlug } from '../../../shared/utils/aSlug';
 import { ContadoresModulo } from '../../../shared/components/ContadoresModulo';
 import { AvisoBanner } from '../../../shared/components/AvisoBanner';
 import { avisoDeNotificacion } from '../../../shared/utils/avisoNotificacion';
@@ -28,9 +29,12 @@ const ESTADOS_NOVEDAD = [
  * Los filtros iniciales pueden venir en la URL (?placa=..., ?estado=abierta,
  * ?sin_asignar=1): así llegan el indicador de Equipos y las tarjetas del
  * Inicio, ya filtrados.
+ *
+ * "Asignada a" permite ver (y exportar a Excel) las novedades de
+ * cualquier persona: el Excel trae el equipo, dónde está, su
+ * cuentadante, qué pasó, quién lo reportó y en qué estado va.
  */
 export function NovedadesPage() {
-    const { user } = useAuth();
     const [searchParams] = useSearchParams();
 
     const [page, setPage] = useState(1);
@@ -43,7 +47,7 @@ export function NovedadesPage() {
     const [sedeFiltro, setSedeFiltro] = useState('');
     const [subsedeFiltro, setSubsedeFiltro] = useState('');
     const [ubicacionFiltro, setUbicacionFiltro] = useState('');
-    const [soloMias, setSoloMias] = useState(false);
+    const [asignadoFiltro, setAsignadoFiltro] = useState(null); // { id, nombre } | null
 
     const [registrando, setRegistrando] = useState(false);
     const [viendoNovedad, setViendoNovedad] = useState(null);
@@ -57,7 +61,7 @@ export function NovedadesPage() {
         ...(usuarioFiltro ? { usuario: usuarioFiltro } : {}),
         ...(fechaDesdeFiltro ? { fecha_desde: fechaDesdeFiltro } : {}),
         ...(fechaHastaFiltro ? { fecha_hasta: fechaHastaFiltro } : {}),
-        ...(soloMias && user?.id ? { asignado_a: user.id } : {}),
+        ...(asignadoFiltro ? { asignado_a: asignadoFiltro.id } : {}),
         ...(ubicacionFiltro
             ? { ubicacion_formacion_id: ubicacionFiltro }
             : subsedeFiltro
@@ -67,7 +71,7 @@ export function NovedadesPage() {
                     : {}),
     };
     const hayFiltrosPropios = Boolean(
-        placaFiltro || estadoFiltro || sinAsignar || usuarioFiltro || fechaDesdeFiltro || fechaHastaFiltro || soloMias
+        placaFiltro || estadoFiltro || sinAsignar || usuarioFiltro || fechaDesdeFiltro || fechaHastaFiltro || asignadoFiltro
     );
 
     const { data: sedesData } = useSedes(1);
@@ -142,7 +146,7 @@ export function NovedadesPage() {
         setUsuarioFiltro('');
         setFechaDesdeFiltro('');
         setFechaHastaFiltro('');
-        setSoloMias(false);
+        setAsignadoFiltro(null);
         setPage(1);
     }
 
@@ -189,7 +193,11 @@ export function NovedadesPage() {
             <div className="mb-6 flex items-center justify-between">
                 <h1 className="text-3xl font-bold text-ink">Novedades</h1>
                 <div className="flex items-start gap-2">
-                    <BotonExportarExcel url={`${ENDPOINTS.novedades}/exportar`} nombreBase="novedades" filtros={filtros} />
+                    <BotonExportarExcel
+                        url={`${ENDPOINTS.novedades}/exportar`}
+                        nombreBase={asignadoFiltro ? `novedades-${aSlug(asignadoFiltro.nombre)}` : 'novedades'}
+                        filtros={filtros}
+                    />
                     <button
                         onClick={abrirRegistro}
                         className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark"
@@ -304,18 +312,17 @@ export function NovedadesPage() {
                     />
                 </div>
 
-                <label className="flex cursor-pointer items-center gap-2 pb-2 text-sm text-slate-600">
-                    <input
-                        type="checkbox"
-                        checked={soloMias}
-                        onChange={(event) => {
-                            setSoloMias(event.target.checked);
-                            setPage(1);
-                        }}
-                        className="h-4 w-4 accent-sena"
-                    />
-                    Asignadas a mí
-                </label>
+                <FiltroAsignado
+                    id="filtro_novedad_asignado"
+                    etiqueta="Asignada a"
+                    textoAtajo="Asignadas a mí"
+                    inputClassName={CAMPO}
+                    value={asignadoFiltro}
+                    onChange={(usuario) => {
+                        setAsignadoFiltro(usuario);
+                        setPage(1);
+                    }}
+                />
 
                 <label className="flex cursor-pointer items-center gap-2 pb-2 text-sm text-slate-600">
                     <input

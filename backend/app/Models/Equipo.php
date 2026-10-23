@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\EstadoEquipo;
+use App\Enums\TipoUso;
 use App\Observers\AuditoriaObserver;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -28,13 +29,24 @@ class Equipo extends Model
         'responsable_id',
         'ubicacion_formacion_id',
         'estado',
+        'tipo_uso',
         'caracteristicas_tecnicas',
+    ];
+
+    /**
+     * Valor por defecto también en el modelo (además de en la BD): así un
+     * Equipo recién creado ya trae "formacion" sin volver a consultarlo,
+     * y la importación por lotes siempre inserta la columna con valor.
+     */
+    protected $attributes = [
+        'tipo_uso' => 'formacion',
     ];
 
     protected function casts(): array
     {
         return [
             'estado' => EstadoEquipo::class,
+            'tipo_uso' => TipoUso::class,
             // JSON <-> array de PHP de forma transparente. La validación de
             // qué claves son válidas según tipoEquipo vive en el Form
             // Request, no aquí.
@@ -124,7 +136,7 @@ class Equipo extends Model
     }
 
     /**
-     * Filtra equipos por tipo y/o estado — a diferencia de
+     * Filtra equipos por tipo, estado y/o tipo de uso — a diferencia de
      * filtrarPorUbicacion, estos son columnas propias de la tabla
      * equipos, sin necesidad de whereHas.
      *
@@ -134,13 +146,18 @@ class Equipo extends Model
      *
      * @param  int|int[]|null  $tiposEquipo
      */
-    public function scopeFiltrarPorAtributos(Builder $query, int|array|null $tiposEquipo, ?string $estado): Builder
-    {
+    public function scopeFiltrarPorAtributos(
+        Builder $query,
+        int|array|null $tiposEquipo,
+        ?string $estado,
+        ?string $tipoUso = null
+    ): Builder {
         $tipos = array_filter((array) $tiposEquipo);
 
         return $query
             ->when($tipos, fn (Builder $q) => $q->whereIn('tipo_equipo_id', $tipos))
-            ->when($estado, fn (Builder $q) => $q->where('estado', $estado));
+            ->when($estado, fn (Builder $q) => $q->where('estado', $estado))
+            ->when($tipoUso, fn (Builder $q) => $q->where('tipo_uso', $tipoUso));
     }
 
     /**

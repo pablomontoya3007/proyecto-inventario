@@ -28,6 +28,8 @@ class EquipoResource extends JsonResource
             'hostname' => $this->hostname,
             'estado' => $this->estado?->value,
             'estado_label' => $this->estado?->label(),
+            'tipo_uso' => $this->tipo_uso?->value,
+            'tipo_uso_label' => $this->tipo_uso?->label(),
             'caracteristicas_tecnicas' => $this->caracteristicas_tecnicas,
             'tipo_equipo' => new TipoEquipoResource($this->whenLoaded('tipoEquipo')),
             'responsable' => new ResponsableResource($this->whenLoaded('responsable')),

@@ -13,6 +13,10 @@ import { ImportarEquiposModal } from '../components/ImportarEquiposModal';
 import { ContadoresModulo } from '../../../shared/components/ContadoresModulo';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 import { Modal } from '../../../shared/components/Modal';
+import { BotonExportarExcel } from '../../../shared/components/BotonExportarExcel';
+import { TIPOS_USO } from '../../../shared/constants/tiposUso';
+import { ENDPOINTS } from '../../../api/endpoints';
+import { aSlug } from '../../../shared/utils/aSlug';
 
 // Confirmado contra app/Enums/EstadoEquipo.php. "tono" colorea su contador.
 const ESTADOS_EQUIPO = [
@@ -28,8 +32,9 @@ const CAMPO =
 /**
  * Los filtros iniciales pueden venir en la URL (?estado=activo,
  * ?sin_licencia=1, ?sede_id=&subsede_id=&ubicacion_formacion_id=,
- * ?placa_sena=): así llegan las tarjetas del Inicio y el contador
- * "Equipos sin licencia" de Licencias, ya filtrados.
+ * ?placa_sena=, ?responsable_id=&responsable_nombre=): así llegan las
+ * tarjetas del Inicio, el contador "Equipos sin licencia" de Licencias y
+ * el número de equipos de cada cuentadante, ya filtrados.
  */
 export function EquiposPage() {
   const [searchParams] = useSearchParams();
@@ -38,7 +43,13 @@ export function EquiposPage() {
   const [placaFiltro, setPlacaFiltro] = useState(() => searchParams.get('placa_sena') ?? '');
   const [serialFiltro, setSerialFiltro] = useState('');
   const [tipoFiltro, setTipoFiltro] = useState('');
-  const [responsableFiltro, setResponsableFiltro] = useState(null);
+  // El buscador necesita el objeto { id, nombre }: por eso la URL trae
+  // también el nombre, para mostrarlo sin una consulta extra.
+  const [responsableFiltro, setResponsableFiltro] = useState(() => {
+    const id = Number(searchParams.get('responsable_id'));
+    return id ? { id, nombre: searchParams.get('responsable_nombre') ?? `Cuentadante #${id}` } : null;
+  });
+  const [tipoUsoFiltro, setTipoUsoFiltro] = useState(() => searchParams.get('tipo_uso') ?? '');
   const [estadoFiltro, setEstadoFiltro] = useState(() => searchParams.get('estado') ?? '');
   const [sinLicencia, setSinLicencia] = useState(() => searchParams.get('sin_licencia') === '1');
   const [sedeFiltro, setSedeFiltro] = useState(() => searchParams.get('sede_id') ?? '');
@@ -56,6 +67,7 @@ export function EquiposPage() {
     ...(serialFiltro ? { serial: serialFiltro } : {}),
     ...(tipoFiltro ? { tipo_equipo_id: tipoFiltro } : {}),
     ...(responsableFiltro ? { responsable_id: responsableFiltro.id } : {}),
+    ...(tipoUsoFiltro ? { tipo_uso: tipoUsoFiltro } : {}),
     ...(estadoFiltro ? { estado: estadoFiltro } : {}),
     ...(sinLicencia ? { sin_licencia: 1 } : {}),
     ...(ubicacionFiltro
@@ -156,7 +168,14 @@ export function EquiposPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-bold text-ink">Equipos</h1>
-        <div className="flex gap-2">
+        <div className="flex items-start gap-2">
+          {/* Exporta TODOS los equipos que cumplen los filtros (no solo la
+              página): con un cuentadante elegido, su inventario completo. */}
+          <BotonExportarExcel
+            url={`${ENDPOINTS.equipos}/exportar`}
+            nombreBase={responsableFiltro ? `equipos-${aSlug(responsableFiltro.nombre)}` : 'equipos'}
+            filtros={filtros}
+          />
           <button
             onClick={() => setImportando(true)}
             className="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-surface"
@@ -233,6 +252,22 @@ export function EquiposPage() {
           {ESTADOS_EQUIPO.map((estado) => (
             <option key={estado.value} value={estado.value}>
               {estado.label}
+            </option>
+          ))}
+        </select>
+        <select
+          value={tipoUsoFiltro}
+          onChange={(event) => {
+            setTipoUsoFiltro(event.target.value);
+            setPage(1);
+          }}
+          aria-label="Tipo de uso"
+          className={CAMPO}
+        >
+          <option value="">Todos los usos</option>
+          {TIPOS_USO.map((tipoUso) => (
+            <option key={tipoUso.value} value={tipoUso.value}>
+              {tipoUso.label}
             </option>
           ))}
         </select>

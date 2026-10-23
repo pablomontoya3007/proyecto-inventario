@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\EstadoEquipo;
+use App\Enums\TipoUso;
 use App\Models\TipoEquipo;
 use App\Support\NormalizadorEquipo;
 use Illuminate\Contracts\Validation\Validator;
@@ -85,6 +86,7 @@ class EquipoRequest extends BaseFormRequest
             'responsable_id' => ['nullable', 'integer', 'exists:responsables,id'],
             'ubicacion_formacion_id' => ['required', 'integer', 'exists:ubicaciones_formacion,id'],
             'estado' => ['sometimes', Rule::enum(EstadoEquipo::class)],
+            'tipo_uso' => ['sometimes', Rule::enum(TipoUso::class)],
             'caracteristicas_tecnicas' => ['nullable', 'array'],
         ];
     }
@@ -98,6 +100,7 @@ class EquipoRequest extends BaseFormRequest
             'mac.unique' => 'Ya existe un equipo con esta MAC.',
             'mac_cableada.max' => 'La MAC cableada no puede superar 50 caracteres.',
             'mac_cableada.unique' => 'Ya existe un equipo con esta MAC cableada.',
+            'tipo_uso.enum' => 'El tipo de uso no es válido (formación, administrativo o no aplica).',
         ];
     }
 

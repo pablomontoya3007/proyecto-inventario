@@ -23,6 +23,11 @@ class ResponsableController extends Controller
      *   persona puede conocer la cédula y no el nombre exacto.
      * - sede_id / subsede_id / ubicacion_formacion_id: responsables con
      *   al menos un equipo en esa ubicación.
+     *
+     * equipos_count: cuántos equipos tiene a su cargo cada cuentadante
+     * (en total, sin importar el filtro de ubicación). Es un COUNT por
+     * subconsulta en la misma consulta del listado, no una consulta por
+     * fila. Los equipos eliminados no cuentan (SoftDeletes).
      */
     public function index(Request $request): AnonymousResourceCollection
     {
@@ -31,6 +36,7 @@ class ResponsableController extends Controller
         [$sedeId, $subsedeId, $ubicacionId] = $this->filtrosUbicacion($request);
 
         $responsables = Responsable::query()
+            ->withCount('equipos')
             ->when($request->filled('nombre'), fn ($q) => $q->where('nombre', 'like', '%' . $request->input('nombre') . '%'))
             ->when($request->filled('documento'), fn ($q) => $q->where('documento', 'like', '%' . $request->input('documento') . '%'))
             // Agrupado en un where(fn...) a propósito: sin el paréntesis,

@@ -19,6 +19,7 @@ use App\Http\Controllers\SedeController;
 use App\Http\Controllers\SubsedeController;
 use App\Http\Controllers\TipoEquipoController;
 use App\Http\Controllers\TrasladoController;
+use App\Http\Controllers\TrasladoCuentadanteController;
 use App\Http\Controllers\UbicacionFormacionController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\VerificacionController;
@@ -67,6 +68,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('tipos-equipo', TipoEquipoController::class)
         ->parameters(['tipos-equipo' => 'tipo_equipo']);
 
+    // Traslado de cuentadantes (cambiar el cuentadante de uno o varios
+    // equipos). ANTES del apiResource: si no, GET responsables/{id}
+    // capturaría "traslado" como si fuera un id.
+    Route::get('responsables/traslado/equipos', [TrasladoCuentadanteController::class, 'equipos']);
+    Route::post('responsables/traslado', [TrasladoCuentadanteController::class, 'store']);
+
     Route::apiResource('responsables', ResponsableController::class);
 
     // Estas van ANTES del apiResource de equipos: si van después,
@@ -75,6 +82,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('equipos/importar', [EquipoController::class, 'importar']);
     Route::get('equipos/plantilla-importacion', [EquipoController::class, 'plantillaImportacion']);
     Route::get('equipos/verificar', [VerificacionController::class, 'equipo']);
+    Route::get('equipos/exportar', [EquipoController::class, 'exportar']);
 
     Route::apiResource('equipos', EquipoController::class);
     Route::get('equipos/{equipo}/hoja-de-vida/pdf', [EquipoController::class, 'hojaDeVidaPdf']);

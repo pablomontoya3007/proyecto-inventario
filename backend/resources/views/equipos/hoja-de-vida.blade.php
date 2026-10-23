@@ -25,7 +25,8 @@
         <tr><td>Hostname</td><td>{{ $equipo->hostname ?? '—' }}</td></tr>
         <tr><td>Tipo de equipo</td><td>{{ $equipo->tipoEquipo?->nombre ?? '—' }}</td></tr>
         <tr><td>Estado</td><td>{{ $equipo->estado?->label() ?? '—' }}</td></tr>
-        <tr><td>CuentaDante</td><td>{{ $equipo->responsable?->nombre ?? 'Sin asignar' }}</td></tr>
+        <tr><td>Tipo de uso</td><td>{{ $equipo->tipo_uso?->label() ?? '—' }}</td></tr>
+        <tr><td>Cuentadante</td><td>{{ $equipo->responsable?->nombre ?? 'Sin asignar' }}</td></tr>
         <tr>
             <td>Ubicación actual</td>
             <td>

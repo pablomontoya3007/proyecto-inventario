@@ -25,6 +25,7 @@ import { LicenciasListadoTabla } from '../components/LicenciasListadoTabla';
 import { EquiposSinLicenciaTabla } from '../components/EquiposSinLicenciaTabla';
 import { SelectorTiposEquipo } from '../components/SelectorTiposEquipo';
 import { SelectorColumnas } from '../components/SelectorColumnas';
+import { TIPOS_USO } from '../../../shared/constants/tiposUso';
 
 // Confirmado contra app/Enums/EstadoEquipo.php.
 const ESTADOS_EQUIPO = [
@@ -44,7 +45,7 @@ const REPORTES = [
   {
     value: 'equipos',
     label: 'Equipos',
-    descripcion: 'Totales por sede, tipo y estado, y el listado de equipos con las columnas que elijas.',
+    descripcion: 'Totales por sede, tipo, estado y tipo de uso, y el listado de equipos con las columnas que elijas.',
   },
   {
     value: 'licencias',
@@ -129,6 +130,7 @@ export function ReportesPage() {
   const [ubicacionFiltro, setUbicacionFiltro] = useState('');
   const [tiposFiltro, setTiposFiltro] = useState([]);
   const [estadoFiltro, setEstadoFiltro] = useState('');
+  const [tipoUsoFiltro, setTipoUsoFiltro] = useState('');
   const [columnas, setColumnas] = useState([]);
   const [vistaLicencias, setVistaLicencias] = useState('registradas');
   const [tiposSinLicenciaFiltro, setTiposSinLicenciaFiltro] = useState([]);
@@ -150,12 +152,13 @@ export function ReportesPage() {
         ? { sede_id: sedeFiltro }
         : {};
 
-  // Equipos: ubicación + tipos + estado + columnas del listado. Los
+  // Equipos: ubicación + tipos + estado + tipo de uso + columnas del listado. Los
   // arreglos viajan como tipo_equipo_ids[]=1&columnas[]=serial (axios).
   const filtroEquipos = {
     ...filtroUbicacion,
     ...(tiposFiltro.length > 0 ? { tipo_equipo_ids: tiposFiltro } : {}),
     ...(estadoFiltro ? { estado: estadoFiltro } : {}),
+    ...(tipoUsoFiltro ? { tipo_uso: tipoUsoFiltro } : {}),
     ...(columnas.length > 0 ? { columnas } : {}),
   };
 
@@ -348,6 +351,21 @@ export function ReportesPage() {
                     ))}
                   </select>
                 </Campo>
+                <Campo etiqueta="Tipo de uso" htmlFor="filtro-tipo-uso-reporte">
+                  <select
+                    id="filtro-tipo-uso-reporte"
+                    value={tipoUsoFiltro}
+                    onChange={(event) => setTipoUsoFiltro(event.target.value)}
+                    className={CLASE_SELECT}
+                  >
+                    <option value="">Todos los usos</option>
+                    {TIPOS_USO.map((tipoUso) => (
+                      <option key={tipoUso.value} value={tipoUso.value}>
+                        {tipoUso.label}
+                      </option>
+                    ))}
+                  </select>
+                </Campo>
               </>
             )}
 
@@ -399,10 +417,11 @@ export function ReportesPage() {
           <EstadoCarga consulta={equipos} />
           {equipos.data && (
             <>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <DesgloseCategoria titulo="Por sede" filas={equipos.data.por_sede} />
                 <DesgloseCategoria titulo="Por tipo de equipo" filas={equipos.data.por_tipo} />
                 <DesgloseCategoria titulo="Por estado" filas={equipos.data.por_estado} etiquetaClave="estado" />
+                <DesgloseCategoria titulo="Por tipo de uso" filas={equipos.data.por_uso ?? []} etiquetaClave="tipo_uso" />
               </div>
 
               <div className="rounded border border-slate-200 bg-white p-4">

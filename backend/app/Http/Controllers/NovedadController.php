@@ -64,6 +64,9 @@ class NovedadController extends Controller
 
     /**
      * Excel con todas las novedades que cumplen los filtros de la pantalla.
+     * Con ?asignado_a= sirve para hacerle seguimiento a una persona: cada
+     * fila trae el equipo (placa, tipo, ubicación, cuentadante), qué pasó
+     * (descripción), quién lo reportó, en qué estado va y cómo se resolvió.
      */
     public function exportar(Request $request)
     {
@@ -75,6 +78,8 @@ class NovedadController extends Controller
             ->map(fn (Novedad $novedad) => [
                 $novedad->created_at?->format('d/m/Y H:i') ?? '—',
                 $novedad->equipo?->placa_sena ?? 'Equipo eliminado',
+                $novedad->equipo?->tipoEquipo?->nombre ?? '—',
+                self::rutaUbicacion($novedad->equipo?->ubicacionFormacion),
                 $novedad->equipo?->responsable?->nombre ?? 'Sin cuentadante',
                 $novedad->descripcion,
                 $novedad->usuario?->name ?? '—',
@@ -88,7 +93,7 @@ class NovedadController extends Controller
 
         return Excel::download(
             new TablaExport(
-                ['Fecha', 'Placa SENA', 'Cuentadante', 'Descripción', 'Reportada por', 'Asignada a', 'Estado', 'Resuelta el', 'Resuelta por', 'Nota de resolución'],
+                ['Fecha', 'Placa SENA', 'Tipo de equipo', 'Ubicación', 'Cuentadante', 'Descripción', 'Reportada por', 'Asignada a', 'Estado', 'Resuelta el', 'Resuelta por', 'Nota de resolución'],
                 $filas
             ),
             'novedades.xlsx'
@@ -130,6 +135,19 @@ class NovedadController extends Controller
             ->when($request->filled('fecha_desde'), fn ($q) => $q->whereDate('created_at', '>=', $request->input('fecha_desde')))
             ->when($request->filled('fecha_hasta'), fn ($q) => $q->whereDate('created_at', '<=', $request->input('fecha_hasta')))
             ->latest();
+    }
+
+    private static function rutaUbicacion($ubicacion): string
+    {
+        if (!$ubicacion) {
+            return '—';
+        }
+
+        return implode(' / ', array_filter([
+            $ubicacion->subsede?->sede?->nombre,
+            $ubicacion->subsede?->nombre,
+            $ubicacion->nombre,
+        ]));
     }
 
     /**

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useAuth } from '../../auth/hooks/useAuth';
 import {
   useMantenimientos,
   useCreateMantenimiento,
@@ -10,6 +9,7 @@ import { useSedes } from '../../sedes/hooks/useSedes';
 import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
 import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
 import { FiltroUbicacionCascada } from '../../../shared/components/FiltroUbicacionCascada';
+import { FiltroAsignado } from '../../usuarios/components/FiltroAsignado';
 import { ContadoresModulo } from '../../../shared/components/ContadoresModulo';
 import { AvisoBanner } from '../../../shared/components/AvisoBanner';
 import { avisoDeNotificacion } from '../../../shared/utils/avisoNotificacion';
@@ -21,6 +21,7 @@ import { MarcarListoForm } from '../components/MarcarListoForm';
 import { Modal } from '../../../shared/components/Modal';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 import { ENDPOINTS } from '../../../api/endpoints';
+import { aSlug } from '../../../shared/utils/aSlug';
 import { BotonExportarExcel } from '../../../shared/components/BotonExportarExcel';
 
 // Estados de la pestaña Activos que se pueden filtrar con su contador.
@@ -29,16 +30,19 @@ const ESTADOS_ACTIVOS = [
   { value: 'en_mantenimiento', label: 'En mantenimiento', tono: 'warning' },
 ];
 
+/**
+ * "Asignado a" permite ver (y exportar a Excel) el trabajo de cualquier
+ * persona: el Excel trae, por cada mantenimiento, el equipo, dónde está,
+ * su cuentadante, qué hay que hacer, para cuándo y en qué va.
+ */
 export function MantenimientosPage() {
-  const { user } = useAuth();
-
   const [pestana, setPestana] = useState('activos'); // 'activos' | 'historial'
   const [page, setPage] = useState(1);
   const [estadoFiltro, setEstadoFiltro] = useState(''); // solo aplica en Activos
   const [sedeFiltro, setSedeFiltro] = useState('');
   const [subsedeFiltro, setSubsedeFiltro] = useState('');
   const [ubicacionFiltro, setUbicacionFiltro] = useState('');
-  const [soloMios, setSoloMios] = useState(false);
+  const [asignadoFiltro, setAsignadoFiltro] = useState(null); // { id, nombre } | null
   const [creando, setCreando] = useState(false);
   const [creandoMasivo, setCreandoMasivo] = useState(false);
   const [completandoMantenimiento, setCompletandoMantenimiento] = useState(null);
@@ -86,7 +90,7 @@ export function MantenimientosPage() {
         : sedeFiltro
           ? { sede_id: sedeFiltro }
           : {}),
-    ...(soloMios && user?.id ? { asignado_a: user.id } : {}),
+    ...(asignadoFiltro ? { asignado_a: asignadoFiltro.id } : {}),
     ...(pestana === 'activos' && estadoFiltro ? { estado: estadoFiltro } : {}),
   };
 
@@ -100,10 +104,11 @@ export function MantenimientosPage() {
   const deleteMantenimiento = useDeleteMantenimiento();
 
   const serverErrors = createMantenimiento.error?.response?.data?.errors;
-  // Calculados por el backend con la ubicación y "asignados a mí" (sin
+  // Calculados por el backend con la ubicación y la persona asignada (sin
   // estado ni pestaña, que son lo que los propios contadores aplican).
   const porEstado = data?.contadores?.por_estado ?? {};
-  const hayFiltrosPropios = Boolean(sedeFiltro || subsedeFiltro || ubicacionFiltro || soloMios);
+  const hayFiltrosPropios = Boolean(sedeFiltro || subsedeFiltro || ubicacionFiltro || asignadoFiltro);
+  const sufijoPersona = asignadoFiltro ? `-${aSlug(asignadoFiltro.nombre)}` : '';
 
   // Contadores por estado. En espera / En mantenimiento filtran la
   // pestaña Activos; Listos abre el Historial.
@@ -201,7 +206,7 @@ export function MantenimientosPage() {
           {/* Exporta la pestaña que se está viendo (activos o historial). */}
           <BotonExportarExcel
             url={`${ENDPOINTS.mantenimientos}/exportar`}
-            nombreBase={pestana === 'historial' ? 'mantenimientos-historial' : 'mantenimientos-activos'}
+            nombreBase={`${pestana === 'historial' ? 'mantenimientos-historial' : 'mantenimientos-activos'}${sufijoPersona}`}
             filtros={{ ...filtros, completado: pestana === 'historial' }}
             hayFiltros={Object.keys(filtros).length > 0}
           />
@@ -237,18 +242,16 @@ export function MantenimientosPage() {
         onLimpiar={handleLimpiarFiltros}
       />
 
-      <label className="mb-4 flex w-fit cursor-pointer items-center gap-2 text-sm text-slate-600">
-        <input
-          type="checkbox"
-          checked={soloMios}
-          onChange={(event) => {
-            setSoloMios(event.target.checked);
+      <div className="mb-4 rounded border border-slate-200 bg-white p-4">
+        <FiltroAsignado
+          id="filtro_mantenimiento_asignado"
+          value={asignadoFiltro}
+          onChange={(usuario) => {
+            setAsignadoFiltro(usuario);
             setPage(1);
           }}
-          className="h-4 w-4 accent-sena"
         />
-        Solo los asignados a mí
-      </label>
+      </div>
 
       <div className="mb-4 flex gap-1 border-b border-slate-200">
         <button

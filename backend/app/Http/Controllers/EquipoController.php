@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\EstadoEquipo;
 use App\Enums\EstadoNovedad;
 use App\Exports\EquiposImportPlantillaExport;
+use App\Exports\TablaExport;
 use App\Http\Controllers\Concerns\CuentaPorColumna;
 use App\Http\Requests\EquipoRequest;
 use App\Http\Resources\EquipoResource;
@@ -24,7 +25,8 @@ class EquipoController extends Controller
     /**
      * Cubre los criterios de búsqueda de la sección 7 de los requisitos:
      * placa, serial, mac, hostname, responsable, sede, subsede, ubicación,
-     * tipo de equipo y estado — todos opcionales y combinables entre sí.
+     * tipo de equipo, estado y tipo de uso — todos opcionales y
+     * combinables entre sí.
      *
      * sin_licencia=1: equipos en uso (no de baja ni extraviados) sin
      * licencia de Office — mismo criterio que el contador del Inicio.
@@ -70,6 +72,55 @@ class EquipoController extends Controller
     }
 
     /**
+     * Excel con TODOS los equipos que cumplen los filtros de la pantalla
+     * (mismos parámetros que index(), sin paginar). Pensado sobre todo
+     * para el seguimiento por cuentadante: con ?responsable_id= sale el
+     * inventario completo a cargo de esa persona. Incluye el documento
+     * del cuentadante y si el equipo tiene licencia de Office, que no se
+     * ven en la tabla pero son lo primero que se pide en una revisión.
+     */
+    public function exportar(Request $request)
+    {
+        $this->authorize('viewAny', Equipo::class);
+
+        $filas = $this->consultaFiltrada($request)
+            ->with(['tipoEquipo', 'responsable', 'ubicacionFormacion.subsede.sede'])
+            ->withExists('licenciaOffice')
+            ->reorder()
+            ->orderBy('placa_sena')
+            ->get()
+            ->map(fn (Equipo $equipo) => [
+                $equipo->placa_sena,
+                $equipo->serial,
+                $equipo->mac ?? '—',
+                $equipo->mac_cableada ?? '—',
+                $equipo->hostname ?? '—',
+                $equipo->tipoEquipo?->nombre ?? '—',
+                $equipo->tipo_uso?->label() ?? '—',
+                $equipo->estado?->label() ?? '—',
+                $equipo->responsable?->nombre ?? 'Sin cuentadante',
+                $equipo->responsable?->documento ?? '—',
+                $equipo->ubicacionFormacion?->subsede?->sede?->nombre ?? '—',
+                $equipo->ubicacionFormacion?->subsede?->nombre ?? '—',
+                $equipo->ubicacionFormacion?->nombre ?? '—',
+                $equipo->licencia_office_exists ? 'Sí' : 'No',
+            ])
+            ->all();
+
+        return Excel::download(
+            new TablaExport(
+                [
+                    'Placa SENA', 'Serial', 'MAC inalámbrica (WiFi)', 'MAC cableada', 'Hostname',
+                    'Tipo de equipo', 'Tipo de uso', 'Estado', 'Cuentadante', 'Documento del cuentadante',
+                    'Sede', 'Subsede', 'Ambiente', 'Licencia de Office',
+                ],
+                $filas
+            ),
+            'equipos.xlsx'
+        );
+    }
+
+    /**
      * Consulta con todos los filtros del listado. $ignorar: filtros que no
      * se aplican (los usan los contadores).
      */
@@ -85,6 +136,7 @@ class EquipoController extends Controller
             ->when($usar('estado') && $request->filled('estado'), fn ($q) => $q->where('estado', $request->input('estado')))
             ->when($request->filled('tipo_equipo_id'), fn ($q) => $q->where('tipo_equipo_id', $request->input('tipo_equipo_id')))
             ->when($request->filled('responsable_id'), fn ($q) => $q->where('responsable_id', $request->input('responsable_id')))
+            ->when($request->filled('tipo_uso'), fn ($q) => $q->where('tipo_uso', $request->input('tipo_uso')))
             ->when($request->filled('ubicacion_formacion_id'), fn ($q) => $q->where('ubicacion_formacion_id', $request->input('ubicacion_formacion_id')))
             ->when($request->filled('subsede_id'), fn ($q) => $q->whereHas('ubicacionFormacion', fn ($sub) => $sub->where('subsede_id', $request->input('subsede_id'))))
             ->when($request->filled('sede_id'), fn ($q) => $q->whereHas('ubicacionFormacion.subsede', fn ($sub) => $sub->where('sede_id', $request->input('sede_id'))))

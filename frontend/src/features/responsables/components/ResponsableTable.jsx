@@ -1,7 +1,13 @@
+import { Link } from 'react-router-dom';
+
 // Documento va primero: es el identificador de la persona. El '—' se
 // conserva solo como respaldo para registros antiguos sin documento.
 // "Sin correo" se resalta: ese responsable no recibirá novedades.
-export function ResponsableTable({ responsables, onEdit, onDelete }) {
+//
+// Equipos: cuántos tiene a su cargo (equipos_count, calculado en el
+// backend). Clic = abre Equipos filtrado por ese cuentadante, donde
+// también se puede exportar su inventario a Excel.
+export function ResponsableTable({ responsables, onEdit, onDelete, onTrasladar }) {
   if (responsables.length === 0) {
     return <p className="text-sm text-slate-500">No hay cuentadantes registrados todavía.</p>;
   }
@@ -14,28 +20,58 @@ export function ResponsableTable({ responsables, onEdit, onDelete }) {
           <th className="py-2 pr-4 font-medium">Nombre</th>
           <th className="py-2 pr-4 font-medium">Cargo</th>
           <th className="py-2 pr-4 font-medium">Correo</th>
-          <th className="py-2 pr-4 font-medium text-right">Acciones</th>
+          <th className="py-2 pr-4 text-right font-medium">Equipos</th>
+          <th className="py-2 pr-4 text-right font-medium">Acciones</th>
         </tr>
       </thead>
       <tbody>
-        {responsables.map((responsable) => (
-          <tr key={responsable.id} className="border-b border-slate-100">
-            <td className="py-2 pr-4 font-mono text-slate-600">{responsable.documento ?? '—'}</td>
-            <td className="py-2 pr-4 text-ink">{responsable.nombre}</td>
-            <td className="py-2 pr-4 text-slate-500">{responsable.cargo ?? '—'}</td>
-            <td className="py-2 pr-4 text-slate-500">
-              {responsable.correo ?? <span className="text-xs text-warning">Sin correo</span>}
-            </td>
-            <td className="py-2 pr-4 text-right">
-              <button onClick={() => onEdit(responsable)} className="mr-3 text-sm text-slate-600 hover:underline">
-                Editar
-              </button>
-              <button onClick={() => onDelete(responsable)} className="text-sm text-danger hover:underline">
-                Eliminar
-              </button>
-            </td>
-          </tr>
-        ))}
+        {responsables.map((responsable) => {
+          const cantidad = responsable.equipos_count ?? 0;
+          const urlEquipos = `/equipos?${new URLSearchParams({
+            responsable_id: String(responsable.id),
+            responsable_nombre: responsable.nombre,
+          }).toString()}`;
+
+          return (
+            <tr key={responsable.id} className="border-b border-slate-100">
+              <td className="py-2 pr-4 font-mono text-slate-600">{responsable.documento ?? '—'}</td>
+              <td className="py-2 pr-4 text-ink">{responsable.nombre}</td>
+              <td className="py-2 pr-4 text-slate-500">{responsable.cargo ?? '—'}</td>
+              <td className="py-2 pr-4 text-slate-500">
+                {responsable.correo ?? <span className="text-xs text-warning">Sin correo</span>}
+              </td>
+              <td className="py-2 pr-4 text-right font-mono">
+                {cantidad > 0 ? (
+                  <Link
+                    to={urlEquipos}
+                    title="Ver sus equipos"
+                    className="rounded bg-sena-soft px-2 py-0.5 text-sena-dark hover:underline"
+                  >
+                    {cantidad}
+                  </Link>
+                ) : (
+                  <span className="text-slate-400">0</span>
+                )}
+              </td>
+              <td className="whitespace-nowrap py-2 pr-4 text-right">
+                {cantidad > 0 && (
+                  <button
+                    onClick={() => onTrasladar(responsable)}
+                    className="mr-3 text-sm text-sena-dark hover:underline"
+                  >
+                    Trasladar equipos
+                  </button>
+                )}
+                <button onClick={() => onEdit(responsable)} className="mr-3 text-sm text-slate-600 hover:underline">
+                  Editar
+                </button>
+                <button onClick={() => onDelete(responsable)} className="text-sm text-danger hover:underline">
+                  Eliminar
+                </button>
+              </td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );
