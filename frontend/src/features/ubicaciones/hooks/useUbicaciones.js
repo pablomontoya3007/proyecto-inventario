@@ -1,11 +1,14 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { fetchUbicaciones, createUbicacion, updateUbicacion, deleteUbicacion } from '../services/ubicacionesApi';
 
-// id entra en la queryKey: cada búsqueda por ID es una consulta distinta.
-export function useUbicaciones({ page = 1, subsedeId, id } = {}) {
+// Todos los filtros entran en la queryKey: cada combinación es una
+// consulta distinta. keepPreviousData: mientras llega el resultado de una
+// búsqueda nueva, la tabla sigue mostrando el anterior (sin parpadeo).
+export function useUbicaciones({ page = 1, subsedeId, sedeId, id, nombre } = {}) {
   return useQuery({
-    queryKey: ['ubicaciones-formacion', page, subsedeId ?? null, id ?? null],
-    queryFn: () => fetchUbicaciones({ page, subsedeId, id }),
+    queryKey: ['ubicaciones-formacion', page, subsedeId ?? null, sedeId ?? null, id ?? null, nombre ?? null],
+    queryFn: () => fetchUbicaciones({ page, subsedeId, sedeId, id, nombre }),
+    placeholderData: keepPreviousData,
   });
 }
 
