@@ -11,6 +11,7 @@ use App\Http\Controllers\MantenimientoController;
 use App\Http\Controllers\MantenimientoMasivoController;
 use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\NovedadController;
+use App\Http\Controllers\NovedadMasivaController;
 use App\Http\Controllers\ObservacionController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\RespaldoController;
@@ -55,6 +56,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // Novedades — rutas explícitas en vez de apiResource: Laravel
     // singularizaría "novedades" como "novedade" para el parámetro.
     Route::get('novedades/exportar', [NovedadController::class, 'exportar']);
+    // Novedad masiva: la misma novedad en varios equipos de un ambiente,
+    // con un solo correo al usuario asignado.
+    Route::get('novedades/masiva/equipos', [NovedadMasivaController::class, 'equipos']);
+    Route::post('novedades/masiva', [NovedadMasivaController::class, 'store']);
     Route::get('novedades', [NovedadController::class, 'index']);
     Route::post('novedades', [NovedadController::class, 'store']);
     Route::patch('novedades/{novedad}/resolver', [NovedadController::class, 'resolver']);

@@ -1,5 +1,11 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
-import { fetchNovedades, createNovedad, resolverNovedad } from '../services/novedadesApi';
+import {
+    fetchNovedades,
+    createNovedad,
+    resolverNovedad,
+    fetchEquiposParaNovedadMasiva,
+    createNovedadMasiva,
+} from '../services/novedadesApi';
 
 export function useNovedades({ page = 1, filtros = {} } = {}) {
     return useQuery({
@@ -35,6 +41,36 @@ export function useResolverNovedad() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['novedades'] });
             queryClient.invalidateQueries({ queryKey: ['equipos'] });
+        },
+    });
+}
+
+/**
+ * Equipos de un ambiente para la novedad masiva. Solo consulta cuando ya
+ * hay una ubicación elegida. La clave empieza por 'novedades': al
+ * registrar, la invalidación de abajo también refresca cuántas novedades
+ * abiertas tiene cada equipo.
+ */
+export function useEquiposParaNovedadMasiva(ubicacionId) {
+    return useQuery({
+        queryKey: ['novedades', 'masiva', 'equipos', ubicacionId],
+        queryFn: () => fetchEquiposParaNovedadMasiva(ubicacionId),
+        enabled: Boolean(ubicacionId),
+    });
+}
+
+/**
+ * Mismas invalidaciones que la novedad individual: listado, indicador de
+ * Equipos y historial de Correos.
+ */
+export function useCreateNovedadMasiva() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: createNovedadMasiva,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['novedades'] });
+            queryClient.invalidateQueries({ queryKey: ['equipos'] });
+            queryClient.invalidateQueries({ queryKey: ['correos'] });
         },
     });
 }

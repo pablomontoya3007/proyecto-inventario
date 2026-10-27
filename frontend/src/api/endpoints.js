@@ -21,6 +21,10 @@ export const ENDPOINTS = {
 
   // Novedades: GET listado, POST registrar, PATCH /{id}/resolver
   novedades: '/novedades',
+  // Novedad masiva: GET equipos de un ambiente (?ubicacion_formacion_id=),
+  // POST { equipo_ids, descripcion, asignado_a }
+  novedadesMasiva: '/novedades/masiva',
+  novedadesMasivaEquipos: '/novedades/masiva/equipos',
 
   // Fase 1
   sedes: '/sedes',

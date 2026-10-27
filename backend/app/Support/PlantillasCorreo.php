@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Equipo;
 use App\Models\Novedad;
+use App\Models\Responsable;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -107,6 +108,121 @@ final class PlantillasCorreo
         ];
 
         return ['Se te asignó una novedad: equipo ' . ($novedad->equipo?->placa_sena ?? ''), implode("\n", $lineas)];
+    }
+
+    /**
+     * Novedad masiva — al usuario asignado: UN correo con todos los
+     * equipos donde se registró la misma novedad, agrupados por ubicación.
+     *
+     * @param  Collection<int, Equipo>  $equipos  con tipoEquipo, responsable y ubicacionFormacion.subsede.sede cargados
+     * @return array{0: string, 1: string}
+     */
+    public static function novedadMasivaAsignada(
+        Collection $equipos,
+        string $descripcion,
+        User $reportadoPor,
+        User $asignado
+    ): array {
+        $asunto = 'Se te asignó una novedad: ' . self::resumenEquipos($equipos);
+
+        $lineas = [
+            "Hola {$asignado->name},",
+            '',
+            'Se te asignó revisar una novedad registrada en el sistema ' . self::NOMBRE_SISTEMA
+                . " en {$equipos->count()} equipo(s).",
+            '',
+            ...self::datosNovedadMasiva($equipos, $descripcion, $reportadoPor, incluirResponsable: true),
+        ];
+
+        return [$asunto, implode("\n", $lineas)];
+    }
+
+    /**
+     * Novedad masiva — a un cuentadante: UN correo con los equipos A SU
+     * CARGO donde se registró la novedad (no los de otros cuentadantes).
+     *
+     * @param  Collection<int, Equipo>  $equipos  solo los de este cuentadante
+     * @return array{0: string, 1: string}
+     */
+    public static function novedadMasivaParaResponsable(
+        Collection $equipos,
+        string $descripcion,
+        User $reportadoPor,
+        ?User $asignado,
+        Responsable $responsable
+    ): array {
+        $asunto = 'Novedad registrada en equipos a tu cargo: ' . self::resumenEquipos($equipos);
+
+        $lineas = [
+            "Hola {$responsable->nombre},",
+            '',
+            "Se registró una novedad en {$equipos->count()} equipo(s) a tu cargo.",
+        ];
+
+        if ($asignado) {
+            $lineas[] = "Asignada para revisión a: {$asignado->name}";
+        }
+
+        $lineas[] = '';
+        array_push($lineas, ...self::datosNovedadMasiva($equipos, $descripcion, $reportadoPor, incluirResponsable: false));
+
+        return [$asunto, implode("\n", $lineas)];
+    }
+
+    /**
+     * "equipo SENA-001" con uno; "Sala de Sistemas 1 - 5 equipos" si
+     * todos son del mismo ambiente; "5 equipos" si no.
+     */
+    private static function resumenEquipos(Collection $equipos): string
+    {
+        $total = $equipos->count();
+
+        if ($total === 1) {
+            return "equipo {$equipos->first()->placa_sena}";
+        }
+
+        $ambientes = $equipos->map(fn (Equipo $equipo) => $equipo->ubicacion_formacion_id)->unique();
+
+        return $ambientes->count() === 1
+            ? ($equipos->first()->ubicacionFormacion?->nombre ?? 'ubicación') . " - {$total} equipos"
+            : "{$total} equipos";
+    }
+
+    /**
+     * Reportada por, fecha, descripción (una sola vez, es la misma para
+     * todos) y la lista de equipos agrupada por ubicación.
+     */
+    private static function datosNovedadMasiva(
+        Collection $equipos,
+        string $descripcion,
+        User $reportadoPor,
+        bool $incluirResponsable
+    ): array {
+        $lineas = [
+            "Reportada por: {$reportadoPor->name}",
+            'Fecha: ' . now()->format('d/m/Y H:i'),
+            '',
+            'Descripción:',
+            $descripcion,
+        ];
+
+        foreach ($equipos->groupBy(fn (Equipo $equipo) => self::ubicacion($equipo)) as $ubicacion => $equiposDeUbicacion) {
+            $lineas[] = '';
+            $lineas[] = "Ubicación: {$ubicacion}";
+            $lineas[] = "Equipos ({$equiposDeUbicacion->count()}):";
+
+            foreach ($equiposDeUbicacion as $equipo) {
+                $linea = '- ' . self::equipo($equipo);
+
+                if ($incluirResponsable) {
+                    $linea .= ' · Cuentadante: ' . ($equipo->responsable?->nombre ?? 'Sin cuentadante');
+                }
+
+                $lineas[] = $linea;
+            }
+        }
+
+        return $lineas;
     }
 
     /**

@@ -12,6 +12,7 @@ import { AvisoBanner } from '../../../shared/components/AvisoBanner';
 import { avisoDeNotificacion } from '../../../shared/utils/avisoNotificacion';
 import { NovedadTable } from '../components/NovedadTable';
 import { NovedadForm } from '../components/NovedadForm';
+import { NovedadMasivaModal } from '../components/NovedadMasivaModal';
 import { DetalleNovedad } from '../components/DetalleNovedad';
 import { Modal } from '../../../shared/components/Modal';
 import { ENDPOINTS } from '../../../api/endpoints';
@@ -50,6 +51,7 @@ export function NovedadesPage() {
     const [asignadoFiltro, setAsignadoFiltro] = useState(null); // { id, nombre } | null
 
     const [registrando, setRegistrando] = useState(false);
+    const [registrandoMasiva, setRegistrandoMasiva] = useState(false);
     const [viendoNovedad, setViendoNovedad] = useState(null);
     const [errorResolver, setErrorResolver] = useState(null);
     const [aviso, setAviso] = useState(null);
@@ -198,6 +200,15 @@ export function NovedadesPage() {
                         nombreBase={asignadoFiltro ? `novedades-${aSlug(asignadoFiltro.nombre)}` : 'novedades'}
                         filtros={filtros}
                     />
+                    <button
+                        onClick={() => {
+                            setAviso(null);
+                            setRegistrandoMasiva(true);
+                        }}
+                        className="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-surface"
+                    >
+                        Novedad masiva
+                    </button>
                     <button
                         onClick={abrirRegistro}
                         className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark"
@@ -385,6 +396,16 @@ export function NovedadesPage() {
                         isSubmitting={crear.isPending}
                         serverErrors={serverErrors}
                     />
+                </Modal>
+            )}
+
+            {registrandoMasiva && (
+                <Modal
+                    title="Novedad masiva (varios equipos de un ambiente)"
+                    onClose={() => setRegistrandoMasiva(false)}
+                    maxWidth="max-w-3xl"
+                >
+                    <NovedadMasivaModal onClose={() => setRegistrandoMasiva(false)} />
                 </Modal>
             )}
 
