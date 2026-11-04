@@ -7,6 +7,7 @@ import { BuscadorResponsable } from '../../responsables/components/BuscadorRespo
 import { BuscadorCatalogo } from '../../../shared/components/BuscadorCatalogo';
 import { useVerificarEquipo } from '../hooks/useVerificarEquipo';
 import { CaracteristicasEditor } from './CaracteristicasEditor';
+import { TIPOS_USO } from '../../../shared/constants/tiposUso';
 
 // Confirmado contra app/Enums/EstadoEquipo.php — valores y etiquetas reales.
 const ESTADOS_EQUIPO = [
@@ -63,6 +64,9 @@ function AvisoDuplicado({ campo, coincidencia }) {
  * El responsable se elige con BuscadorResponsable (autocompletado
  * contra el backend), porque hay demasiados para un <select>.
  *
+ * Tipo de uso: un equipo nuevo arranca en "Uso de formación", igual que
+ * el valor por defecto del backend.
+ *
  * Sede / Subsede / Ubicación usan BuscadorCatalogo (autocompletado
  * contra el backend), en cascada: cada nivel depende del anterior y
  * cambiar uno limpia los de abajo. Ya no hay límite de 15 registros:
@@ -70,8 +74,6 @@ function AvisoDuplicado({ campo, coincidencia }) {
  * El estado guarda el objeto { id, nombre } de cada nivel.
  */
 export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, serverErrors }) {
-  const ubicacionInicial = initialValues?.ubicacion_formacion ?? null;
-
   const [placaSena, setPlacaSena] = useState(String(initialValues?.placa_sena ?? ''));
   const [serial, setSerial] = useState(String(initialValues?.serial ?? ''));
   const [mac, setMac] = useState(initialValues?.mac ?? '');
@@ -79,11 +81,13 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
   const [hostname, setHostname] = useState(initialValues?.hostname ?? '');
   const [tipoEquipoId, setTipoEquipoId] = useState(initialValues?.tipo_equipo?.id ?? '');
   const [responsable, setResponsable] = useState(initialValues?.responsable ?? null);
+  const ubicacionInicial = initialValues?.ubicacion_formacion ?? null;
   const [sede, setSede] = useState(ubicacionInicial?.subsede?.sede ?? null);
   const [subsede, setSubsede] = useState(ubicacionInicial?.subsede ?? null);
   const [ubicacion, setUbicacion] = useState(ubicacionInicial);
   const [caracteristicas, setCaracteristicas] = useState(initialValues?.caracteristicas_tecnicas ?? {});
   const [estado, setEstado] = useState(initialValues?.estado ?? 'activo');
+  const [tipoUso, setTipoUso] = useState(initialValues?.tipo_uso ?? 'formacion');
 
   const { data: tiposData } = useTiposEquipo();
 
@@ -136,6 +140,7 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
       responsable_id: responsable?.id ?? null,
       ubicacion_formacion_id: ubicacion.id,
       estado,
+      tipo_uso: tipoUso,
       caracteristicas_tecnicas: caracteristicas,
     });
   }
@@ -216,19 +221,41 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
         </div>
       </div>
 
-      <div>
-        <label htmlFor="hostname" className="block text-sm font-medium text-ink">
-          Hostname (opcional)
-        </label>
-        <input
-          id="hostname"
-          type="text"
-          maxLength={100}
-          value={hostname}
-          onChange={(event) => setHostname(event.target.value)}
-          className={`mt-1 w-full ${INPUT}`}
-        />
-        {serverErrors?.hostname && <p className="mt-1 text-sm text-danger">{serverErrors.hostname[0]}</p>}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="hostname" className="block text-sm font-medium text-ink">
+            Hostname (opcional)
+          </label>
+          <input
+            id="hostname"
+            type="text"
+            maxLength={100}
+            value={hostname}
+            onChange={(event) => setHostname(event.target.value)}
+            className={`mt-1 w-full ${INPUT}`}
+          />
+          {serverErrors?.hostname && <p className="mt-1 text-sm text-danger">{serverErrors.hostname[0]}</p>}
+        </div>
+
+        <div>
+          <label htmlFor="tipo_uso" className="block text-sm font-medium text-ink">
+            Tipo de uso
+          </label>
+          <select
+            id="tipo_uso"
+            required
+            value={tipoUso}
+            onChange={(event) => setTipoUso(event.target.value)}
+            className={`mt-1 w-full ${INPUT}`}
+          >
+            {TIPOS_USO.map((opcion) => (
+              <option key={opcion.value} value={opcion.value}>
+                {opcion.label}
+              </option>
+            ))}
+          </select>
+          {serverErrors?.tipo_uso && <p className="mt-1 text-sm text-danger">{serverErrors.tipo_uso[0]}</p>}
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-4">
@@ -259,7 +286,7 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
 
         <div>
           <label htmlFor="responsable_buscador" className="block text-sm font-medium text-ink">
-            Responsable (opcional)
+            Cuentadante (opcional)
           </label>
           <BuscadorResponsable
             id="responsable_buscador"
