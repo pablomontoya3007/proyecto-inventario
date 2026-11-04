@@ -12,10 +12,11 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 class SubsedeController extends Controller
 {
     /**
-     * Filtros: sede_id e id — opcionales y combinables. El id es
-     * coincidencia EXACTA (whereKey), no LIKE: buscar "1" no debe traer
-     * también la 10, 11, 100... Un valor no numérico se convierte en 0
-     * con integer(), así que simplemente no encuentra nada.
+     * Filtros: sede_id, id y buscar — opcionales y combinables.
+     * El id es coincidencia EXACTA (whereKey), no LIKE: buscar "1" no debe
+     * traer también la 10, 11, 100... Un valor no numérico se convierte en
+     * 0 con integer(), así que simplemente no encuentra nada.
+     * "buscar" sí es parcial, sobre el nombre (lo usa el autocompletado).
      */
     public function index(Request $request): AnonymousResourceCollection
     {
@@ -28,6 +29,10 @@ class SubsedeController extends Controller
             ->withCount('ubicacionesFormacion')
             ->when($request->filled('sede_id'), fn ($q) => $q->where('sede_id', $request->input('sede_id')))
             ->when($request->filled('id'), fn ($q) => $q->whereKey($request->integer('id')))
+            ->when(
+                $request->filled('buscar'),
+                fn ($q) => $q->where('nombre', 'like', '%' . $request->input('buscar') . '%')
+            )
             ->orderBy('nombre')
             ->paginate(15);
 

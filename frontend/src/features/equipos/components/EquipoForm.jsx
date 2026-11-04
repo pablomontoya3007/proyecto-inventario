@@ -1,12 +1,12 @@
 import { useState, useMemo } from 'react';
 import { useTiposEquipo } from '../../tipos-equipo/hooks/useTiposEquipo';
-import { useSedes } from '../../sedes/hooks/useSedes';
-import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
-import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
+import { useBuscarSedes } from '../../sedes/hooks/useSedes';
+import { useBuscarSubsedes } from '../../subsedes/hooks/useSubsedes';
+import { useBuscarUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
 import { BuscadorResponsable } from '../../responsables/components/BuscadorResponsable';
+import { BuscadorCatalogo } from '../../../shared/components/BuscadorCatalogo';
 import { useVerificarEquipo } from '../hooks/useVerificarEquipo';
 import { CaracteristicasEditor } from './CaracteristicasEditor';
-import { TIPOS_USO } from '../../../shared/constants/tiposUso';
 
 // Confirmado contra app/Enums/EstadoEquipo.php — valores y etiquetas reales.
 const ESTADOS_EQUIPO = [
@@ -63,13 +63,15 @@ function AvisoDuplicado({ campo, coincidencia }) {
  * El responsable se elige con BuscadorResponsable (autocompletado
  * contra el backend), porque hay demasiados para un <select>.
  *
- * Tipo de uso: un equipo nuevo arranca en "Uso de formación", igual que
- * el valor por defecto del backend.
- *
- * Sedes/Subsedes/Ubicaciones se listan sin paginar más allá de la
- * página 1 (máx. 15 cada una) — límite conocido.
+ * Sede / Subsede / Ubicación usan BuscadorCatalogo (autocompletado
+ * contra el backend), en cascada: cada nivel depende del anterior y
+ * cambiar uno limpia los de abajo. Ya no hay límite de 15 registros:
+ * se escribe parte del nombre y el servidor devuelve las coincidencias.
+ * El estado guarda el objeto { id, nombre } de cada nivel.
  */
 export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, serverErrors }) {
+  const ubicacionInicial = initialValues?.ubicacion_formacion ?? null;
+
   const [placaSena, setPlacaSena] = useState(String(initialValues?.placa_sena ?? ''));
   const [serial, setSerial] = useState(String(initialValues?.serial ?? ''));
   const [mac, setMac] = useState(initialValues?.mac ?? '');
@@ -77,17 +79,13 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
   const [hostname, setHostname] = useState(initialValues?.hostname ?? '');
   const [tipoEquipoId, setTipoEquipoId] = useState(initialValues?.tipo_equipo?.id ?? '');
   const [responsable, setResponsable] = useState(initialValues?.responsable ?? null);
-  const [sedeId, setSedeId] = useState(initialValues?.ubicacion_formacion?.subsede?.sede?.id ?? '');
-  const [subsedeId, setSubsedeId] = useState(initialValues?.ubicacion_formacion?.subsede?.id ?? '');
-  const [ubicacionId, setUbicacionId] = useState(initialValues?.ubicacion_formacion?.id ?? '');
+  const [sede, setSede] = useState(ubicacionInicial?.subsede?.sede ?? null);
+  const [subsede, setSubsede] = useState(ubicacionInicial?.subsede ?? null);
+  const [ubicacion, setUbicacion] = useState(ubicacionInicial);
   const [caracteristicas, setCaracteristicas] = useState(initialValues?.caracteristicas_tecnicas ?? {});
   const [estado, setEstado] = useState(initialValues?.estado ?? 'activo');
-  const [tipoUso, setTipoUso] = useState(initialValues?.tipo_uso ?? 'formacion');
 
   const { data: tiposData } = useTiposEquipo();
-  const { data: sedesData } = useSedes(1);
-  const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeId || undefined });
-  const { data: ubicacionesData } = useUbicaciones({ page: 1, subsedeId: subsedeId || undefined });
 
   const { duplicadoPlaca, duplicadoSerial, verificandoPlaca, verificandoSerial } = useVerificarEquipo({
     placa: placaSena,
@@ -111,20 +109,22 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
 
   const tipoSeleccionado = tiposDisponibles.find((t) => t.id === Number(tipoEquipoId));
 
-  function handleSedeChange(event) {
-    setSedeId(event.target.value);
-    setSubsedeId('');
-    setUbicacionId('');
+  // Cambiar un nivel invalida los de abajo (una subsede de otra sede ya
+  // no es válida).
+  function handleSedeChange(nuevaSede) {
+    setSede(nuevaSede);
+    setSubsede(null);
+    setUbicacion(null);
   }
 
-  function handleSubsedeChange(event) {
-    setSubsedeId(event.target.value);
-    setUbicacionId('');
+  function handleSubsedeChange(nuevaSubsede) {
+    setSubsede(nuevaSubsede);
+    setUbicacion(null);
   }
 
   function handleSubmit(event) {
     event.preventDefault();
-    if (hayDuplicado) return;
+    if (hayDuplicado || !ubicacion) return;
 
     onSubmit({
       placa_sena: placaSena,
@@ -134,9 +134,8 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
       hostname: hostname.trim() || null,
       tipo_equipo_id: Number(tipoEquipoId),
       responsable_id: responsable?.id ?? null,
-      ubicacion_formacion_id: Number(ubicacionId),
+      ubicacion_formacion_id: ubicacion.id,
       estado,
-      tipo_uso: tipoUso,
       caracteristicas_tecnicas: caracteristicas,
     });
   }
@@ -217,41 +216,19 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="hostname" className="block text-sm font-medium text-ink">
-            Hostname (opcional)
-          </label>
-          <input
-            id="hostname"
-            type="text"
-            maxLength={100}
-            value={hostname}
-            onChange={(event) => setHostname(event.target.value)}
-            className={`mt-1 w-full ${INPUT}`}
-          />
-          {serverErrors?.hostname && <p className="mt-1 text-sm text-danger">{serverErrors.hostname[0]}</p>}
-        </div>
-
-        <div>
-          <label htmlFor="tipo_uso" className="block text-sm font-medium text-ink">
-            Tipo de uso
-          </label>
-          <select
-            id="tipo_uso"
-            required
-            value={tipoUso}
-            onChange={(event) => setTipoUso(event.target.value)}
-            className={`mt-1 w-full ${INPUT}`}
-          >
-            {TIPOS_USO.map((opcion) => (
-              <option key={opcion.value} value={opcion.value}>
-                {opcion.label}
-              </option>
-            ))}
-          </select>
-          {serverErrors?.tipo_uso && <p className="mt-1 text-sm text-danger">{serverErrors.tipo_uso[0]}</p>}
-        </div>
+      <div>
+        <label htmlFor="hostname" className="block text-sm font-medium text-ink">
+          Hostname (opcional)
+        </label>
+        <input
+          id="hostname"
+          type="text"
+          maxLength={100}
+          value={hostname}
+          onChange={(event) => setHostname(event.target.value)}
+          className={`mt-1 w-full ${INPUT}`}
+        />
+        {serverErrors?.hostname && <p className="mt-1 text-sm text-danger">{serverErrors.hostname[0]}</p>}
       </div>
 
       <div className="grid grid-cols-3 gap-4">
@@ -282,7 +259,7 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
 
         <div>
           <label htmlFor="responsable_buscador" className="block text-sm font-medium text-ink">
-            Cuentadante (opcional)
+            Responsable (opcional)
           </label>
           <BuscadorResponsable
             id="responsable_buscador"
@@ -324,68 +301,49 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
           <label htmlFor="sede_id_equipo" className="block text-sm font-medium text-ink">
             Sede
           </label>
-          <select
+          <BuscadorCatalogo
             id="sede_id_equipo"
-            required
-            value={sedeId}
+            value={sede}
             onChange={handleSedeChange}
-            className={`mt-1 w-full ${INPUT}`}
-          >
-            <option value="" disabled>
-              Sede
-            </option>
-            {sedesData?.data.map((sede) => (
-              <option key={sede.id} value={sede.id}>
-                {sede.nombre}
-              </option>
-            ))}
-          </select>
+            useBuscar={useBuscarSedes}
+            placeholder="Buscar sede..."
+            className="mt-1"
+            inputClassName={INPUT}
+          />
         </div>
 
         <div>
           <label htmlFor="subsede_id_equipo" className="block text-sm font-medium text-ink">
             Subsede
           </label>
-          <select
+          <BuscadorCatalogo
             id="subsede_id_equipo"
-            required
-            disabled={!sedeId}
-            value={subsedeId}
+            value={subsede}
             onChange={handleSubsedeChange}
-            className={`mt-1 w-full ${INPUT} disabled:bg-slate-100`}
-          >
-            <option value="" disabled>
-              Subsede
-            </option>
-            {subsedesData?.data.map((subsede) => (
-              <option key={subsede.id} value={subsede.id}>
-                {subsede.nombre}
-              </option>
-            ))}
-          </select>
+            useBuscar={useBuscarSubsedes}
+            parametros={{ sedeId: sede?.id }}
+            disabled={!sede}
+            placeholder={sede ? 'Buscar subsede...' : 'Primero elige una sede'}
+            className="mt-1"
+            inputClassName={`${INPUT} disabled:bg-slate-100`}
+          />
         </div>
 
         <div>
           <label htmlFor="ubicacion_formacion_id" className="block text-sm font-medium text-ink">
             Ubicación
           </label>
-          <select
+          <BuscadorCatalogo
             id="ubicacion_formacion_id"
-            required
-            disabled={!subsedeId}
-            value={ubicacionId}
-            onChange={(event) => setUbicacionId(event.target.value)}
-            className={`mt-1 w-full ${INPUT} disabled:bg-slate-100`}
-          >
-            <option value="" disabled>
-              Ubicación
-            </option>
-            {ubicacionesData?.data.map((ubicacion) => (
-              <option key={ubicacion.id} value={ubicacion.id}>
-                {ubicacion.nombre}
-              </option>
-            ))}
-          </select>
+            value={ubicacion}
+            onChange={setUbicacion}
+            useBuscar={useBuscarUbicaciones}
+            parametros={{ subsedeId: subsede?.id }}
+            disabled={!subsede}
+            placeholder={subsede ? 'Buscar ubicación...' : 'Primero elige una subsede'}
+            className="mt-1"
+            inputClassName={`${INPUT} disabled:bg-slate-100`}
+          />
           {serverErrors?.ubicacion_formacion_id && (
             <p className="mt-1 text-sm text-danger">{serverErrors.ubicacion_formacion_id[0]}</p>
           )}
@@ -404,6 +362,9 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
         {hayDuplicado && (
           <p className="mr-auto text-sm text-danger">Corrige la placa o el serial repetido para poder guardar.</p>
         )}
+        {!hayDuplicado && !ubicacion && (
+          <p className="mr-auto text-sm text-slate-500">Elige sede, subsede y ubicación de la lista para poder guardar.</p>
+        )}
         <button
           type="button"
           onClick={onCancel}
@@ -413,7 +374,7 @@ export function EquipoForm({ initialValues, onSubmit, onCancel, isSubmitting, se
         </button>
         <button
           type="submit"
-          disabled={isSubmitting || hayDuplicado}
+          disabled={isSubmitting || hayDuplicado || !ubicacion}
           className="rounded bg-sena px-4 py-2 text-sm font-medium text-white hover:bg-sena-dark disabled:opacity-50"
         >
           {isSubmitting ? 'Guardando...' : 'Guardar'}

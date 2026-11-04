@@ -3,26 +3,25 @@ import { ENDPOINTS } from '../../../api/endpoints';
 
 /**
  * Shapes confirmados contra UbicacionFormacionController.php / Resource:
- * - GET    /ubicaciones-formacion?nombre=&sede_id=&subsede_id=&id=&page= -> { data: [...], links, meta }
+ * - GET    /ubicaciones-formacion?subsede_id=&id=&buscar=&page= -> { data: [...], links, meta }
  *          index() trae subsede Y su sede (->with('subsede.sede')), así
  *          que cada fila llega con la cadena completa sede → subsede.
- *          "id" es coincidencia exacta; "nombre" es parcial.
+ *          "id" es coincidencia exacta; "buscar" es parcial sobre el nombre.
  * - POST   /ubicaciones-formacion      -> { data: UbicacionFormacionResource }
  * - PUT    /ubicaciones-formacion/{id} -> { data: UbicacionFormacionResource }
  * - DELETE /ubicaciones-formacion/{id} -> { mensaje: '...' } (o 403 si tiene equipos)
  *
- * "id", "nombre" y "sedeId" son opcionales: los selects en cascada de
- * otros módulos no los mandan y siguen funcionando igual.
+ * "id" y "buscar" son opcionales: los selects en cascada de otros
+ * módulos no los mandan y siguen funcionando igual.
  */
 
-export async function fetchUbicaciones({ page = 1, subsedeId, sedeId, id, nombre } = {}) {
+export async function fetchUbicaciones({ page = 1, subsedeId, id, buscar } = {}) {
   const { data } = await httpClient.get(ENDPOINTS.ubicacionesFormacion, {
     params: {
       page,
-      ...(nombre ? { nombre } : {}),
-      ...(sedeId ? { sede_id: sedeId } : {}),
       ...(subsedeId ? { subsede_id: subsedeId } : {}),
       ...(id ? { id } : {}),
+      ...(buscar ? { buscar } : {}),
     },
   });
   return data;

@@ -3,8 +3,9 @@ import { ENDPOINTS } from '../../../api/endpoints';
 
 /**
  * Shapes confirmados contra SedeController.php y SedeResource.php reales:
- * - GET    /sedes      -> { data: [SedeResource...], links: {...}, meta: {...} }
+ * - GET    /sedes?page=&buscar= -> { data: [SedeResource...], links: {...}, meta: {...} }
  *                          (Sede::paginate(15), envoltura estándar de Laravel)
+ *                          "buscar" es coincidencia parcial sobre el nombre.
  * - POST   /sedes      -> { data: SedeResource }
  * - PUT    /sedes/{id} -> { data: SedeResource }
  * - DELETE /sedes/{id} -> { mensaje: '...' }  (o 403 si tiene subsedes activas)
@@ -14,8 +15,10 @@ import { ENDPOINTS } from '../../../api/endpoints';
  * en index() llega ausente — por eso en la UI se trata como opcional.
  */
 
-export async function fetchSedes(page = 1) {
-  const { data } = await httpClient.get(ENDPOINTS.sedes, { params: { page } });
+export async function fetchSedes(page = 1, { buscar } = {}) {
+  const { data } = await httpClient.get(ENDPOINTS.sedes, {
+    params: { page, ...(buscar ? { buscar } : {}) },
+  });
   return data;
 }
 

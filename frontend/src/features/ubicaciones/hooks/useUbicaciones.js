@@ -1,14 +1,27 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { fetchUbicaciones, createUbicacion, updateUbicacion, deleteUbicacion } from '../services/ubicacionesApi';
 
-// Todos los filtros entran en la queryKey: cada combinación es una
-// consulta distinta. keepPreviousData: mientras llega el resultado de una
-// búsqueda nueva, la tabla sigue mostrando el anterior (sin parpadeo).
-export function useUbicaciones({ page = 1, subsedeId, sedeId, id, nombre } = {}) {
+// id entra en la queryKey: cada búsqueda por ID es una consulta distinta.
+export function useUbicaciones({ page = 1, subsedeId, id } = {}) {
   return useQuery({
-    queryKey: ['ubicaciones-formacion', page, subsedeId ?? null, sedeId ?? null, id ?? null, nombre ?? null],
-    queryFn: () => fetchUbicaciones({ page, subsedeId, sedeId, id, nombre }),
-    placeholderData: keepPreviousData,
+    queryKey: ['ubicaciones-formacion', page, subsedeId ?? null, id ?? null],
+    queryFn: () => fetchUbicaciones({ page, subsedeId, id }),
+  });
+}
+
+/**
+ * Para el buscador de ubicaciones (autocompletado), siempre dentro de una
+ * subsede. Igual que useBuscarSubsedes: solo se conservan los resultados
+ * anteriores si son de la misma subsede.
+ */
+export function useBuscarUbicaciones(termino, { enabled = true, subsedeId } = {}) {
+  return useQuery({
+    queryKey: ['ubicaciones-formacion', 'buscar', subsedeId ?? null, termino],
+    queryFn: () => fetchUbicaciones({ page: 1, subsedeId, buscar: termino || undefined }),
+    enabled: enabled && Boolean(subsedeId),
+    placeholderData: (previo, consultaPrevia) =>
+      consultaPrevia?.queryKey?.[2] === (subsedeId ?? null) ? previo : undefined,
+    staleTime: 30_000,
   });
 }
 

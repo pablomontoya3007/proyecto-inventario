@@ -12,11 +12,9 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 class UbicacionFormacionController extends Controller
 {
     /**
-     * Filtros (opcionales y combinables):
-     * - nombre: coincidencia parcial ("sala" encuentra "Sala de Sistemas 1").
-     * - sede_id: ubicaciones de cualquier subsede de esa sede.
-     * - subsede_id: ubicaciones de esa subsede.
-     * - id: coincidencia exacta, igual que en SubsedeController.
+     * Filtros: subsede_id, id y buscar — opcionales y combinables. El id
+     * es coincidencia exacta, igual que en SubsedeController; "buscar" es
+     * coincidencia parcial sobre el nombre (lo usa el autocompletado).
      */
     public function index(Request $request): AnonymousResourceCollection
     {
@@ -27,10 +25,12 @@ class UbicacionFormacionController extends Controller
             // Mismo ajuste que en Sede y Subsede: withCount en vez de
             // cargar cada equipo completo solo para contarlos.
             ->withCount('equipos')
-            ->when($request->filled('nombre'), fn ($q) => $q->where('nombre', 'like', '%' . $request->input('nombre') . '%'))
-            ->when($request->filled('sede_id'), fn ($q) => $q->whereHas('subsede', fn ($sub) => $sub->where('sede_id', $request->integer('sede_id'))))
             ->when($request->filled('subsede_id'), fn ($q) => $q->where('subsede_id', $request->input('subsede_id')))
             ->when($request->filled('id'), fn ($q) => $q->whereKey($request->integer('id')))
+            ->when(
+                $request->filled('buscar'),
+                fn ($q) => $q->where('nombre', 'like', '%' . $request->input('buscar') . '%')
+            )
             ->orderBy('nombre')
             ->paginate(15);
 

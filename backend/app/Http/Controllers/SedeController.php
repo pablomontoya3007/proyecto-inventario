@@ -6,11 +6,17 @@ use App\Http\Requests\SedeRequest;
 use App\Http\Resources\SedeResource;
 use App\Models\Sede;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class SedeController extends Controller
 {
-    public function index(): AnonymousResourceCollection
+    /**
+     * Filtro opcional: buscar (coincidencia parcial sobre el nombre).
+     * Lo usa el buscador de sedes de los formularios, para poder
+     * encontrar una sede aunque no esté entre las primeras 15.
+     */
+    public function index(Request $request): AnonymousResourceCollection
     {
         $this->authorize('viewAny', Sede::class);
 
@@ -18,7 +24,13 @@ class SedeController extends Controller
         // (COUNT vía subquery), sin traer ni serializar cada subsede
         // completa — más barato que ->load('subsedes') para un listado.
         return SedeResource::collection(
-            Sede::withCount('subsedes')->orderBy('nombre')->paginate(15)
+            Sede::withCount('subsedes')
+                ->when(
+                    $request->filled('buscar'),
+                    fn ($q) => $q->where('nombre', 'like', '%' . $request->input('buscar') . '%')
+                )
+                ->orderBy('nombre')
+                ->paginate(15)
         );
     }
 
