@@ -1,18 +1,28 @@
+import { BuscadorCatalogoPorId } from './BuscadorCatalogo';
+import { useBuscarSedes, useSedePorId } from '../../features/sedes/hooks/useSedes';
+import { useBuscarSubsedes, useSubsedePorId } from '../../features/subsedes/hooks/useSubsedes';
+import { useBuscarUbicaciones, useUbicacionPorId } from '../../features/ubicaciones/hooks/useUbicaciones';
+
+const CAMPO =
+  'rounded border border-slate-300 px-2 py-1 text-sm focus:border-sena focus:outline-none focus:ring-1 focus:ring-sena disabled:bg-surface';
+
 /**
  * Filtro en cascada sede -> subsede -> ubicación, reutilizado por todas
  * las páginas que necesitan acotar sus datos a una parte de la
  * jerarquía (Equipos, Licencias, Responsables, Mantenimientos,
- * Traslados, Observaciones, Reportes). Antes cada página lo tenía
- * copiado con variaciones; se extrajo aquí al repetirse por quinta vez.
+ * Traslados, Observaciones, Novedades, Reportes).
  *
- * `mostrarUbicacion = false` oculta el tercer selector para páginas
+ * Cada nivel es un buscador (BuscadorCatalogoPorId): se escribe parte del
+ * nombre y el servidor devuelve las coincidencias, así que ya no hay
+ * límite de 15 registros. El componente es autónomo: las páginas solo
+ * guardan los ids (texto, '' = sin filtro) y reciben los cambios por
+ * onSedeChange / onSubsedeChange / onUbicacionChange(id).
+ *
+ * `mostrarUbicacion = false` oculta el tercer buscador para páginas
  * donde no aplica (por ejemplo, la propia lista de Ubicaciones, que
  * solo puede filtrarse por sede/subsede).
  */
 export function FiltroUbicacionCascada({
-  sedesData,
-  subsedesData,
-  ubicacionesData,
   sedeFiltro,
   subsedeFiltro,
   ubicacionFiltro,
@@ -26,64 +36,54 @@ export function FiltroUbicacionCascada({
 
   return (
     <div className="mb-4 flex flex-wrap items-end gap-4 rounded border border-slate-200 bg-white p-4">
-      <div>
+      <div className="w-52">
         <label htmlFor="filtro-sede" className="mb-1 block text-xs font-medium text-slate-600">
           Sede
         </label>
-        <select
+        <BuscadorCatalogoPorId
           id="filtro-sede"
-          value={sedeFiltro}
-          onChange={(event) => onSedeChange(event.target.value)}
-          className="rounded border border-slate-300 px-2 py-1 text-sm focus:border-sena focus:outline-none focus:ring-1 focus:ring-sena"
-        >
-          <option value="">Todas las sedes</option>
-          {sedesData?.data.map((sede) => (
-            <option key={sede.id} value={sede.id}>
-              {sede.nombre}
-            </option>
-          ))}
-        </select>
+          valueId={sedeFiltro}
+          onChange={onSedeChange}
+          usePorId={useSedePorId}
+          useBuscar={useBuscarSedes}
+          placeholder="Todas las sedes"
+          inputClassName={CAMPO}
+        />
       </div>
 
-      <div>
+      <div className="w-52">
         <label htmlFor="filtro-subsede" className="mb-1 block text-xs font-medium text-slate-600">
           Subsede
         </label>
-        <select
+        <BuscadorCatalogoPorId
           id="filtro-subsede"
-          value={subsedeFiltro}
+          valueId={subsedeFiltro}
+          onChange={onSubsedeChange}
+          usePorId={useSubsedePorId}
+          useBuscar={useBuscarSubsedes}
+          parametros={{ sedeId: sedeFiltro || undefined }}
           disabled={!sedeFiltro}
-          onChange={(event) => onSubsedeChange(event.target.value)}
-          className="rounded border border-slate-300 px-2 py-1 text-sm focus:border-sena focus:outline-none focus:ring-1 focus:ring-sena disabled:bg-surface"
-        >
-          <option value="">Todas las subsedes</option>
-          {subsedesData?.data.map((subsede) => (
-            <option key={subsede.id} value={subsede.id}>
-              {subsede.nombre}
-            </option>
-          ))}
-        </select>
+          placeholder="Todas las subsedes"
+          inputClassName={CAMPO}
+        />
       </div>
 
       {mostrarUbicacion && (
-        <div>
+        <div className="w-52">
           <label htmlFor="filtro-ubicacion" className="mb-1 block text-xs font-medium text-slate-600">
             Ubicación
           </label>
-          <select
+          <BuscadorCatalogoPorId
             id="filtro-ubicacion"
-            value={ubicacionFiltro}
+            valueId={ubicacionFiltro}
+            onChange={onUbicacionChange}
+            usePorId={useUbicacionPorId}
+            useBuscar={useBuscarUbicaciones}
+            parametros={{ subsedeId: subsedeFiltro || undefined }}
             disabled={!subsedeFiltro}
-            onChange={(event) => onUbicacionChange(event.target.value)}
-            className="rounded border border-slate-300 px-2 py-1 text-sm focus:border-sena focus:outline-none focus:ring-1 focus:ring-sena disabled:bg-surface"
-          >
-            <option value="">Todas las ubicaciones</option>
-            {ubicacionesData?.data.map((ubicacion) => (
-              <option key={ubicacion.id} value={ubicacion.id}>
-                {ubicacion.nombre}
-              </option>
-            ))}
-          </select>
+            placeholder="Todas las ubicaciones"
+            inputClassName={CAMPO}
+          />
         </div>
       )}
 

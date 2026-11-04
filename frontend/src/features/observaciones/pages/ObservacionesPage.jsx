@@ -1,8 +1,5 @@
 import { useState } from 'react';
 import { useObservaciones, useCreateObservacion } from '../hooks/useObservaciones';
-import { useSedes } from '../../sedes/hooks/useSedes';
-import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
-import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
 import { FiltroUbicacionCascada } from '../../../shared/components/FiltroUbicacionCascada';
 import { ObservacionList } from '../components/ObservacionList';
 import { ObservacionForm } from '../components/ObservacionForm';
@@ -59,10 +56,6 @@ export function ObservacionesPage() {
     ...(usuarioFiltro ? { usuario: usuarioFiltro } : {}),
   };
 
-  const { data: sedesData } = useSedes(1);
-  const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeFiltro || undefined });
-  const { data: ubicacionesData } = useUbicaciones({ page: 1, subsedeId: subsedeFiltro || undefined });
-
   const { data, isLoading, isError } = useObservaciones({ page, filtros });
   const createObservacion = useCreateObservacion();
 
@@ -88,9 +81,6 @@ export function ObservacionesPage() {
       </div>
 
       <FiltroUbicacionCascada
-        sedesData={sedesData}
-        subsedesData={subsedesData}
-        ubicacionesData={ubicacionesData}
         sedeFiltro={sedeFiltro}
         subsedeFiltro={subsedeFiltro}
         ubicacionFiltro={ubicacionFiltro}

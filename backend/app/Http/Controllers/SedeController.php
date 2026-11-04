@@ -12,7 +12,9 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 class SedeController extends Controller
 {
     /**
-     * Filtro opcional: buscar (coincidencia parcial sobre el nombre).
+     * Filtros opcionales: buscar (coincidencia parcial sobre el nombre) e
+     * id (coincidencia exacta; lo usan los buscadores para mostrar el
+     * nombre de una sede de la que solo se conoce el id).
      * Lo usa el buscador de sedes de los formularios, para poder
      * encontrar una sede aunque no esté entre las primeras 15.
      */
@@ -25,6 +27,7 @@ class SedeController extends Controller
         // completa — más barato que ->load('subsedes') para un listado.
         return SedeResource::collection(
             Sede::withCount('subsedes')
+                ->when($request->filled('id'), fn ($q) => $q->whereKey($request->integer('id')))
                 ->when(
                     $request->filled('buscar'),
                     fn ($q) => $q->where('nombre', 'like', '%' . $request->input('buscar') . '%')

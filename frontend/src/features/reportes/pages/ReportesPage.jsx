@@ -15,9 +15,6 @@ import {
   useDescargarReporteResponsablesPdf,
 } from '../hooks/useReportes';
 import { useTiposEquipo } from '../../tipos-equipo/hooks/useTiposEquipo';
-import { useSedes } from '../../sedes/hooks/useSedes';
-import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
-import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
 import { DesgloseCategoria } from '../components/DesgloseCategoria';
 import { EquiposListadoTabla } from '../components/EquiposListadoTabla';
 import { LicenciasAtencionTabla } from '../components/LicenciasAtencionTabla';
@@ -26,6 +23,10 @@ import { EquiposSinLicenciaTabla } from '../components/EquiposSinLicenciaTabla';
 import { SelectorTiposEquipo } from '../components/SelectorTiposEquipo';
 import { SelectorColumnas } from '../components/SelectorColumnas';
 import { TIPOS_USO } from '../../../shared/constants/tiposUso';
+import { BuscadorCatalogoPorId } from '../../../shared/components/BuscadorCatalogo';
+import { useBuscarSedes, useSedePorId } from '../../sedes/hooks/useSedes';
+import { useBuscarSubsedes, useSubsedePorId } from '../../subsedes/hooks/useSubsedes';
+import { useBuscarUbicaciones, useUbicacionPorId } from '../../ubicaciones/hooks/useUbicaciones';
 
 // Confirmado contra app/Enums/EstadoEquipo.php.
 const ESTADOS_EQUIPO = [
@@ -134,10 +135,6 @@ export function ReportesPage() {
   const [columnas, setColumnas] = useState([]);
   const [vistaLicencias, setVistaLicencias] = useState('registradas');
   const [tiposSinLicenciaFiltro, setTiposSinLicenciaFiltro] = useState([]);
-
-  const { data: sedesData } = useSedes(1);
-  const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeFiltro || undefined });
-  const { data: ubicacionesData } = useUbicaciones({ page: 1, subsedeId: subsedeFiltro || undefined });
   const { data: tiposData } = useTiposEquipo();
 
   // El más específico gana — igual que en EquiposPage. Si hay
@@ -193,14 +190,14 @@ export function ReportesPage() {
     setSearchParams(valor === 'equipos' ? {} : { reporte: valor }, { replace: true });
   }
 
-  function handleSedeFiltroChange(event) {
-    setSedeFiltro(event.target.value);
+  function handleSedeFiltroChange(valor) {
+    setSedeFiltro(valor);
     setSubsedeFiltro('');
     setUbicacionFiltro('');
   }
 
-  function handleSubsedeFiltroChange(event) {
-    setSubsedeFiltro(event.target.value);
+  function handleSubsedeFiltroChange(valor) {
+    setSubsedeFiltro(valor);
     setUbicacionFiltro('');
   }
 
@@ -287,48 +284,46 @@ export function ReportesPage() {
         <div className="space-y-4 p-4">
           <div className="flex flex-wrap items-end gap-3">
             <Campo etiqueta="Sede" htmlFor="filtro-sede-reporte">
-              <select id="filtro-sede-reporte" value={sedeFiltro} onChange={handleSedeFiltroChange} className={CLASE_SELECT}>
-                <option value="">Todas las sedes</option>
-                {sedesData?.data.map((sede) => (
-                  <option key={sede.id} value={sede.id}>
-                    {sede.nombre}
-                  </option>
-                ))}
-              </select>
+              <BuscadorCatalogoPorId
+                id="filtro-sede-reporte"
+                valueId={sedeFiltro}
+                onChange={handleSedeFiltroChange}
+                usePorId={useSedePorId}
+                useBuscar={useBuscarSedes}
+                placeholder="Todas las sedes"
+                className="w-48"
+                inputClassName={CLASE_SELECT}
+              />
             </Campo>
 
             <Campo etiqueta="Subsede" htmlFor="filtro-subsede-reporte">
-              <select
+              <BuscadorCatalogoPorId
                 id="filtro-subsede-reporte"
-                value={subsedeFiltro}
-                disabled={!sedeFiltro}
+                valueId={subsedeFiltro}
                 onChange={handleSubsedeFiltroChange}
-                className={CLASE_SELECT}
-              >
-                <option value="">Todas las subsedes</option>
-                {subsedesData?.data.map((subsede) => (
-                  <option key={subsede.id} value={subsede.id}>
-                    {subsede.nombre}
-                  </option>
-                ))}
-              </select>
+                usePorId={useSubsedePorId}
+                useBuscar={useBuscarSubsedes}
+                parametros={{ sedeId: sedeFiltro || undefined }}
+                disabled={!sedeFiltro}
+                placeholder="Todas las subsedes"
+                className="w-48"
+                inputClassName={CLASE_SELECT}
+              />
             </Campo>
 
             <Campo etiqueta="Ubicación" htmlFor="filtro-ubicacion-reporte">
-              <select
+              <BuscadorCatalogoPorId
                 id="filtro-ubicacion-reporte"
-                value={ubicacionFiltro}
+                valueId={ubicacionFiltro}
+                onChange={setUbicacionFiltro}
+                usePorId={useUbicacionPorId}
+                useBuscar={useBuscarUbicaciones}
+                parametros={{ subsedeId: subsedeFiltro || undefined }}
                 disabled={!subsedeFiltro}
-                onChange={(event) => setUbicacionFiltro(event.target.value)}
-                className={CLASE_SELECT}
-              >
-                <option value="">Todas las ubicaciones</option>
-                {ubicacionesData?.data.map((ubicacion) => (
-                  <option key={ubicacion.id} value={ubicacion.id}>
-                    {ubicacion.nombre}
-                  </option>
-                ))}
-              </select>
+                placeholder="Todas las ubicaciones"
+                className="w-48"
+                inputClassName={CLASE_SELECT}
+              />
             </Campo>
 
             {reporte === 'equipos' && (

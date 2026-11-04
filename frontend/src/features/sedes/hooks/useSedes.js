@@ -27,6 +27,17 @@ export function useBuscarSedes(termino, { enabled = true } = {}) {
   });
 }
 
+// Nombre de una sede a partir de su id (para mostrar el valor de un
+// buscador cuando solo se conoce el id, p. ej. un filtro de la URL).
+export function useSedePorId(id) {
+  return useQuery({
+    queryKey: ['sedes', 'por-id', String(id ?? '')],
+    queryFn: async () => (await fetchSedes(1, { id })).data[0] ?? null,
+    enabled: Boolean(id),
+    staleTime: 5 * 60_000,
+  });
+}
+
 export function useCreateSede() {
   const queryClient = useQueryClient();
   return useMutation({

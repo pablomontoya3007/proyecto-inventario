@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useSedes } from '../../sedes/hooks/useSedes';
-import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
+import { BuscadorCatalogoPorId } from '../../../shared/components/BuscadorCatalogo';
+import { useBuscarSedes, useSedePorId } from '../../sedes/hooks/useSedes';
+import { useBuscarSubsedes, useSubsedePorId } from '../../subsedes/hooks/useSubsedes';
 
 /**
- * Select en cascada: Sede solo filtra qué subsedes se muestran en el
- * segundo select — no se envía al backend. Lo único que exige
+ * Buscadores en cascada: Sede solo filtra qué subsedes se buscan en el
+ * segundo campo — no se envía al backend. Lo único que exige
  * UbicacionFormacionRequest es subsede_id.
  *
  * Al editar, initialValues.subsede.sede_id ya viene poblado porque
@@ -16,17 +17,14 @@ export function UbicacionForm({ initialValues, onSubmit, onCancel, isSubmitting,
     const [subsedeId, setSubsedeId] = useState(initialValues?.subsede_id ?? '');
     const [nombre, setNombre] = useState(initialValues?.nombre ?? '');
 
-    const { data: sedesData } = useSedes(1);
-    const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeId || undefined });
-
     useEffect(() => {
         setSedeId(initialValues?.subsede?.sede_id ?? '');
         setSubsedeId(initialValues?.subsede_id ?? '');
         setNombre(initialValues?.nombre ?? '');
     }, [initialValues]);
 
-    function handleSedeChange(event) {
-        setSedeId(event.target.value);
+    function handleSedeChange(valor) {
+        setSedeId(valor);
         setSubsedeId(''); // cambiar de sede invalida la subsede elegida antes
     }
 
@@ -41,45 +39,34 @@ export function UbicacionForm({ initialValues, onSubmit, onCancel, isSubmitting,
                 <label htmlFor="sede_id" className="block text-sm font-medium text-ink">
                     Sede
                 </label>
-                <select
-                    id="sede_id"
-                    required
-                    value={sedeId}
-                    onChange={handleSedeChange}
-                    className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
-                >
-                    <option value="" disabled>
-                        Selecciona una sede
-                    </option>
-                    {sedesData?.data.map((sede) => (
-                        <option key={sede.id} value={sede.id}>
-                            {sede.nombre}
-                        </option>
-                    ))}
-                </select>
+                <BuscadorCatalogoPorId
+                  id="sede_id"
+                  valueId={sedeId}
+                  onChange={handleSedeChange}
+                  usePorId={useSedePorId}
+                  useBuscar={useBuscarSedes}
+                  placeholder="Buscar sede..."
+                  className="mt-1"
+                  inputClassName={"mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none disabled:bg-slate-100"}
+                />
             </div>
 
             <div>
                 <label htmlFor="subsede_id" className="block text-sm font-medium text-ink">
                     Subsede
                 </label>
-                <select
-                    id="subsede_id"
-                    required
-                    disabled={!sedeId}
-                    value={subsedeId}
-                    onChange={(event) => setSubsedeId(event.target.value)}
-                    className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none disabled:bg-slate-100"
-                >
-                    <option value="" disabled>
-                        {sedeId ? 'Selecciona una subsede' : 'Primero elige una sede'}
-                    </option>
-                    {subsedesData?.data.map((subsede) => (
-                        <option key={subsede.id} value={subsede.id}>
-                            {subsede.nombre}
-                        </option>
-                    ))}
-                </select>
+                <BuscadorCatalogoPorId
+                  id="subsede_id"
+                  valueId={subsedeId}
+                  onChange={setSubsedeId}
+                  usePorId={useSubsedePorId}
+                  useBuscar={useBuscarSubsedes}
+                  parametros={{ sedeId: sedeId || undefined }}
+                  disabled={!sedeId}
+                  placeholder="Buscar subsede..."
+                  className="mt-1"
+                  inputClassName={"mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none disabled:bg-slate-100"}
+                />
                 {serverErrors?.subsede_id && <p className="mt-1 text-sm text-danger">{serverErrors.subsede_id[0]}</p>}
             </div>
 

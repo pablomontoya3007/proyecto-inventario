@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { Search, X } from 'lucide-react';
 import { useBusquedaGlobal } from '../hooks/useBusquedaGlobal';
 import { useTiposEquipo } from '../../tipos-equipo/hooks/useTiposEquipo';
-import { useSedes } from '../../sedes/hooks/useSedes';
-import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
-import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
 import { HojaDeVidaModal } from '../../equipos/components/HojaDeVidaModal';
 import { useValorDiferido } from '../../../shared/hooks/useValorDiferido';
 import { ResultadosBusqueda } from './ResultadosBusqueda';
+import { BuscadorCatalogoPorId } from '../../../shared/components/BuscadorCatalogo';
+import { useBuscarSedes, useSedePorId } from '../../sedes/hooks/useSedes';
+import { useBuscarSubsedes, useSubsedePorId } from '../../subsedes/hooks/useSubsedes';
+import { useBuscarUbicaciones, useUbicacionPorId } from '../../ubicaciones/hooks/useUbicaciones';
 
 // Mismos valores que app/Enums/EstadoEquipo.php y que EquiposPage.
 const ESTADOS_EQUIPO = [
@@ -53,9 +54,6 @@ export function BuscadorGlobal() {
   const termino = useValorDiferido(texto.trim(), ESPERA_MS);
 
   const { data: tiposData } = useTiposEquipo();
-  const { data: sedesData } = useSedes(1);
-  const { data: subsedesData } = useSubsedes({ page: 1, sedeId: filtros.sedeId || undefined });
-  const { data: ubicacionesData } = useUbicaciones({ page: 1, subsedeId: filtros.subsedeId || undefined });
 
   const hayFiltros = Object.values(filtros).some(Boolean);
   const textoSuficiente = termino.length >= MIN_CARACTERES;
@@ -169,49 +167,42 @@ export function BuscadorGlobal() {
             ))}
           </select>
 
-          <select
-            aria-label="Filtrar por sede"
-            value={filtros.sedeId}
-            onChange={(event) => cambiarFiltro('sedeId', event.target.value)}
-            className={CAMPO}
-          >
-            <option value="">Todas las sedes</option>
-            {sedesData?.data.map((sede) => (
-              <option key={sede.id} value={sede.id}>
-                {sede.nombre}
-              </option>
-            ))}
-          </select>
+          <BuscadorCatalogoPorId
+            ariaLabel="Filtrar por sede"
+            valueId={filtros.sedeId}
+            onChange={(id) => cambiarFiltro('sedeId', id)}
+            usePorId={useSedePorId}
+            useBuscar={useBuscarSedes}
+            placeholder="Todas las sedes"
+            className="w-48"
+            inputClassName={CAMPO}
+          />
 
-          <select
-            aria-label="Filtrar por subsede"
-            value={filtros.subsedeId}
+          <BuscadorCatalogoPorId
+            ariaLabel="Filtrar por subsede"
+            valueId={filtros.subsedeId}
+            onChange={(id) => cambiarFiltro('subsedeId', id)}
+            usePorId={useSubsedePorId}
+            useBuscar={useBuscarSubsedes}
+            parametros={{ sedeId: filtros.sedeId || undefined }}
             disabled={!filtros.sedeId}
-            onChange={(event) => cambiarFiltro('subsedeId', event.target.value)}
-            className={CAMPO}
-          >
-            <option value="">Todas las subsedes</option>
-            {subsedesData?.data.map((subsede) => (
-              <option key={subsede.id} value={subsede.id}>
-                {subsede.nombre}
-              </option>
-            ))}
-          </select>
+            placeholder="Todas las subsedes"
+            className="w-48"
+            inputClassName={CAMPO}
+          />
 
-          <select
-            aria-label="Filtrar por ubicación de formación"
-            value={filtros.ubicacionId}
+          <BuscadorCatalogoPorId
+            ariaLabel="Filtrar por ubicación de formación"
+            valueId={filtros.ubicacionId}
+            onChange={(id) => cambiarFiltro('ubicacionId', id)}
+            usePorId={useUbicacionPorId}
+            useBuscar={useBuscarUbicaciones}
+            parametros={{ subsedeId: filtros.subsedeId || undefined }}
             disabled={!filtros.subsedeId}
-            onChange={(event) => cambiarFiltro('ubicacionId', event.target.value)}
-            className={CAMPO}
-          >
-            <option value="">Todas las ubicaciones</option>
-            {ubicacionesData?.data.map((ubicacion) => (
-              <option key={ubicacion.id} value={ubicacion.id}>
-                {ubicacion.nombre}
-              </option>
-            ))}
-          </select>
+            placeholder="Todas las ubicaciones"
+            className="w-48"
+            inputClassName={CAMPO}
+          />
 
           <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600">
             <input

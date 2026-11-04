@@ -1,8 +1,5 @@
 import { useState } from 'react';
 import { useTraslados, useCreateTraslado } from '../hooks/useTraslados';
-import { useSedes } from '../../sedes/hooks/useSedes';
-import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
-import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
 import { FiltroUbicacionCascada } from '../../../shared/components/FiltroUbicacionCascada';
 import { TrasladoTable } from '../components/TrasladoTable';
 import { TrasladoForm } from '../components/TrasladoForm';
@@ -54,10 +51,6 @@ export function TrasladosPage() {
           : {}),
   };
 
-  const { data: sedesData } = useSedes(1);
-  const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeFiltro || undefined });
-  const { data: ubicacionesData } = useUbicaciones({ page: 1, subsedeId: subsedeFiltro || undefined });
-
   const { data, isLoading, isError } = useTraslados(page, filtros);
   const createTraslado = useCreateTraslado();
 
@@ -83,9 +76,6 @@ export function TrasladosPage() {
       </div>
 
       <FiltroUbicacionCascada
-        sedesData={sedesData}
-        subsedesData={subsedesData}
-        ubicacionesData={ubicacionesData}
         sedeFiltro={sedeFiltro}
         subsedeFiltro={subsedeFiltro}
         ubicacionFiltro={ubicacionFiltro}

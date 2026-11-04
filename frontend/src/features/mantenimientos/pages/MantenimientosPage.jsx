@@ -5,9 +5,6 @@ import {
   useUpdateMantenimiento,
   useDeleteMantenimiento,
 } from '../hooks/useMantenimientos';
-import { useSedes } from '../../sedes/hooks/useSedes';
-import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
-import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
 import { FiltroUbicacionCascada } from '../../../shared/components/FiltroUbicacionCascada';
 import { FiltroAsignado } from '../../usuarios/components/FiltroAsignado';
 import { ContadoresModulo } from '../../../shared/components/ContadoresModulo';
@@ -93,10 +90,6 @@ export function MantenimientosPage() {
     ...(asignadoFiltro ? { asignado_a: asignadoFiltro.id } : {}),
     ...(pestana === 'activos' && estadoFiltro ? { estado: estadoFiltro } : {}),
   };
-
-  const { data: sedesData } = useSedes(1);
-  const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeFiltro || undefined });
-  const { data: ubicacionesData } = useUbicaciones({ page: 1, subsedeId: subsedeFiltro || undefined });
 
   const { data, isLoading, isError } = useMantenimientos({ page, completado: pestana === 'historial', filtros });
   const createMantenimiento = useCreateMantenimiento();
@@ -230,9 +223,6 @@ export function MantenimientosPage() {
       <AvisoBanner aviso={aviso} onCerrar={() => setAviso(null)} />
 
       <FiltroUbicacionCascada
-        sedesData={sedesData}
-        subsedesData={subsedesData}
-        ubicacionesData={ubicacionesData}
         sedeFiltro={sedeFiltro}
         subsedeFiltro={subsedeFiltro}
         ubicacionFiltro={ubicacionFiltro}

@@ -1,12 +1,15 @@
 import { useState } from 'react';
-import { useSedes } from '../../sedes/hooks/useSedes';
-import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
-import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
 import { BuscadorUsuario } from '../../usuarios/components/BuscadorUsuario';
 import { useEquiposParaMasivo, useCreateMantenimientosMasivos } from '../hooks/useMantenimientos';
+import { BuscadorCatalogoPorId } from '../../../shared/components/BuscadorCatalogo';
+import { useBuscarSedes, useSedePorId } from '../../sedes/hooks/useSedes';
+import { useBuscarSubsedes, useSubsedePorId } from '../../subsedes/hooks/useSubsedes';
+import { useBuscarUbicaciones, useUbicacionPorId } from '../../ubicaciones/hooks/useUbicaciones';
 
 const CAMPO =
   'mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-sena focus:outline-none disabled:bg-slate-100';
+// El buscador va dentro de un contenedor que ya trae el margen superior.
+const CAMPO_BUSCADOR = CAMPO.replace('mt-1 ', '');
 
 // Equipos en estos estados aparecen DESMARCADOS al cargar la ubicación,
 // pero se pueden marcar a mano si hace falta.
@@ -45,10 +48,6 @@ export function MantenimientoMasivoModal({ onClose }) {
   const [fecha, setFecha] = useState(obtenerFechaHoyLocal);
   const [asignado, setAsignado] = useState(null);
   const [descripcion, setDescripcion] = useState('');
-
-  const { data: sedesData } = useSedes(1);
-  const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeId || undefined });
-  const { data: ubicacionesData } = useUbicaciones({ page: 1, subsedeId: subsedeId || undefined });
   const {
     data: equiposData,
     isLoading: cargandoEquipos,
@@ -76,21 +75,21 @@ export function MantenimientoMasivoModal({ onClose }) {
     setBusqueda('');
   }
 
-  function handleSedeChange(event) {
-    setSedeId(event.target.value);
+  function handleSedeChange(valor) {
+    setSedeId(valor);
     setSubsedeId('');
     setUbicacionId('');
     reiniciarSeleccion();
   }
 
-  function handleSubsedeChange(event) {
-    setSubsedeId(event.target.value);
+  function handleSubsedeChange(valor) {
+    setSubsedeId(valor);
     setUbicacionId('');
     reiniciarSeleccion();
   }
 
-  function handleUbicacionChange(event) {
-    setUbicacionId(event.target.value);
+  function handleUbicacionChange(valor) {
+    setUbicacionId(valor);
     reiniciarSeleccion();
   }
 
@@ -185,62 +184,52 @@ export function MantenimientoMasivoModal({ onClose }) {
           <label htmlFor="masivo_sede" className="block text-sm font-medium text-ink">
             Sede
           </label>
-          <select id="masivo_sede" required value={sedeId} onChange={handleSedeChange} className={CAMPO}>
-            <option value="" disabled>
-              Sede
-            </option>
-            {sedesData?.data.map((sede) => (
-              <option key={sede.id} value={sede.id}>
-                {sede.nombre}
-              </option>
-            ))}
-          </select>
+          <BuscadorCatalogoPorId
+            id="masivo_sede"
+            valueId={sedeId}
+            onChange={handleSedeChange}
+            usePorId={useSedePorId}
+            useBuscar={useBuscarSedes}
+            placeholder="Buscar sede..."
+            className="mt-1"
+            inputClassName={CAMPO_BUSCADOR}
+          />
         </div>
 
         <div>
           <label htmlFor="masivo_subsede" className="block text-sm font-medium text-ink">
             Subsede
           </label>
-          <select
+          <BuscadorCatalogoPorId
             id="masivo_subsede"
-            required
-            disabled={!sedeId}
-            value={subsedeId}
+            valueId={subsedeId}
             onChange={handleSubsedeChange}
-            className={CAMPO}
-          >
-            <option value="" disabled>
-              Subsede
-            </option>
-            {subsedesData?.data.map((subsede) => (
-              <option key={subsede.id} value={subsede.id}>
-                {subsede.nombre}
-              </option>
-            ))}
-          </select>
+            usePorId={useSubsedePorId}
+            useBuscar={useBuscarSubsedes}
+            parametros={{ sedeId: sedeId || undefined }}
+            disabled={!sedeId}
+            placeholder="Buscar subsede..."
+            className="mt-1"
+            inputClassName={CAMPO_BUSCADOR}
+          />
         </div>
 
         <div>
           <label htmlFor="masivo_ubicacion" className="block text-sm font-medium text-ink">
             Ubicación
           </label>
-          <select
+          <BuscadorCatalogoPorId
             id="masivo_ubicacion"
-            required
-            disabled={!subsedeId}
-            value={ubicacionId}
+            valueId={ubicacionId}
             onChange={handleUbicacionChange}
-            className={CAMPO}
-          >
-            <option value="" disabled>
-              Ubicación
-            </option>
-            {ubicacionesData?.data.map((ubicacion) => (
-              <option key={ubicacion.id} value={ubicacion.id}>
-                {ubicacion.nombre}
-              </option>
-            ))}
-          </select>
+            usePorId={useUbicacionPorId}
+            useBuscar={useBuscarUbicaciones}
+            parametros={{ subsedeId: subsedeId || undefined }}
+            disabled={!subsedeId}
+            placeholder="Buscar ubicación..."
+            className="mt-1"
+            inputClassName={CAMPO_BUSCADOR}
+          />
         </div>
       </div>
 

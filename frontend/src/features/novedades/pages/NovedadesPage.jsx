@@ -1,9 +1,6 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useNovedades, useCreateNovedad, useResolverNovedad } from '../hooks/useNovedades';
-import { useSedes } from '../../sedes/hooks/useSedes';
-import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
-import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
 import { FiltroUbicacionCascada } from '../../../shared/components/FiltroUbicacionCascada';
 import { FiltroAsignado } from '../../usuarios/components/FiltroAsignado';
 import { aSlug } from '../../../shared/utils/aSlug';
@@ -75,10 +72,6 @@ export function NovedadesPage() {
     const hayFiltrosPropios = Boolean(
         placaFiltro || estadoFiltro || sinAsignar || usuarioFiltro || fechaDesdeFiltro || fechaHastaFiltro || asignadoFiltro
     );
-
-    const { data: sedesData } = useSedes(1);
-    const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeFiltro || undefined });
-    const { data: ubicacionesData } = useUbicaciones({ page: 1, subsedeId: subsedeFiltro || undefined });
 
     const { data, isLoading, isError } = useNovedades({ page, filtros });
     const crear = useCreateNovedad();
@@ -223,9 +216,6 @@ export function NovedadesPage() {
             <AvisoBanner aviso={aviso} onCerrar={() => setAviso(null)} />
 
             <FiltroUbicacionCascada
-                sedesData={sedesData}
-                subsedesData={subsedesData}
-                ubicacionesData={ubicacionesData}
                 sedeFiltro={sedeFiltro}
                 subsedeFiltro={subsedeFiltro}
                 ubicacionFiltro={ubicacionFiltro}

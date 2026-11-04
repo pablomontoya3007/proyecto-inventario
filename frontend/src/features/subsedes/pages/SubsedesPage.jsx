@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useSubsedes, useCreateSubsede, useUpdateSubsede, useDeleteSubsede } from '../hooks/useSubsedes';
-import { useSedes } from '../../sedes/hooks/useSedes';
 import { SubsedeTable } from '../components/SubsedeTable';
 import { SubsedeForm } from '../components/SubsedeForm';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 import { Modal } from '../../../shared/components/Modal';
+import { BuscadorCatalogoPorId } from '../../../shared/components/BuscadorCatalogo';
+import { useBuscarSedes, useSedePorId } from '../../sedes/hooks/useSedes';
 
 export function SubsedesPage() {
   const [page, setPage] = useState(1);
@@ -19,7 +20,6 @@ export function SubsedesPage() {
     sedeId: sedeFiltro || undefined,
     id: idFiltro || undefined,
   });
-  const { data: sedesData } = useSedes(1);
   const createSubsede = useCreateSubsede();
   const updateSubsede = useUpdateSubsede();
   const deleteSubsede = useDeleteSubsede();
@@ -85,22 +85,19 @@ export function SubsedesPage() {
           <label htmlFor="filtro-sede" className="mr-2 text-sm text-slate-600">
             Filtrar por sede:
           </label>
-          <select
+          <BuscadorCatalogoPorId
             id="filtro-sede"
-            value={sedeFiltro}
-            onChange={(event) => {
-              setSedeFiltro(event.target.value);
-              setPage(1);
-            }}
-            className="rounded border border-slate-300 px-2 py-1 text-sm"
-          >
-            <option value="">Todas las sedes</option>
-            {sedesData?.data.map((sede) => (
-              <option key={sede.id} value={sede.id}>
-                {sede.nombre}
-              </option>
-            ))}
-          </select>
+            valueId={sedeFiltro}
+            onChange={(valor) => {
+            setSedeFiltro(valor);
+            setPage(1);
+          }}
+            usePorId={useSedePorId}
+            useBuscar={useBuscarSedes}
+            placeholder="Todas las sedes"
+            className="inline-block w-52 align-middle"
+            inputClassName={"rounded border border-slate-300 px-2 py-1 text-sm"}
+          />
         </div>
       </div>
 

@@ -28,6 +28,16 @@ export function useBuscarUbicaciones(termino, { enabled = true, subsedeId } = {}
   });
 }
 
+// Nombre de una ubicación a partir de su id (ver useSedePorId).
+export function useUbicacionPorId(id) {
+  return useQuery({
+    queryKey: ['ubicaciones-formacion', 'por-id', String(id ?? '')],
+    queryFn: async () => (await fetchUbicaciones({ id })).data[0] ?? null,
+    enabled: Boolean(id),
+    staleTime: 5 * 60_000,
+  });
+}
+
 export function useCreateUbicacion() {
   const queryClient = useQueryClient();
   return useMutation({

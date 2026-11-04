@@ -2,9 +2,6 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useEquipos, useCreateEquipo, useUpdateEquipo, useDeleteEquipo } from '../hooks/useEquipos';
 import { useTiposEquipo } from '../../tipos-equipo/hooks/useTiposEquipo';
-import { useSedes } from '../../sedes/hooks/useSedes';
-import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
-import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
 import { BuscadorResponsable } from '../../responsables/components/BuscadorResponsable';
 import { EquipoTable } from '../components/EquipoTable';
 import { EquipoForm } from '../components/EquipoForm';
@@ -17,6 +14,10 @@ import { BotonExportarExcel } from '../../../shared/components/BotonExportarExce
 import { TIPOS_USO } from '../../../shared/constants/tiposUso';
 import { ENDPOINTS } from '../../../api/endpoints';
 import { aSlug } from '../../../shared/utils/aSlug';
+import { BuscadorCatalogoPorId } from '../../../shared/components/BuscadorCatalogo';
+import { useBuscarSedes, useSedePorId } from '../../sedes/hooks/useSedes';
+import { useBuscarSubsedes, useSubsedePorId } from '../../subsedes/hooks/useSubsedes';
+import { useBuscarUbicaciones, useUbicacionPorId } from '../../ubicaciones/hooks/useUbicaciones';
 
 // Confirmado contra app/Enums/EstadoEquipo.php. "tono" colorea su contador.
 const ESTADOS_EQUIPO = [
@@ -81,9 +82,6 @@ export function EquiposPage() {
 
   const { data, isLoading, isError } = useEquipos(filtros, page);
   const { data: tiposData } = useTiposEquipo();
-  const { data: sedesData } = useSedes(1);
-  const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeFiltro || undefined });
-  const { data: ubicacionesData } = useUbicaciones({ page: 1, subsedeId: subsedeFiltro || undefined });
 
   const createEquipo = useCreateEquipo();
   const updateEquipo = useUpdateEquipo();
@@ -133,15 +131,20 @@ export function EquiposPage() {
     },
   ];
 
-  function handleSedeFiltroChange(event) {
-    setSedeFiltro(event.target.value);
+  function handleSedeFiltroChange(valor) {
+    setSedeFiltro(valor);
     setSubsedeFiltro('');
     setUbicacionFiltro('');
     setPage(1);
   }
 
-  function handleSubsedeFiltroChange(event) {
-    setSubsedeFiltro(event.target.value);
+  function handleUbicacionFiltroChange(valor) {
+    setUbicacionFiltro(valor);
+    setPage(1);
+  }
+
+  function handleSubsedeFiltroChange(valor) {
+    setSubsedeFiltro(valor);
     setUbicacionFiltro('');
     setPage(1);
   }
@@ -271,43 +274,40 @@ export function EquiposPage() {
             </option>
           ))}
         </select>
-        <select value={sedeFiltro} onChange={handleSedeFiltroChange} className={CAMPO}>
-          <option value="">Todas las sedes</option>
-          {sedesData?.data.map((sede) => (
-            <option key={sede.id} value={sede.id}>
-              {sede.nombre}
-            </option>
-          ))}
-        </select>
-        <select
-          value={subsedeFiltro}
-          disabled={!sedeFiltro}
+        <BuscadorCatalogoPorId
+          id="filtro_sede_equipos"
+          valueId={sedeFiltro}
+          onChange={handleSedeFiltroChange}
+          usePorId={useSedePorId}
+          useBuscar={useBuscarSedes}
+          placeholder="Todas las sedes"
+          className="w-48"
+          inputClassName={CAMPO}
+        />
+        <BuscadorCatalogoPorId
+          id="filtro_subsede_equipos"
+          valueId={subsedeFiltro}
           onChange={handleSubsedeFiltroChange}
-          className={`${CAMPO} disabled:bg-surface`}
-        >
-          <option value="">Todas las subsedes</option>
-          {subsedesData?.data.map((subsede) => (
-            <option key={subsede.id} value={subsede.id}>
-              {subsede.nombre}
-            </option>
-          ))}
-        </select>
-        <select
-          value={ubicacionFiltro}
+          usePorId={useSubsedePorId}
+          useBuscar={useBuscarSubsedes}
+          parametros={{ sedeId: sedeFiltro || undefined }}
+          disabled={!sedeFiltro}
+          placeholder="Todas las subsedes"
+          className="w-48"
+          inputClassName={`${CAMPO} disabled:bg-surface`}
+        />
+        <BuscadorCatalogoPorId
+          id="filtro_ubicacion_equipos"
+          valueId={ubicacionFiltro}
+          onChange={handleUbicacionFiltroChange}
+          usePorId={useUbicacionPorId}
+          useBuscar={useBuscarUbicaciones}
+          parametros={{ subsedeId: subsedeFiltro || undefined }}
           disabled={!subsedeFiltro}
-          onChange={(event) => {
-            setUbicacionFiltro(event.target.value);
-            setPage(1);
-          }}
-          className={`${CAMPO} disabled:bg-surface`}
-        >
-          <option value="">Todas las ubicaciones</option>
-          {ubicacionesData?.data.map((ubicacion) => (
-            <option key={ubicacion.id} value={ubicacion.id}>
-              {ubicacion.nombre}
-            </option>
-          ))}
-        </select>
+          placeholder="Todas las ubicaciones"
+          className="w-48"
+          inputClassName={`${CAMPO} disabled:bg-surface`}
+        />
         <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600">
           <input
             type="checkbox"

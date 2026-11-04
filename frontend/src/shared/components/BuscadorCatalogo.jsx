@@ -178,3 +178,35 @@ export function BuscadorCatalogo({
         </div>
     );
 }
+/**
+ * Adaptador de BuscadorCatalogo para pantallas cuyo estado guarda solo el
+ * ID (filtros, formularios con ids como texto, filtros que vienen de la
+ * URL). Muestra el nombre eligiendo entre lo que el usuario acaba de
+ * seleccionar y, si el id llegó de fuera, lo que resuelve `usePorId`.
+ *
+ * - valueId: id actual ('' si no hay).
+ * - onChange(id): recibe el id elegido como texto, o '' al quitarlo.
+ * - usePorId: hook que devuelve { data: item } a partir del id
+ *   (useSedePorId, useSubsedePorId, useUbicacionPorId).
+ * El resto de props son las de BuscadorCatalogo.
+ */
+export function BuscadorCatalogoPorId({ valueId, onChange, usePorId, ...resto }) {
+  const [elegido, setElegido] = useState(null);
+
+  const idActual = valueId ? String(valueId) : '';
+  const hayElegido = elegido && String(elegido.id) === idActual;
+  const { data: resuelto } = usePorId(hayElegido ? '' : idActual);
+
+  const value = idActual ? (hayElegido ? elegido : (resuelto ?? null)) : null;
+
+  return (
+    <BuscadorCatalogo
+      {...resto}
+      value={value}
+      onChange={(item) => {
+        setElegido(item);
+        onChange(item ? String(item.id) : '');
+      }}
+    />
+  );
+}

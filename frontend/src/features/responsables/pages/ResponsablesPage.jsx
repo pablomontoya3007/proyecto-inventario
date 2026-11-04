@@ -5,9 +5,6 @@ import {
   useUpdateResponsable,
   useDeleteResponsable,
 } from '../hooks/useResponsables';
-import { useSedes } from '../../sedes/hooks/useSedes';
-import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
-import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
 import { FiltroUbicacionCascada } from '../../../shared/components/FiltroUbicacionCascada';
 import { ResponsableTable } from '../components/ResponsableTable';
 import { ResponsableForm } from '../components/ResponsableForm';
@@ -68,10 +65,6 @@ export function ResponsablesPage() {
           ? { sede_id: sedeFiltro }
           : {}),
   };
-
-  const { data: sedesData } = useSedes(1);
-  const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeFiltro || undefined });
-  const { data: ubicacionesData } = useUbicaciones({ page: 1, subsedeId: subsedeFiltro || undefined });
 
   const { data, isLoading, isError } = useResponsables({
     page,
@@ -151,9 +144,6 @@ export function ResponsablesPage() {
       </div>
 
       <FiltroUbicacionCascada
-        sedesData={sedesData}
-        subsedesData={subsedesData}
-        ubicacionesData={ubicacionesData}
         sedeFiltro={sedeFiltro}
         subsedeFiltro={subsedeFiltro}
         ubicacionFiltro={ubicacionFiltro}

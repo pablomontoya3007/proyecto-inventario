@@ -1,9 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLicencias, useCreateLicencia, useUpdateLicencia, useDeleteLicencia } from '../hooks/useLicencias';
-import { useSedes } from '../../sedes/hooks/useSedes';
-import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
-import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
 import { FiltroUbicacionCascada } from '../../../shared/components/FiltroUbicacionCascada';
 import { ContadoresModulo } from '../../../shared/components/ContadoresModulo';
 import { LicenciaTable } from '../components/LicenciaTable';
@@ -99,10 +96,6 @@ export function LicenciasPage() {
     ...(fechaDesdeFiltro ? { fecha_desde: fechaDesdeFiltro } : {}),
     ...(fechaHastaFiltro ? { fecha_hasta: fechaHastaFiltro } : {}),
   };
-
-  const { data: sedesData } = useSedes(1);
-  const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeFiltro || undefined });
-  const { data: ubicacionesData } = useUbicaciones({ page: 1, subsedeId: subsedeFiltro || undefined });
 
   const { data, isLoading, isError } = useLicencias(page, filtros);
   const createLicencia = useCreateLicencia();
@@ -202,9 +195,6 @@ export function LicenciasPage() {
       <LicenciasSinActualizarPanel onVerLicencia={handleVerLicencia} />
 
       <FiltroUbicacionCascada
-        sedesData={sedesData}
-        subsedesData={subsedesData}
-        ubicacionesData={ubicacionesData}
         sedeFiltro={sedeFiltro}
         subsedeFiltro={subsedeFiltro}
         ubicacionFiltro={ubicacionFiltro}

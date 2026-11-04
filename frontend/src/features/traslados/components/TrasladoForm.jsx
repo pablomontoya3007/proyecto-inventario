@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { EquipoAutocomplete } from '../../../shared/components/EquipoAutocomplete';
-import { useSedes } from '../../sedes/hooks/useSedes';
-import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
-import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
+import { BuscadorCatalogoPorId } from '../../../shared/components/BuscadorCatalogo';
+import { useBuscarSedes, useSedePorId } from '../../sedes/hooks/useSedes';
+import { useBuscarSubsedes, useSubsedePorId } from '../../subsedes/hooks/useSubsedes';
+import { useBuscarUbicaciones, useUbicacionPorId } from '../../ubicaciones/hooks/useUbicaciones';
 
 /**
  * El origen del traslado NUNCA se pide aquí — el backend lo captura
@@ -17,18 +18,14 @@ export function TrasladoForm({ onSubmit, onCancel, isSubmitting, serverErrors })
   const [fecha, setFecha] = useState('');
   const [motivo, setMotivo] = useState('');
 
-  const { data: sedesData } = useSedes(1);
-  const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeId || undefined });
-  const { data: ubicacionesData } = useUbicaciones({ page: 1, subsedeId: subsedeId || undefined });
-
-  function handleSedeChange(event) {
-    setSedeId(event.target.value);
+  function handleSedeChange(valor) {
+    setSedeId(valor);
     setSubsedeId('');
     setUbicacionDestinoId('');
   }
 
-  function handleSubsedeChange(event) {
-    setSubsedeId(event.target.value);
+  function handleSubsedeChange(valor) {
+    setSubsedeId(valor);
     setUbicacionDestinoId('');
   }
 
@@ -63,68 +60,52 @@ export function TrasladoForm({ onSubmit, onCancel, isSubmitting, serverErrors })
           <label htmlFor="sede_destino" className="block text-sm font-medium text-ink">
             Sede destino
           </label>
-          <select
+          <BuscadorCatalogoPorId
             id="sede_destino"
-            required
-            value={sedeId}
+            valueId={sedeId}
             onChange={handleSedeChange}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none"
-          >
-            <option value="" disabled>
-              Sede
-            </option>
-            {sedesData?.data.map((sede) => (
-              <option key={sede.id} value={sede.id}>
-                {sede.nombre}
-              </option>
-            ))}
-          </select>
+            usePorId={useSedePorId}
+            useBuscar={useBuscarSedes}
+            placeholder="Buscar sede..."
+            className="mt-1"
+            inputClassName={"mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none disabled:bg-slate-100"}
+          />
         </div>
 
         <div>
           <label htmlFor="subsede_destino" className="block text-sm font-medium text-ink">
             Subsede destino
           </label>
-          <select
+          <BuscadorCatalogoPorId
             id="subsede_destino"
-            required
-            disabled={!sedeId}
-            value={subsedeId}
+            valueId={subsedeId}
             onChange={handleSubsedeChange}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none disabled:bg-slate-100"
-          >
-            <option value="" disabled>
-              Subsede
-            </option>
-            {subsedesData?.data.map((subsede) => (
-              <option key={subsede.id} value={subsede.id}>
-                {subsede.nombre}
-              </option>
-            ))}
-          </select>
+            usePorId={useSubsedePorId}
+            useBuscar={useBuscarSubsedes}
+            parametros={{ sedeId: sedeId || undefined }}
+            disabled={!sedeId}
+            placeholder="Buscar subsede..."
+            className="mt-1"
+            inputClassName={"mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none disabled:bg-slate-100"}
+          />
         </div>
 
         <div>
           <label htmlFor="ubicacion_destino" className="block text-sm font-medium text-ink">
             Ubicación destino
           </label>
-          <select
+          <BuscadorCatalogoPorId
             id="ubicacion_destino"
-            required
+            valueId={ubicacionDestinoId}
+            onChange={setUbicacionDestinoId}
+            usePorId={useUbicacionPorId}
+            useBuscar={useBuscarUbicaciones}
+            parametros={{ subsedeId: subsedeId || undefined }}
             disabled={!subsedeId}
-            value={ubicacionDestinoId}
-            onChange={(event) => setUbicacionDestinoId(event.target.value)}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none disabled:bg-slate-100"
-          >
-            <option value="" disabled>
-              Ubicación
-            </option>
-            {ubicacionesData?.data.map((ubicacion) => (
-              <option key={ubicacion.id} value={ubicacion.id}>
-                {ubicacion.nombre}
-              </option>
-            ))}
-          </select>
+            placeholder="Buscar ubicación..."
+            className="mt-1"
+            inputClassName={"mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none disabled:bg-slate-100"}
+          />
           {serverErrors?.ubicacion_destino_id && (
             <p className="mt-1 text-sm text-danger">{serverErrors.ubicacion_destino_id[0]}</p>
           )}

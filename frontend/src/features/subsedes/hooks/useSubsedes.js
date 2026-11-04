@@ -25,6 +25,16 @@ export function useBuscarSubsedes(termino, { enabled = true, sedeId } = {}) {
   });
 }
 
+// Nombre de una subsede a partir de su id (ver useSedePorId).
+export function useSubsedePorId(id) {
+  return useQuery({
+    queryKey: ['subsedes', 'por-id', String(id ?? '')],
+    queryFn: async () => (await fetchSubsedes({ id })).data[0] ?? null,
+    enabled: Boolean(id),
+    staleTime: 5 * 60_000,
+  });
+}
+
 export function useCreateSubsede() {
   const queryClient = useQueryClient();
   return useMutation({

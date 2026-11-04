@@ -1,12 +1,15 @@
 import { useState } from 'react';
-import { useSedes } from '../../sedes/hooks/useSedes';
-import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
-import { useUbicaciones } from '../../ubicaciones/hooks/useUbicaciones';
 import { BuscadorUsuario } from '../../usuarios/components/BuscadorUsuario';
 import { useEquiposParaNovedadMasiva, useCreateNovedadMasiva } from '../hooks/useNovedades';
+import { BuscadorCatalogoPorId } from '../../../shared/components/BuscadorCatalogo';
+import { useBuscarSedes, useSedePorId } from '../../sedes/hooks/useSedes';
+import { useBuscarSubsedes, useSubsedePorId } from '../../subsedes/hooks/useSubsedes';
+import { useBuscarUbicaciones, useUbicacionPorId } from '../../ubicaciones/hooks/useUbicaciones';
 
 const CAMPO =
     'mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-sena focus:outline-none disabled:bg-slate-100';
+// El buscador va dentro de un contenedor que ya trae el margen superior.
+const CAMPO_BUSCADOR = CAMPO.replace('mt-1 ', '');
 
 /**
  * Agrupa los equipos marcados por cuentadante, para mostrar ANTES de
@@ -55,10 +58,6 @@ export function NovedadMasivaModal({ onClose }) {
     const [busqueda, setBusqueda] = useState('');
     const [asignado, setAsignado] = useState(null);
     const [descripcion, setDescripcion] = useState('');
-
-    const { data: sedesData } = useSedes(1);
-    const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeId || undefined });
-    const { data: ubicacionesData } = useUbicaciones({ page: 1, subsedeId: subsedeId || undefined });
     const { data: equiposData, isLoading: cargandoEquipos, isError: errorEquipos } = useEquiposParaNovedadMasiva(ubicacionId);
     const crear = useCreateNovedadMasiva();
 
@@ -150,80 +149,64 @@ export function NovedadMasivaModal({ onClose }) {
                     <label htmlFor="novedad_masiva_sede" className="block text-sm font-medium text-ink">
                         Sede
                     </label>
-                    <select
-                        id="novedad_masiva_sede"
-                        required
-                        value={sedeId}
-                        onChange={(event) => {
-                            setSedeId(event.target.value);
-                            setSubsedeId('');
-                            setUbicacionId('');
-                            reiniciarSeleccion();
-                        }}
-                        className={CAMPO}
-                    >
-                        <option value="" disabled>
-                            Sede
-                        </option>
-                        {sedesData?.data.map((sede) => (
-                            <option key={sede.id} value={sede.id}>
-                                {sede.nombre}
-                            </option>
-                        ))}
-                    </select>
+                    <BuscadorCatalogoPorId
+                      id="novedad_masiva_sede"
+                      valueId={sedeId}
+                      onChange={(valor) => {
+                        setSedeId(valor);
+                        setSubsedeId('');
+                        setUbicacionId('');
+                        reiniciarSeleccion();
+                    }}
+                      usePorId={useSedePorId}
+                      useBuscar={useBuscarSedes}
+                      placeholder="Buscar sede..."
+                      className="mt-1"
+                      inputClassName={CAMPO_BUSCADOR}
+                    />
                 </div>
 
                 <div>
                     <label htmlFor="novedad_masiva_subsede" className="block text-sm font-medium text-ink">
                         Subsede
                     </label>
-                    <select
-                        id="novedad_masiva_subsede"
-                        required
-                        disabled={!sedeId}
-                        value={subsedeId}
-                        onChange={(event) => {
-                            setSubsedeId(event.target.value);
-                            setUbicacionId('');
-                            reiniciarSeleccion();
-                        }}
-                        className={CAMPO}
-                    >
-                        <option value="" disabled>
-                            Subsede
-                        </option>
-                        {subsedesData?.data.map((subsede) => (
-                            <option key={subsede.id} value={subsede.id}>
-                                {subsede.nombre}
-                            </option>
-                        ))}
-                    </select>
+                    <BuscadorCatalogoPorId
+                      id="novedad_masiva_subsede"
+                      valueId={subsedeId}
+                      onChange={(valor) => {
+                        setSubsedeId(valor);
+                        setUbicacionId('');
+                        reiniciarSeleccion();
+                    }}
+                      usePorId={useSubsedePorId}
+                      useBuscar={useBuscarSubsedes}
+                      parametros={{ sedeId: sedeId || undefined }}
+                      disabled={!sedeId}
+                      placeholder="Buscar subsede..."
+                      className="mt-1"
+                      inputClassName={CAMPO_BUSCADOR}
+                    />
                 </div>
 
                 <div>
                     <label htmlFor="novedad_masiva_ubicacion" className="block text-sm font-medium text-ink">
                         Ambiente
                     </label>
-                    <select
-                        id="novedad_masiva_ubicacion"
-                        required
-                        disabled={!subsedeId}
-                        value={ubicacionId}
-                        onChange={(event) => {
-                            setUbicacionId(event.target.value);
-                            reiniciarSeleccion();
-                        }}
-                        className={CAMPO}
-                    >
-                        <option value="" disabled>
-                            Ambiente
-                        </option>
-                        {ubicacionesData?.data.map((ubicacion) => (
-                            <option key={ubicacion.id} value={ubicacion.id}>
-                                {ubicacion.nombre}
-                            </option>
-                        ))}
-                    </select>
+                    <BuscadorCatalogoPorId
+                      id="novedad_masiva_ubicacion"
+                      valueId={ubicacionId}
+                      onChange={(valor) => {
+                        setUbicacionId(valor);
+                        reiniciarSeleccion();
+                    }}
+                      usePorId={useUbicacionPorId}
+                      useBuscar={useBuscarUbicaciones}
+                      parametros={{ subsedeId: subsedeId || undefined }}
+                      disabled={!subsedeId}
+                      placeholder="Buscar ambiente..."
+                      className="mt-1"
+                      inputClassName={CAMPO_BUSCADOR}
+                    />
                 </div>
             </div>
 

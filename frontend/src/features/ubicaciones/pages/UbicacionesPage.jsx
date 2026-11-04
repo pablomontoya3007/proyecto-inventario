@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useUbicaciones, useCreateUbicacion, useUpdateUbicacion, useDeleteUbicacion } from '../hooks/useUbicaciones';
-import { useSedes } from '../../sedes/hooks/useSedes';
-import { useSubsedes } from '../../subsedes/hooks/useSubsedes';
 import { UbicacionTable } from '../components/UbicacionTable';
 import { UbicacionForm } from '../components/UbicacionForm';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 import { Modal } from '../../../shared/components/Modal';
 import { useValorDiferido } from '../../../shared/hooks/useValorDiferido';
+import { BuscadorCatalogoPorId } from '../../../shared/components/BuscadorCatalogo';
+import { useBuscarSedes, useSedePorId } from '../../sedes/hooks/useSedes';
+import { useBuscarSubsedes, useSubsedePorId } from '../../subsedes/hooks/useSubsedes';
 
 /**
  * Filtros: nombre (búsqueda parcial), ID, sede y subsede. El nombre se
@@ -33,8 +34,6 @@ export function UbicacionesPage() {
     sedeId: subsedeFiltro ? undefined : sedeFiltro || undefined,
     id: idFiltro || undefined,
   });
-  const { data: sedesData } = useSedes(1);
-  const { data: subsedesData } = useSubsedes({ page: 1, sedeId: sedeFiltro || undefined });
 
   const createUbicacion = useCreateUbicacion();
   const updateUbicacion = useUpdateUbicacion();
@@ -42,8 +41,8 @@ export function UbicacionesPage() {
 
   const serverErrors = createUbicacion.error?.response?.data?.errors ?? updateUbicacion.error?.response?.data?.errors;
 
-  function handleSedeFiltroChange(event) {
-    setSedeFiltro(event.target.value);
+  function handleSedeFiltroChange(valor) {
+    setSedeFiltro(valor);
     setSubsedeFiltro(''); // cambiar de sede invalida el filtro de subsede
     setPage(1);
   }
@@ -132,42 +131,37 @@ export function UbicacionesPage() {
           <label htmlFor="filtro-sede" className="mr-2 text-sm text-slate-600">
             Sede:
           </label>
-          <select
+          <BuscadorCatalogoPorId
             id="filtro-sede"
-            value={sedeFiltro}
+            valueId={sedeFiltro}
             onChange={handleSedeFiltroChange}
-            className="rounded border border-slate-300 px-2 py-1 text-sm"
-          >
-            <option value="">Todas las sedes</option>
-            {sedesData?.data.map((sede) => (
-              <option key={sede.id} value={sede.id}>
-                {sede.nombre}
-              </option>
-            ))}
-          </select>
+            usePorId={useSedePorId}
+            useBuscar={useBuscarSedes}
+            placeholder="Todas las sedes"
+            className="inline-block w-52 align-middle"
+            inputClassName={"rounded border border-slate-300 px-2 py-1 text-sm"}
+          />
         </div>
 
         <div>
           <label htmlFor="filtro-subsede" className="mr-2 text-sm text-slate-600">
             Subsede:
           </label>
-          <select
+          <BuscadorCatalogoPorId
             id="filtro-subsede"
-            value={subsedeFiltro}
+            valueId={subsedeFiltro}
+            onChange={(valor) => {
+            setSubsedeFiltro(valor);
+            setPage(1);
+          }}
+            usePorId={useSubsedePorId}
+            useBuscar={useBuscarSubsedes}
+            parametros={{ sedeId: sedeFiltro || undefined }}
             disabled={!sedeFiltro}
-            onChange={(event) => {
-              setSubsedeFiltro(event.target.value);
-              setPage(1);
-            }}
-            className="rounded border border-slate-300 px-2 py-1 text-sm disabled:bg-slate-100"
-          >
-            <option value="">Todas las subsedes</option>
-            {subsedesData?.data.map((subsede) => (
-              <option key={subsede.id} value={subsede.id}>
-                {subsede.nombre}
-              </option>
-            ))}
-          </select>
+            placeholder="Todas las subsedes"
+            className="inline-block w-52 align-middle"
+            inputClassName={"rounded border border-slate-300 px-2 py-1 text-sm disabled:bg-slate-100"}
+          />
         </div>
 
         {hayFiltros && (
