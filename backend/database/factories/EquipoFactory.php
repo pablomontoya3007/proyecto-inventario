@@ -17,7 +17,7 @@ class EquipoFactory extends Factory
 
     // Pesado hacia "activo" a propósito: en un inventario real, la mayoría
     // de los equipos están en uso; los otros estados son la excepción.
-    private const ESTADOS = ['activo', 'activo', 'activo', 'mantenimiento', 'de_baja', 'extraviado'];
+    private const ESTADOS = ['activo', 'activo', 'activo', 'mantenimiento', 'de_baja', 'extraviado', 'almacenado'];
 
     private const MARCAS_COMPUTO = ['Dell', 'HP', 'Lenovo', 'Asus'];
 

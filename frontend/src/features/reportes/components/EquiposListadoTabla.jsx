@@ -8,6 +8,7 @@ const ESTADO_CRUDO_POR_ETIQUETA = {
   'En mantenimiento': 'mantenimiento',
   'De baja': 'de_baja',
   Extraviado: 'extraviado',
+  Almacenado: 'almacenado',
 };
 
 // Identificadores: letra monoespaciada y sin partirse en dos líneas.

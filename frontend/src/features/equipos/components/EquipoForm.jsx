@@ -15,6 +15,7 @@ const ESTADOS_EQUIPO = [
   { value: 'mantenimiento', label: 'En mantenimiento' },
   { value: 'de_baja', label: 'De baja' },
   { value: 'extraviado', label: 'Extraviado' },
+  { value: 'almacenado', label: 'Almacenado' },
 ];
 
 const INPUT = 'rounded border border-slate-300 px-3 py-2 focus:border-sena focus:outline-none';

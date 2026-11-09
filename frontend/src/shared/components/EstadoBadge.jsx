@@ -8,6 +8,7 @@ const ESTILOS_POR_ESTADO = {
   mantenimiento: 'bg-amber-50 text-warning',
   de_baja: 'bg-red-50 text-danger',
   extraviado: 'bg-red-50 text-danger',
+  almacenado: 'bg-slate-100 text-slate-600',
   // Licencia
   activa: 'bg-sena-soft text-sena-dark',
   vencida: 'bg-red-50 text-danger',

@@ -27,6 +27,7 @@ function TarjetaEstadistica({ titulo, valor, tono = 'neutral', irA, ayuda }) {
   );
 }
 
+const GRID_SEIS = 'grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6';
 const GRID_CINCO = 'grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5';
 
 export function DashboardPage() {
@@ -74,7 +75,7 @@ export function DashboardPage() {
 
       <section>
         <h2 className="mb-3 text-lg font-medium text-ink">Equipos</h2>
-        <div className={GRID_CINCO}>
+        <div className={GRID_SEIS}>
           <TarjetaEstadistica titulo="Total de equipos" valor={data.equipos.total} irA="/equipos" />
           <TarjetaEstadistica titulo="Activos" valor={equiposPorEstado.activo} tono="success" irA="/equipos?estado=activo" />
           <TarjetaEstadistica
@@ -89,6 +90,11 @@ export function DashboardPage() {
             valor={equiposPorEstado.extraviado}
             tono="danger"
             irA="/equipos?estado=extraviado"
+          />
+          <TarjetaEstadistica
+            titulo="Almacenados"
+            valor={equiposPorEstado.almacenado}
+            irA="/equipos?estado=almacenado"
           />
         </div>
       </section>

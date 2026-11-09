@@ -25,7 +25,7 @@ final class NormalizadorEquipo
 
     /**
      * Variantes escritas a mano que corresponden a un estado válido del
-     * enum EstadoEquipo (activo, mantenimiento, de_baja, extraviado).
+     * enum EstadoEquipo (activo, mantenimiento, de_baja, extraviado, almacenado).
      */
     private const ALIAS_ESTADO = [
         'en_mantenimiento' => 'mantenimiento',

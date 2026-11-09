@@ -8,6 +8,7 @@ enum EstadoEquipo: string
     case Mantenimiento = 'mantenimiento';
     case DeBaja = 'de_baja';
     case Extraviado = 'extraviado';
+    case Almacenado = 'almacenado';
 
     public function label(): string
     {
@@ -16,6 +17,7 @@ enum EstadoEquipo: string
             self::Mantenimiento => 'En mantenimiento',
             self::DeBaja => 'De baja',
             self::Extraviado => 'Extraviado',
+            self::Almacenado => 'Almacenado',
         };
     }
 }

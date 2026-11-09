@@ -192,7 +192,7 @@ class EquiposImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
             'tipo_de_equipo.exists' => 'No existe el tipo de equipo ":input".',
             'sede.exists' => 'No existe la sede ":input".',
             'subsede.exists' => 'No existe la subsede ":input".',
-            'estado.in' => 'El estado ":input" no es válido (usa: activo, mantenimiento, de baja o extraviado).',
+            'estado.in' => 'El estado ":input" no es válido (usa: activo, mantenimiento, de baja, extraviado o almacenado).',
             'tipo_de_uso.in' => 'El tipo de uso ":input" no es válido (usa: formación, administrativo o no aplica).',
         ];
     }

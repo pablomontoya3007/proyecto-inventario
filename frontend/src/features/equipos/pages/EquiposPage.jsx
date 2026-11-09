@@ -25,6 +25,7 @@ const ESTADOS_EQUIPO = [
   { value: 'mantenimiento', label: 'En mantenimiento', tono: 'warning' },
   { value: 'de_baja', label: 'De baja', tono: 'danger' },
   { value: 'extraviado', label: 'Extraviados', tono: 'danger' },
+  { value: 'almacenado', label: 'Almacenados', tono: 'neutral' },
 ];
 
 const CAMPO =
